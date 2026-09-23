@@ -29,19 +29,27 @@ Node 22+. You won't need any accounts, env vars, or a database.
 
 The email code is always **`424242`**. Any other address gets "no account found". To sign out, use the profile menu at the bottom of the sidebar.
 
-## The task
+## The challenge
 
-Take the review experience (sign-in through deciding on candidates) and make it meaningfully better. Plan for about **4–6 hours**. We care much more about depth than coverage.
+**Four hours, maximum.** Stop when the time is up, even mid-change, and write down what you'd do next. We'd rather see three screens with clear priorities than one polished corner.
 
-You decide what "better" means. Some places we'd look:
+Build the hiring manager's side of Clera as three screens, on top of the real code in this repo:
 
-- **The decide-next loop.** `↵` requests an intro, `⌫` passes, and there's a follow-up "similar candidates" step after an intro. How fast and safe does that feel over 40 candidates? Over a flaky network?
-- **Signal first.** Does the card and the detail pane show what a hiring manager needs in the first two seconds?
-- **The messy data** (see below). The current UI handles some of it well and some of it badly.
-- **States:** loading, empty (one role has nobody waiting, and one is paused), errors, viewer permissions, and mobile.
-- **Sign-in.** It's the first thing a hiring manager sees every week.
+1. **Review. This matters most, so spend most of your time here.** Redesign and rebuild the review experience so a hiring manager can go through 40 candidates quickly and safely. It already works; make it clearly better. Places we'd look:
+   - **The decide-next loop.** `↵` requests an intro, `⌫` passes, and there's a follow-up "similar candidates" step after an intro. How fast and safe does it feel over 40 candidates, and over a flaky network?
+   - **Signal first.** Do the card and the detail pane show what a hiring manager needs in the first two seconds?
+   - **The messy data** (see below). The current UI handles some of it well and some of it badly.
+   - **States:** loading, empty (one role has nobody waiting, and one is paused), errors, viewer permissions, and mobile.
+2. **Dashboard: your own, from scratch.** This is the sidebar's **Home**, at `/organization/[orgId]`, and it doesn't exist yet. Design a clear landing screen that answers "what needs me this week?", using the data the mock API already has (review queue and counts per role, roles, pipeline numbers on roles). Link into Review wherever it helps.
+3. **Settings.** This is the sidebar's **Settings**, at `/organization/[orgId]/settings/company`, and it doesn't exist yet either. Build a settings screen for the company: at least the company profile and the team (`GET …/members` already returns owners and viewers). Add mock endpoints under `app/api/` and data under `mock/` for anything else you want to show or save.
 
-Start with a short critique: what's working, what isn't, and what you'd change first. Then build the changes you believe in most. Refactor, restyle, or replace components as you see fit. Anything you leave out, write down in `NOTES.md`.
+Refactor, restyle, or replace components as you see fit. Our design system (`src/components/`, the `v2-*` tokens) is there to use, extend, or deliberately move beyond. Say which you did and why.
+
+### How to work
+
+- **Commit and push directly to this repository** as you go. Make small, frequent commits with messages that say why, and don't squash. We read the history as part of the review: it shows how you prioritised and where the time went.
+- Put your first commit within the first 15 minutes. It should be `NOTES.md` with a short critique of the current review screen (what's working, what isn't, what you'll change first) and your plan for the four hours.
+- Your last commit updates `NOTES.md` with what you shipped, what you cut, and what you'd do next.
 
 ## How the repo is laid out
 
@@ -57,7 +65,7 @@ Start with a short critique: what's working, what isn't, and what you'd change f
 | `stubs/` | Stand-ins for backend-only types and services; you shouldn't need to touch these |
 | `src/features/auth/use-auth-flow.ts` | Mock sign-in that replaces our auth provider behind the real login UI |
 
-The API behaves like a real network on purpose: responses take **250–1500 ms**, and **about 1 in 10 decisions fails** with a 500. Decisions are stored in memory and reset when the dev server restarts. Unmocked endpoints return 404 and log `[mock-api]` in the terminal. Some sidebar links (Pipeline, Roles, Settings) go to pages that aren't part of this challenge.
+The API behaves like a real network on purpose: responses take **250–1500 ms**, and **about 1 in 10 decisions fails** with a 500. Decisions are stored in memory and reset when the dev server restarts. Unmocked endpoints return 404 and log `[mock-api]` in the terminal. Home and Settings in the sidebar point at the pages you'll build. Pipeline and Roles go to pages that aren't part of this challenge.
 
 ## The data is messy, on purpose
 
@@ -73,15 +81,17 @@ Everything in `mock/` is fictional, and it was modelled on what our production d
 - **Profiles:** no experience at all, 15 roles over 20 years, overlapping current jobs, missing dates, `yearsExperience: 0`, malformed links, and one profile that returns 404.
 - **Roles:** the ML role's hiring manager has no calendar link, so an intro there hits the hiring-manager gate. One role is paused, and one has nobody waiting.
 
-## What to send back
+## What we expect at the end
 
-- A link to your fork or a zip, with your commits intact. We read the history.
-- `NOTES.md` covering your critique, the decisions you made, what you'd do with another day, and anything you'd push back on in this brief.
+- Your commits pushed to this repository, with the history intact.
+- Working **Review**, **Dashboard**, and **Settings** screens, all reachable from the sidebar.
+- `NOTES.md` with your critique, your plan, what you shipped, what you cut, and anything you'd push back on in this brief.
 - Optional: a 3–5 minute screen recording walking through it.
 
 ## How we'll look at it
 
-- **Judgement:** did you find the changes that matter most for a hiring manager?
+- **Judgement:** did the review screen get most of the time, and did you find the changes that matter most for a hiring manager?
+- **Clarity:** does the dashboard tell a hiring manager what needs them, and is settings straightforward?
 - **Craft:** hierarchy, typography, spacing, motion that helps rather than decorates, and consistency with (or a deliberate evolution of) our design system.
 - **Interaction:** how fast and safe the decide-next loop feels, including when the network misbehaves.
 - **Robustness:** how the messy data is handled.
