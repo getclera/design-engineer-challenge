@@ -1,93 +1,90 @@
-# Design Engineering Challenge — the Review board
+# Design Engineer Challenge — the Review board
 
-Clera introduces startups to candidates. Every week a hiring manager at one of our client companies opens **Review**, a queue of people we picked for their open roles, and decides on each one:
+Clera introduces startups to candidates. Every week a hiring manager at one of our client companies signs in and opens **Review**, a queue of people we picked for their open roles. They decide on each one:
 
 - **Request intro:** we reach out to the candidate and set up a first call.
 - **Pass:** the candidate leaves the queue, and the reason trains what we send next.
 
-The people using this screen are founders and hiring managers going through 20–60 candidates between meetings. Most decisions take a few seconds. A good board makes those seconds count: it shows the right signal first, makes the decision one keystroke away, and never loses their place.
+The people using this screen are founders and hiring managers working through 20–60 candidates between meetings. Most decisions take a few seconds.
 
-This repo contains a working but rough version of that board, on top of a mock API with realistic data. Your job is to make it great.
+**This repo is our real interface.** The login page, the org dashboard shell, and the Review board are the production frontend code, copied out of our monorepo. They run against a mock API seeded with fictional data. What you see after `pnpm dev` is what our customers see.
 
 ## Getting started
 
 ```bash
 pnpm install
-pnpm dev        # http://localhost:3000
+pnpm dev        # http://localhost:3000 → redirects to the review board
 pnpm typecheck
 ```
 
 Node 22+. You won't need any accounts, env vars, or a database.
 
-## Signing in
+### Signing in
 
-The app is behind a mock login. The password for both accounts is `review-demo`:
-
-| Email | Role |
+| Method | Signs you in as |
 |---|---|
-| `robin@tidewater.example` | owner, who can decide on candidates |
-| `sam@tidewater.example` | viewer, who is read-only (actions return 403) |
+| Continue with Google / LinkedIn | Robin Keller (owner) |
+| Continue with email → `robin@tidewater.example` | Robin Keller (owner), who can decide on candidates |
+| Continue with email → `sam@tidewater.example` | Sam Ortiz (viewer), who is read-only; decisions return 403 |
+
+The email code is always **`424242`**. Any other address gets "no account found". To sign out, use the profile menu at the bottom of the sidebar.
 
 ## The task
 
-Redesign and rebuild the review board. Plan for about **4–6 hours**. We care much more about depth on the core loop than about coverage.
+Take the review experience (sign-in through deciding on candidates) and make it meaningfully better. Plan for about **4–6 hours**. We care much more about depth than coverage.
 
-It should include:
+You decide what "better" means. Some places we'd look:
 
-1. **List + detail.** Scan the queue, open a candidate, and see why we think they fit.
-2. **Decide.** Request an intro or pass, with an optional reason (the categories are in `src/lib/categories.ts`).
-3. **Keyboard flow.** `↵` requests the intro, `⌫` passes, `↑`/`↓` move through the queue. The next candidate should be ready when you land on it.
-4. **Undo.** Mistakes happen at this speed.
-5. **Real-world states:** loading, empty (one role has nobody waiting, and one is paused), errors, and slow responses.
-6. **Mobile.** Hiring managers review on their phones too.
-7. **Sign-in and roles.** The login page is part of the redesign, and viewers need a read-only board that makes sense.
+- **The decide-next loop.** `↵` requests an intro, `⌫` passes, and there's a follow-up "similar candidates" step after an intro. How fast and safe does that feel over 40 candidates? Over a flaky network?
+- **Signal first.** Does the card and the detail pane show what a hiring manager needs in the first two seconds?
+- **The messy data** (see below). The current UI handles some of it well and some of it badly.
+- **States:** loading, empty (one role has nobody waiting, and one is paused), errors, viewer permissions, and mobile.
+- **Sign-in.** It's the first thing a hiring manager sees every week.
 
-Choose your own stack inside the Next.js app. Any component or animation library is fine; tell us why you picked it. Anything you don't have time for, write down in `NOTES.md`.
+Start with a short critique: what's working, what isn't, and what you'd change first. Then build the changes you believe in most. Refactor, restyle, or replace components as you see fit. Anything you leave out, write down in `NOTES.md`.
 
-## The mock API
+## How the repo is laid out
 
-| Endpoint | What it does |
+| Path | What it is |
 |---|---|
-| `POST /api/auth/login` | `{ email, password }`, which sets the session cookie. Wrong credentials return 401 |
-| `POST /api/auth/logout` | Clears the session |
-| `GET /api/me` | The signed-in user (`name`, `email`, `companyName`, `role`) |
-| `GET /api/roles` | The company's roles, some `open` and one `paused` |
-| `GET /api/review?roleId=` | The review feed (`ReviewListData`). Omit `roleId` for all roles |
-| `GET /api/talents/:talentId` | Full candidate profile (`TalentProfile`) |
-| `POST /api/review/actions` | `{ talentId, jobId, action: "request_intro" \| "pass", noFitCategories?, interestCompanyCategory?, text? }` |
-| `DELETE /api/review/actions` | `{ talentId, jobId }`, which undoes a decision |
+| `app/(main)/login`, `app/(main)/organization/[orgId]/…` | Real routes: login, org shell, review page |
+| `src/features/org-review/` | The review board (start here) |
+| `src/features/org-shared-cards/`, `org-shared-modals/`, `talent-profile/` | Card, decision panel, profile pane |
+| `src/components/`, `src/styles/v2-globals.css` | Our design system: primitives and tokens (`v2-*`) |
+| `packages/` | Shared helpers vendored from our monorepo |
+| `mock/` | **Fictional data** and the in-memory decision store |
+| `app/api/**` | **Mock API** at the same URLs production uses |
+| `stubs/` | Stand-ins for backend-only types and services; you shouldn't need to touch these |
+| `src/features/auth/use-auth-flow.ts` | Mock sign-in that replaces our auth provider behind the real login UI |
 
-Types live in `src/types.ts` and the data in `src/data/`. Every endpoint except login returns 401 when you're signed out. Decisions are stored in memory and reset when the dev server restarts.
-
-The API behaves like a real network on purpose: responses take **300–1500 ms**, and **about 1 in 10 actions fails** with a 500.
+The API behaves like a real network on purpose: responses take **250–1500 ms**, and **about 1 in 10 decisions fails** with a 500. Decisions are stored in memory and reset when the dev server restarts. Unmocked endpoints return 404 and log `[mock-api]` in the terminal. Some sidebar links (Pipeline, Roles, Settings) go to pages that aren't part of this challenge.
 
 ## The data is messy, on purpose
 
-The feed was modelled on what our production data looks like, not on a design mock. Some things you'll run into:
+Everything in `mock/` is fictional, and it was modelled on what our production data really looks like:
 
-- **Missing fields:** no avatar, no one-liner, no headline, no school, no received date, no role at all (a candidate who isn't tied to one role yet).
-- **`fitReason` in many formats:** a labelled multi-line pitch, a single sentence, literal `\n` escapes, Slack markup (`*bold*`, `<url|label>`), a numbered list, a paragraph far too long for a card, and `null`. `src/lib/fit-reason.ts` has the helper we use in production to pull out a short "hook". It is deliberately conservative: it returns `null` for single-line reasons. Use it, change it, or replace it, and tell us why.
-- **Strings of every length:** a 68-character name, a one-word name, non-Latin script, diacritics, emoji-heavy headlines, one-liners that don't fit, and a company name longer than most sentences.
-- **Company chips:** zero companies, eight companies (including the same company twice), a missing logo, and a logo URL that 404s.
-- **The same person under two roles.** A candidate is identified by talent *and* role (`reviewItemKey` in `src/lib/categories.ts`).
-- **Counts that don't match the list:** the feed is paged (`truncated`, `totalCount`), and `byRole` / `pausedPending` include people who aren't in `items`.
+- **Missing fields:** no avatar, no one-liner, no headline, no school, no received date, and no role at all (a candidate not tied to a role, so the intro needs a role picker).
+- **`fitReason` in many formats:** a labelled multi-line pitch, a single sentence (our hook extractor returns nothing for it), literal `\n` escapes, Slack markup, a numbered list, a paragraph far too long, and `null`.
+- **Strings of every length:** a 68-character name, a one-word name, Chinese script, diacritics, emoji-heavy headlines, and a one-liner that doesn't fit.
+- **Company chips:** zero, eight (including the same company twice), a missing logo, a logo URL that 404s, and an 83-character company name.
+- **The same person under two roles.**
+- **Counts that don't match the list:** the feed is paged (`truncated`, `totalCount`), and `byRole` / `pausedPending` count people who aren't in `items`.
 - **Time:** received 5 minutes ago, 400 days ago, in the future (clock skew), or never.
 - **Profiles:** no experience at all, 15 roles over 20 years, overlapping current jobs, missing dates, `yearsExperience: 0`, malformed links, and one profile that returns 404.
-
-The current UI gets most of these wrong. That's part of the brief.
+- **Roles:** the ML role's hiring manager has no calendar link, so an intro there hits the hiring-manager gate. One role is paused, and one has nobody waiting.
 
 ## What to send back
 
 - A link to your fork or a zip, with your commits intact. We read the history.
-- `NOTES.md` covering the decisions you made, what you'd do with another day, and anything you'd push back on in this brief.
+- `NOTES.md` covering your critique, the decisions you made, what you'd do with another day, and anything you'd push back on in this brief.
 - Optional: a 3–5 minute screen recording walking through it.
 
 ## How we'll look at it
 
-- **Craft:** hierarchy, typography, spacing, motion that helps rather than decorates.
+- **Judgement:** did you find the changes that matter most for a hiring manager?
+- **Craft:** hierarchy, typography, spacing, motion that helps rather than decorates, and consistency with (or a deliberate evolution of) our design system.
 - **Interaction:** how fast and safe the decide-next loop feels, including when the network misbehaves.
-- **Robustness:** how the messy data above is handled.
-- **Code:** clear components, sensible state, nothing clever for its own sake.
-- **Accessibility:** keyboard, focus, contrast, screen-reader labels.
+- **Robustness:** how the messy data is handled.
+- **Code:** clear components and sensible state, working with the codebase rather than around it.
 
-Everything in `src/data/` is fictional. Any resemblance to real people or companies is accidental.
+This repository contains Clera's proprietary source code and is shared with you only for this challenge. Please don't publish it or reuse it elsewhere.

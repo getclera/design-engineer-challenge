@@ -1,0 +1,1185 @@
+/*
+ * v2 Frontend Design System
+ *
+ * Architecture:
+ *   @theme inline  — registers v2-namespaced Tailwind utilities (no :root output)
+ *   [data-v2]      — light mode token values (scoped to v2 routes)
+ *   [data-v2-theme="dark"] or .dark [data-v2] — dark mode overrides
+ *
+ * Usage:
+ *   bg-v2-bg-page        → warm cream (#FBF8F4) in light, dark gray (#2A2A2A) in dark
+ *   text-v2-text-primary  → warm brown (#2C2322) in light, white in dark
+ *   bg-v2-brand-teal/50   → opacity modifier via color-mix()
+ *
+ * Dark mode activation:
+ *   Page-level:  <div data-v2 data-v2-theme="dark">  (e.g. B2B landing)
+ *   System-wide: .dark class on <html> via next-themes
+ *
+ * Tokens derived from Figma MCP analysis across 5 pages.
+ * See docs/frontend/references/cross-page-analysis.md for source mapping.
+ */
+
+/* ============================================
+   FONT LOADING
+   Self-hosted variable woff2 (latin). SS4 axis-subset to wght 400-600 + opsz 8-60
+   (down from the full 200-900 wght axis) — keeps optical sizing for elegant rendering
+   at hero scales while cutting ~35% off the file size. wght range covers all
+   actual usage on font-v2-heading: default 400, font-medium 500, font-semibold 600.
+   Bypasses next/font to avoid CSS variable chain issues.
+   ============================================ */
+
+@font-face {
+	font-family: "Source Serif 4";
+	font-style: normal;
+	font-weight: 400 600;
+	/* `optional` lets the headline paint immediately with the Georgia fallback instead
+	   of blocking on the 78KB woff2 — required to keep mobile LCP under 2.5s. Returning
+	   visitors hit the HTTP cache and see SS4 on first paint. */
+	font-display: optional;
+	src: url("/fonts/source-serif-4-latin-normal.woff2") format("woff2");
+}
+
+@font-face {
+	font-family: "Source Serif 4";
+	font-style: italic;
+	font-weight: 400 600;
+	/* Preload is component-level (HeroHeading + bare-italic hero pages) so routes that
+	   don't render italic above the fold don't fetch this file. */
+	font-display: swap;
+	src: url("/fonts/source-serif-4-latin-italic.woff2") format("woff2");
+}
+
+@font-face {
+	font-family: "Be Vietnam Pro";
+	font-style: normal;
+	font-weight: 300;
+	font-display: swap;
+	src: url("/fonts/be-vietnam-pro-300-normal.woff2") format("woff2");
+}
+
+@font-face {
+	font-family: "Be Vietnam Pro";
+	font-style: normal;
+	font-weight: 400;
+	font-display: swap;
+	src: url("/fonts/be-vietnam-pro-400-normal.woff2") format("woff2");
+}
+
+@font-face {
+	font-family: "Be Vietnam Pro";
+	font-style: normal;
+	font-weight: 500;
+	font-display: swap;
+	src: url("/fonts/be-vietnam-pro-500-normal.woff2") format("woff2");
+}
+
+@font-face {
+	font-family: "Be Vietnam Pro";
+	font-style: normal;
+	font-weight: 600;
+	font-display: swap;
+	src: url("/fonts/be-vietnam-pro-600-normal.woff2") format("woff2");
+}
+
+@font-face {
+	font-family: "Be Vietnam Pro";
+	font-style: normal;
+	font-weight: 700;
+	font-display: swap;
+	src: url("/fonts/be-vietnam-pro-700-normal.woff2") format("woff2");
+}
+
+@font-face {
+	font-family: "Be Vietnam Pro";
+	font-style: normal;
+	font-weight: 300;
+	font-display: swap;
+	src: url("/fonts/be-vietnam-pro-300-normal-latin-ext.woff2") format("woff2");
+	unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+
+@font-face {
+	font-family: "Be Vietnam Pro";
+	font-style: normal;
+	font-weight: 400;
+	font-display: swap;
+	src: url("/fonts/be-vietnam-pro-400-normal-latin-ext.woff2") format("woff2");
+	unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+
+@font-face {
+	font-family: "Be Vietnam Pro";
+	font-style: normal;
+	font-weight: 500;
+	font-display: swap;
+	src: url("/fonts/be-vietnam-pro-500-normal-latin-ext.woff2") format("woff2");
+	unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+
+@font-face {
+	font-family: "Be Vietnam Pro";
+	font-style: normal;
+	font-weight: 600;
+	font-display: swap;
+	src: url("/fonts/be-vietnam-pro-600-normal-latin-ext.woff2") format("woff2");
+	unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+
+@font-face {
+	font-family: "Be Vietnam Pro";
+	font-style: normal;
+	font-weight: 700;
+	font-display: swap;
+	src: url("/fonts/be-vietnam-pro-700-normal-latin-ext.woff2") format("woff2");
+	unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+
+@font-face {
+	font-family: "Be Vietnam Pro";
+	font-style: normal;
+	font-weight: 300;
+	font-display: swap;
+	src: url("/fonts/be-vietnam-pro-300-normal-vietnamese.woff2") format("woff2");
+	unicode-range: U+0102-0103, U+0110-0111, U+0128-0129, U+0168-0169, U+01A0-01A1, U+01AF-01B0, U+0300-0301, U+0303-0304, U+0308-0309, U+0323, U+0329, U+1EA0-1EF9, U+20AB;
+}
+
+@font-face {
+	font-family: "Be Vietnam Pro";
+	font-style: normal;
+	font-weight: 400;
+	font-display: swap;
+	src: url("/fonts/be-vietnam-pro-400-normal-vietnamese.woff2") format("woff2");
+	unicode-range: U+0102-0103, U+0110-0111, U+0128-0129, U+0168-0169, U+01A0-01A1, U+01AF-01B0, U+0300-0301, U+0303-0304, U+0308-0309, U+0323, U+0329, U+1EA0-1EF9, U+20AB;
+}
+
+@font-face {
+	font-family: "Be Vietnam Pro";
+	font-style: normal;
+	font-weight: 500;
+	font-display: swap;
+	src: url("/fonts/be-vietnam-pro-500-normal-vietnamese.woff2") format("woff2");
+	unicode-range: U+0102-0103, U+0110-0111, U+0128-0129, U+0168-0169, U+01A0-01A1, U+01AF-01B0, U+0300-0301, U+0303-0304, U+0308-0309, U+0323, U+0329, U+1EA0-1EF9, U+20AB;
+}
+
+@font-face {
+	font-family: "Be Vietnam Pro";
+	font-style: normal;
+	font-weight: 600;
+	font-display: swap;
+	src: url("/fonts/be-vietnam-pro-600-normal-vietnamese.woff2") format("woff2");
+	unicode-range: U+0102-0103, U+0110-0111, U+0128-0129, U+0168-0169, U+01A0-01A1, U+01AF-01B0, U+0300-0301, U+0303-0304, U+0308-0309, U+0323, U+0329, U+1EA0-1EF9, U+20AB;
+}
+
+@font-face {
+	font-family: "Be Vietnam Pro";
+	font-style: normal;
+	font-weight: 700;
+	font-display: swap;
+	src: url("/fonts/be-vietnam-pro-700-normal-vietnamese.woff2") format("woff2");
+	unicode-range: U+0102-0103, U+0110-0111, U+0128-0129, U+0168-0169, U+01A0-01A1, U+01AF-01B0, U+0300-0301, U+0303-0304, U+0308-0309, U+0323, U+0329, U+1EA0-1EF9, U+20AB;
+}
+
+@font-face {
+	font-family: "Be Vietnam Pro";
+	font-style: italic;
+	font-weight: 300;
+	font-display: optional; /* Italic variants rarely appear above fold */
+	src: url("/fonts/be-vietnam-pro-300-italic.woff2") format("woff2");
+}
+
+@font-face {
+	font-family: "Be Vietnam Pro";
+	font-style: italic;
+	font-weight: 400;
+	font-display: optional; /* Italic variants rarely appear above fold */
+	src: url("/fonts/be-vietnam-pro-400-italic.woff2") format("woff2");
+}
+
+/* Fallback metrics — reduces CLS during font-display: swap */
+@font-face {
+	font-family: "Be Vietnam Pro Fallback";
+	font-weight: 300;
+	src: local("Arial"), local("ArialMT");
+	size-adjust: 108.98%;
+	ascent-override: 91.76%;
+	descent-override: 24.32%;
+	line-gap-override: 0%;
+}
+
+@font-face {
+	font-family: "Be Vietnam Pro Fallback";
+	font-weight: 400;
+	src: local("Arial"), local("ArialMT");
+	size-adjust: 110.66%;
+	ascent-override: 90.37%;
+	descent-override: 23.95%;
+	line-gap-override: 0%;
+}
+
+@font-face {
+	font-family: "Be Vietnam Pro Fallback";
+	font-weight: 500;
+	src: local("Arial"), local("ArialMT");
+	size-adjust: 112.04%;
+	ascent-override: 89.25%;
+	descent-override: 23.65%;
+	line-gap-override: 0%;
+}
+
+@font-face {
+	font-family: "Be Vietnam Pro Fallback";
+	font-weight: 600;
+	src: local("Arial Bold"), local("Arial-BoldMT");
+	size-adjust: 105.02%;
+	ascent-override: 95.22%;
+	descent-override: 25.23%;
+	line-gap-override: 0%;
+}
+
+@font-face {
+	font-family: "Be Vietnam Pro Fallback";
+	font-weight: 700;
+	src: local("Arial Bold"), local("Arial-BoldMT");
+	size-adjust: 106.39%;
+	ascent-override: 93.99%;
+	descent-override: 24.91%;
+	line-gap-override: 0%;
+}
+
+@font-face {
+	font-family: "Be Vietnam Pro Fallback";
+	font-style: italic;
+	font-weight: 300;
+	src: local("Arial Italic"), local("Arial-ItalicMT");
+	size-adjust: 107.80%;
+	ascent-override: 92.76%;
+	descent-override: 24.58%;
+	line-gap-override: 0%;
+}
+
+@font-face {
+	font-family: "Be Vietnam Pro Fallback";
+	font-style: italic;
+	font-weight: 400;
+	src: local("Arial Italic"), local("Arial-ItalicMT");
+	size-adjust: 110.14%;
+	ascent-override: 90.79%;
+	descent-override: 24.06%;
+	line-gap-override: 0%;
+}
+
+@font-face {
+	font-family: "Source Serif 4 Fallback";
+	font-weight: 400;
+	src: local("Georgia");
+	size-adjust: 100.26%;
+	ascent-override: 103.33%;
+	descent-override: 33.41%;
+	line-gap-override: 0%;
+}
+
+@font-face {
+	font-family: "Source Serif 4 Fallback";
+	font-weight: 500;
+	src: local("Georgia");
+	size-adjust: 100.21%;
+	ascent-override: 103.38%;
+	descent-override: 33.43%;
+	line-gap-override: 0%;
+}
+
+@font-face {
+	font-family: "Source Serif 4 Fallback";
+	font-weight: 600;
+	src: local("Georgia Bold"), local("Georgia-Bold");
+	size-adjust: 91.47%;
+	ascent-override: 113.26%;
+	descent-override: 36.62%;
+	line-gap-override: 0%;
+}
+
+@font-face {
+	font-family: "Source Serif 4 Fallback";
+	font-style: italic;
+	font-weight: 400;
+	src: local("Georgia Italic"), local("Georgia-Italic");
+	size-adjust: 94.35%;
+	ascent-override: 109.80%;
+	descent-override: 35.51%;
+	line-gap-override: 0%;
+}
+
+@font-face {
+	font-family: "Source Serif 4 Fallback";
+	font-style: italic;
+	font-weight: 500;
+	src: local("Georgia Italic"), local("Georgia-Italic");
+	size-adjust: 96.17%;
+	ascent-override: 107.73%;
+	descent-override: 34.83%;
+	line-gap-override: 0%;
+}
+
+/* ============================================
+   TAILWIND v4 THEME REGISTRATION
+   Generates utility classes for all v2 tokens.
+   Values resolve at runtime via [data-v2] scope.
+   ============================================ */
+
+@theme inline {
+	/* --- Brand --- */
+	--color-v2-brand-teal: var(--v2-brand-teal);
+	--color-v2-brand-teal-dark: var(--v2-brand-teal-dark);
+	--color-v2-brand-teal-bright: var(--v2-brand-teal-bright);
+	--color-v2-brand-green: var(--v2-brand-green);
+	--color-v2-brand-teal-badge: var(--v2-brand-teal-badge);
+	--color-v2-brand-whatsapp: var(--v2-brand-whatsapp);
+	--color-v2-brand-whatsapp-hover: var(--v2-brand-whatsapp-hover);
+	--color-v2-brand-aimfox: var(--v2-brand-aimfox);
+	--color-v2-brand-linkedin: var(--v2-brand-linkedin);
+	--color-v2-brand-slack: var(--v2-brand-slack);
+	--color-v2-brand-imessage: var(--v2-brand-imessage);
+	--color-v2-brand-product-hunt: var(--v2-brand-product-hunt);
+	--color-v2-brand-google-blue: var(--v2-brand-google-blue);
+	--color-v2-brand-google-green: var(--v2-brand-google-green);
+	--color-v2-brand-google-yellow: var(--v2-brand-google-yellow);
+	--color-v2-brand-google-red: var(--v2-brand-google-red);
+
+	/* --- Identicons (anonymized candidates) --- */
+	--color-v2-identicon-1: var(--v2-identicon-1);
+	--color-v2-identicon-2: var(--v2-identicon-2);
+	--color-v2-identicon-3: var(--v2-identicon-3);
+	--color-v2-identicon-4: var(--v2-identicon-4);
+	--color-v2-identicon-5: var(--v2-identicon-5);
+	--color-v2-identicon-6: var(--v2-identicon-6);
+
+	/* --- Backgrounds --- */
+	--color-v2-bg-page: var(--v2-bg-page);
+	--color-v2-bg-card: var(--v2-bg-card);
+	--color-v2-bg-warm: var(--v2-bg-warm);
+	--color-v2-bg-blush: var(--v2-bg-blush);
+	--color-v2-bg-input: var(--v2-bg-input);
+	--color-v2-bg-input-solid: var(--v2-bg-input-solid);
+	--color-v2-bg-badge-teal: var(--v2-bg-badge-teal);
+	--color-v2-bg-active: var(--v2-bg-active);
+	--color-v2-bg-chat: var(--v2-bg-chat);
+	--color-v2-bg-modal-header: var(--v2-bg-modal-header);
+	--color-v2-bg-tag-dark: var(--v2-bg-tag-dark);
+
+	/* --- Text --- */
+	--color-v2-text-primary: var(--v2-text-primary);
+	--color-v2-text-body: var(--v2-text-body);
+	--color-v2-text-secondary: var(--v2-text-secondary);
+	--color-v2-text-table-secondary: var(--v2-text-table-secondary);
+	--color-v2-text-tertiary: var(--v2-text-tertiary);
+	--color-v2-text-muted: var(--v2-text-muted);
+	--color-v2-text-placeholder: var(--v2-text-placeholder);
+	--color-v2-text-inverse: var(--v2-text-inverse);
+	--color-v2-text-brand: var(--v2-text-brand);
+	--color-v2-text-brand-green: var(--v2-text-brand-green);
+	--color-v2-text-link: var(--v2-text-link);
+
+	/* --- Borders --- */
+	--color-v2-border-warm: var(--v2-border-warm);
+	--color-v2-border-warm-soft: var(--v2-border-warm-soft);
+	--color-v2-border-default: var(--v2-border-default);
+	--color-v2-border-medium: var(--v2-border-medium);
+	--color-v2-border-divider: var(--v2-border-divider);
+	--color-v2-border-active: var(--v2-border-active);
+
+	/* --- Status --- */
+	--color-v2-status-active: var(--v2-status-active);
+	--color-v2-status-active-bg: var(--v2-status-active-bg);
+	--color-v2-status-success: var(--v2-status-success);
+	--color-v2-status-success-bg: var(--v2-status-success-bg);
+	--color-v2-status-success-text: var(--v2-status-success-text);
+	--color-v2-status-link: var(--v2-status-link);
+	--color-v2-status-inactive: var(--v2-status-inactive);
+	--color-v2-status-error: var(--v2-status-error);
+	--color-v2-status-error-bg: var(--v2-status-error-bg);
+	--color-v2-status-active-on-dark: var(--v2-status-active-on-dark);
+	--color-v2-status-warning-on-dark: var(--v2-status-warning-on-dark);
+	--color-v2-status-error-on-dark: var(--v2-status-error-on-dark);
+	--color-v2-text-on-dark: var(--v2-text-on-dark);
+	--color-v2-status-warning: var(--v2-status-warning);
+	--color-v2-status-warning-bg: var(--v2-status-warning-bg);
+	--color-v2-status-info: var(--v2-status-info);
+	--color-v2-status-info-bg: var(--v2-status-info-bg);
+	--color-v2-status-neutral: var(--v2-status-neutral);
+	--color-v2-status-neutral-bg: var(--v2-status-neutral-bg);
+
+	/* --- Chart palette --- */
+	--color-v2-chart-1: var(--v2-chart-1);
+	--color-v2-chart-2: var(--v2-chart-2);
+	--color-v2-chart-3: var(--v2-chart-3);
+	--color-v2-chart-4: var(--v2-chart-4);
+	--color-v2-chart-5: var(--v2-chart-5);
+	--color-v2-chart-6: var(--v2-chart-6);
+	--color-v2-chart-8: var(--v2-chart-8);
+
+	/* --- Border Radius --- */
+	--radius-v2-sm: var(--v2-radius-sm);
+	--radius-v2-md: var(--v2-radius-md);
+	--radius-v2-lg: var(--v2-radius-lg);
+	--radius-v2-xl: var(--v2-radius-xl);
+	--radius-v2-full: var(--v2-radius-full);
+
+	/* --- Shadows --- */
+	--shadow-v2-card: var(--v2-shadow-card);
+	--shadow-v2-card-dark: var(--v2-shadow-card-dark);
+	--shadow-v2-button: var(--v2-shadow-button);
+	--shadow-v2-content: var(--v2-shadow-content);
+	--shadow-v2-gloss: var(--v2-shadow-gloss);
+
+	/* --- Font Families --- */
+	--font-v2-heading: var(--v2-font-heading);
+	--font-v2-body: var(--v2-font-body);
+
+	/* --- Type Scale --- */
+	--text-3xs: 0.5rem;
+	--text-3xs--line-height: 0.75rem;
+	--text-2xs: 0.6875rem;
+	--text-2xs--line-height: 1rem;
+
+	/* --- Accordion Animations --- */
+	--animate-accordion-down: accordion-down 200ms ease-out;
+	--animate-accordion-up: accordion-up 200ms ease-out;
+	--animate-fade-swap: fadeSwap 240ms ease-out both;
+	--animate-fade-slide-in: fadeSlideIn 0.45s ease-out both;
+	--animate-caret-blink: caret-blink 1s step-end infinite;
+	--animate-typing-bounce: typingBounce 1.3s infinite ease-in-out;
+	--animate-v2-value-prop-in: v2-value-prop-in 350ms ease-out both;
+	--animate-stream-word-fade-in: streamWordFadeIn 180ms ease-out both;
+	--animate-elo-gleam: eloGleam 4.6s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+	--animate-elo-sweep: eloSweep 2.1s linear infinite;
+	--animate-v2-dash-flow: v2-dash-flow 1.4s linear infinite;
+	--animate-v2-float: v2-float 7s ease-in-out infinite;
+	--animate-map-ticker: map-ticker 120s linear infinite;
+	--animate-carousel-nudge: carousel-nudge 0.8s ease-in-out 1.5s 1;
+	--animate-v2-core-pulse: v2-core-pulse 3.6s ease-out infinite;
+	--animate-v2-stream-dash: v2-stream-dash 1.2s linear infinite;
+}
+
+@utility gradient-v2-brand {
+	background-image: linear-gradient(to bottom, var(--v2-brand-teal), var(--v2-brand-teal-dark));
+}
+
+@utility tint-surface {
+	background-color: color-mix(in srgb, var(--tint-color) 3%, transparent);
+}
+
+@utility tint-badge {
+	background-color: color-mix(in srgb, var(--tint-color) 8%, transparent);
+	color: var(--tint-color);
+}
+
+@utility pattern-v2-dots {
+	background-image: radial-gradient(circle, var(--v2-border-warm) 1px, transparent 1px);
+	background-size: 26px 26px;
+}
+
+@utility animation-delay-* {
+	animation-delay: --value([*]);
+	animation-delay: calc(--value(integer) * 1ms);
+}
+
+@utility animation-duration-* {
+	animation-duration: calc(--value(integer) * 1ms);
+}
+
+@utility animation-paused {
+	animation-play-state: paused;
+}
+
+@utility intrinsic-size-* {
+	contain-intrinsic-size: auto --value([*]);
+	contain-intrinsic-size: auto calc(--value(integer) * 1px);
+}
+
+@utility intrinsic-size-auto {
+	contain-intrinsic-size: auto;
+}
+
+@utility pt-safe {
+	padding-top: env(safe-area-inset-top);
+}
+
+@utility pb-safe {
+	padding-bottom: env(safe-area-inset-bottom);
+}
+
+@utility rounded-inherit {
+	border-radius: inherit;
+}
+
+@utility content-visibility-auto {
+	content-visibility: auto;
+}
+
+@utility overflow-anchor-none {
+	overflow-anchor: none;
+}
+
+@utility animation-fill-backwards {
+	animation-fill-mode: backwards;
+}
+
+@utility mask-padding-ring {
+	mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+	-webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+	mask-composite: exclude;
+	-webkit-mask-composite: xor;
+}
+
+@utility gradient-v2-map-photo-shade {
+	background-image: radial-gradient(
+		circle at center,
+		rgba(4, 52, 44, 0.78) 0%,
+		rgba(4, 52, 44, 0.34) 55%,
+		rgba(4, 52, 44, 0.12) 100%
+	);
+}
+
+@utility gradient-glass-ring {
+	background-image: linear-gradient(
+		135deg,
+		rgba(255, 255, 255, 0.35) 0%,
+		rgba(255, 255, 255, 0.06) 40%,
+		rgba(255, 255, 255, 0.06) 60%,
+		rgba(255, 255, 255, 0.25) 100%
+	);
+}
+
+/* ============================================
+   LIGHT MODE (default)
+   All 35 tokens from cross-page analysis.
+   Defined on :root so Radix Portal content (rendered at <body>)
+   can resolve tokens. The --v2-* prefix prevents v1 collision.
+   ============================================ */
+
+:root {
+	/* Brand */
+	--v2-brand-teal: #005a5f;
+	--v2-brand-teal-dark: #003639;
+	--v2-brand-teal-bright: #005a5f;
+	--v2-brand-green: #039365;
+	--v2-brand-cream: #fbf8f4;
+	--v2-accent-limoncello: #f2e28b;
+	--v2-brand-teal-badge: #106367;
+	--v2-brand-whatsapp: #25d366;
+	--v2-brand-whatsapp-hover: #22c55e;
+	--v2-brand-aimfox: #fc421d;
+	--v2-brand-linkedin: #0a66c2;
+	--v2-brand-slack: #4a154b;
+	--v2-brand-imessage: #007aff;
+	--v2-brand-product-hunt: #4e5879;
+	--v2-brand-google-blue: #4285f4;
+	--v2-brand-google-green: #34a853;
+	--v2-brand-google-yellow: #fbbc05;
+	--v2-brand-google-red: #ea4335;
+
+	/* Identicons — muted hues for anonymized candidate avatars */
+	--v2-identicon-1: #70849b;
+	--v2-identicon-2: #537b78;
+	--v2-identicon-3: #62876f;
+	--v2-identicon-4: #968364;
+	--v2-identicon-5: #9d787b;
+	--v2-identicon-6: #867c9f;
+
+	/* Backgrounds */
+	--v2-bg-page: #fbf8f4;
+	--v2-bg-card: #ffffff;
+	--v2-bg-warm: #f9f7f3;
+	--v2-bg-blush: #fdf8f7;
+	--v2-bg-input: rgba(251, 248, 244, 0.5);
+	--v2-bg-input-solid: #f8f8f8;
+	--v2-bg-badge-teal: #daf2f3;
+	--v2-bg-active: #ebf1ee;
+	--v2-bg-chat: #f0e7e5;
+	--v2-bg-modal-header: #ebe3d8;
+	--v2-bg-tag-dark: #2c2420;
+
+	/* Text */
+	--v2-text-primary: #2c2322;
+	--v2-text-body: #2a2a2a;
+	--v2-text-secondary: #6a6a6a;
+	--v2-text-table-secondary: #555555;
+	--v2-text-tertiary: #707070;
+	/* Lightest gray with >=4.5:1 on --v2-bg-page (#fbf8f4); WCAG AA floor for body-size text. */
+	--v2-text-muted: #707070;
+	--v2-text-placeholder: #9e9e9e;
+	--v2-text-inverse: #ffffff;
+	--v2-text-brand: #004e52;
+	--v2-text-brand-green: #039365;
+	--v2-text-link: #0500f3;
+
+	/* Borders */
+	--v2-border-warm: #e0cac5;
+	--v2-border-warm-soft: rgba(224, 202, 197, 0.3);
+	--v2-border-default: #d3d3d3;
+	--v2-border-medium: #bcbcbc;
+	--v2-border-divider: #e9e9e9;
+	--v2-border-active: #c2d6cd;
+
+	/* Status */
+	--v2-status-active: #039365;
+	--v2-status-active-bg: #ebf1ee;
+	--v2-status-success: #039365;
+	--v2-status-success-bg: #ebf1ee;
+	--v2-status-success-text: #039365;
+	--v2-status-link: #0500f3;
+	--v2-status-inactive: #d9d9d9;
+	--v2-status-error: #ef4444;
+	--v2-status-error-bg: #fef2f2;
+	/* Fixed bright variants for status text on the always-dark teal tooltip/toast surface (both themes) */
+	--v2-status-active-on-dark: #5ee8b7;
+	--v2-status-error-on-dark: #f87171;
+	--v2-status-warning-on-dark: #fbbf24;
+	--v2-text-on-dark: #ffffff;
+	--v2-status-warning: #b45309;
+	--v2-status-warning-bg: #fef9ee;
+	--v2-status-info: #2563eb;
+	--v2-status-info-bg: #eff4ff;
+	--v2-status-neutral: #6b7280;
+	--v2-status-neutral-bg: #f3f4f6;
+
+	/* Chart palette */
+	--v2-chart-1: #2563eb;
+	--v2-chart-2: #039365;
+	--v2-chart-3: #f59e0b;
+	--v2-chart-4: #8b5cf6;
+	--v2-chart-5: #ef4444;
+	--v2-chart-6: #06b6d4;
+	--v2-chart-8: #6b7280;
+
+	/* Radius (px values from Figma) */
+	--v2-radius-sm: 5px;
+	--v2-radius-md: 10px;
+	--v2-radius-lg: 20px;
+	--v2-radius-xl: 25px;
+	--v2-radius-full: 9999px;
+
+	/* Shadows */
+	--v2-shadow-card: inset 0px 7px 7px white, inset 0px -7px 7.1px rgba(0, 0, 0, 0.05);
+	--v2-shadow-card-dark: inset 0px 7px 7px rgba(255, 255, 255, 0.1), inset 0px -7px 7.1px rgba(0, 0, 0, 0.25);
+	--v2-shadow-button:
+		inset 0px -2.372px 4.921px rgba(0, 0, 0, 0.55), inset 0px 2.372px 5.573px rgba(255, 255, 255, 0.25);
+	--v2-shadow-content:
+		0px 2px 4px rgba(0, 0, 0, 0.06), 0px 1px 2px -1px rgba(0, 0, 0, 0.1), 0px 0px 0px 1px rgba(0, 0, 0, 0.06);
+	--v2-shadow-gloss: inset 0 1px 0 rgba(255, 255, 255, 0.5), inset 0 -2px 4px rgba(0, 0, 0, 0.08);
+
+	/* Font families */
+	--v2-font-heading: "Source Serif 4", "Source Serif 4 Fallback", Georgia, serif;
+	--v2-font-body: "Be Vietnam Pro", "Be Vietnam Pro Fallback", system-ui, sans-serif;
+}
+
+/* Prevent browser-synthesized bold/italic while custom fonts load */
+[data-v2] {
+	font-synthesis: none;
+}
+
+/* ============================================
+   DARK MODE
+   For dark-themed pages (B2B landing) or system dark mode.
+   Anchored to :root (<html>) so Radix Portal content at <body> inherits.
+   Two activation paths:
+     1. Page-level: useEffect syncs data-v2-theme="dark" to <html>
+     2. System:     next-themes sets .dark on <html>
+   ============================================ */
+
+:root[data-v2-theme="dark"],
+:root.dark {
+	/* Brand */
+	--v2-brand-teal-bright: #0e7280;
+
+	/* Identicons — lifted for contrast on dark surfaces */
+	--v2-identicon-1: #93a7bc;
+	--v2-identicon-2: #749e9b;
+	--v2-identicon-3: #82a990;
+	--v2-identicon-4: #b6a384;
+	--v2-identicon-5: #be9c9f;
+	--v2-identicon-6: #a8a0c0;
+
+	/* Backgrounds — from B2B landing analysis */
+	--v2-bg-page: #2a2a2a;
+	--v2-bg-card: #343434;
+	--v2-bg-warm: #343434;
+	--v2-bg-blush: #303030;
+	--v2-bg-input: rgba(255, 255, 255, 0.1);
+	--v2-bg-input-solid: #303030;
+	--v2-bg-badge-teal: rgba(0, 78, 82, 0.3);
+	--v2-bg-active: rgba(3, 147, 101, 0.15);
+	--v2-bg-chat: #3a3a3a;
+	--v2-bg-modal-header: #3a3a3a;
+
+	/* Text */
+	--v2-text-primary: #ffffff;
+	--v2-text-body: #ffffff;
+	--v2-text-secondary: rgba(255, 255, 255, 0.7);
+	--v2-text-table-secondary: rgba(255, 255, 255, 0.8);
+	--v2-text-tertiary: rgba(255, 255, 255, 0.6);
+	--v2-text-muted: rgba(255, 255, 255, 0.5);
+	--v2-text-placeholder: #c0c0c0;
+	--v2-text-inverse: #2a2a2a;
+	--v2-text-brand: #5ccfda;
+	--v2-text-brand-green: #5ee8b7;
+	--v2-text-link: #7b9dff;
+
+	/* Status — lightened for dark backgrounds */
+	--v2-status-active: #5ee8b7;
+	--v2-status-active-bg: rgba(3, 147, 101, 0.15);
+	--v2-status-success: #5ee8b7;
+	--v2-status-success-bg: rgba(3, 147, 101, 0.15);
+	--v2-status-success-text: #5ee8b7;
+	--v2-status-error: #f87171;
+	--v2-status-error-bg: rgba(239, 68, 68, 0.15);
+	--v2-status-warning: #fbbf24;
+	--v2-status-warning-bg: rgba(245, 158, 11, 0.15);
+	--v2-status-info: #60a5fa;
+	--v2-status-info-bg: rgba(37, 99, 235, 0.15);
+	--v2-status-neutral: #9ca3af;
+	--v2-status-neutral-bg: rgba(107, 114, 128, 0.15);
+	--v2-border-default: #4a4a4a;
+	--v2-border-medium: #4a4a4a;
+
+	/* Chart palette */
+	--v2-chart-1: #60a5fa;
+	--v2-chart-2: #34d399;
+	--v2-chart-3: #fbbf24;
+	--v2-chart-4: #a78bfa;
+	--v2-chart-5: #f87171;
+	--v2-chart-6: #22d3ee;
+	--v2-chart-8: #9ca3af;
+
+	/* Borders */
+	--v2-border-warm: rgba(255, 255, 255, 0.1);
+	--v2-border-warm-soft: rgba(255, 255, 255, 0.06);
+	--v2-border-divider: rgba(255, 255, 255, 0.1);
+	--v2-border-active: rgba(94, 232, 183, 0.25);
+
+	/* Shadows — dark card variant becomes default */
+	--v2-shadow-card: inset 0px 7px 7px rgba(255, 255, 255, 0.1), inset 0px -7px 7.1px rgba(0, 0, 0, 0.25);
+	--v2-shadow-gloss: inset 0 1px 0 rgba(255, 255, 255, 0.12), inset 0 -2px 4px rgba(0, 0, 0, 0.3);
+}
+
+/* ============================================
+   KEYFRAME ANIMATIONS
+   ============================================ */
+
+@keyframes caret-blink {
+	0%,
+	70%,
+	100% {
+		opacity: 1;
+	}
+	20%,
+	50% {
+		opacity: 0;
+	}
+}
+
+@keyframes accordion-down {
+	from {
+		height: 0;
+	}
+	to {
+		height: var(--radix-accordion-content-height);
+	}
+}
+
+@keyframes accordion-up {
+	from {
+		height: var(--radix-accordion-content-height);
+	}
+	to {
+		height: 0;
+	}
+}
+
+@keyframes carousel-nudge {
+	0% {
+		transform: translateX(0) rotate(0deg);
+	}
+	50% {
+		transform: translateX(-18px) rotate(-2deg);
+	}
+	75% {
+		transform: translateX(3px) rotate(0.3deg);
+	}
+	100% {
+		transform: translateX(0) rotate(0deg);
+	}
+}
+
+/* Chat focus mode — footer fades out, header buttons disabled, section padding
+   tightens. Attribute is set only once (on goToChat) so these rules only fire
+   once the user reaches the chat panel. */
+
+[data-chat-focus] header {
+	pointer-events: none;
+}
+
+[data-chat-focus] footer {
+	opacity: 0;
+	pointer-events: none;
+	transition: opacity 1.2s linear;
+}
+
+/* Gutter lines: promote to position:fixed so they span the full viewport,
+   independent of PageContent height. The existing inset-0 + max-w + mx-auto
+   classes from Tailwind work correctly with fixed positioning. */
+[data-chat-focus] main > div > .pointer-events-none {
+	position: fixed;
+}
+
+/* Shrink section padding so chat has more vertical room — snaps instantly so
+   the fixed-height chat card doesn't appear to drift up as the parent shrinks. */
+[data-chat-focus] section {
+	padding-top: 1rem !important;
+	padding-bottom: 1rem !important;
+}
+
+@keyframes v2-marquee {
+	0% {
+		transform: translateX(0);
+	}
+	100% {
+		transform: translateX(-50%);
+	}
+}
+
+.v2-marquee {
+	animation: v2-marquee 60s linear infinite;
+}
+
+.v2-marquee:hover {
+	animation-play-state: paused;
+}
+
+@keyframes v2-float {
+	0%,
+	100% {
+		transform: translateY(0) rotate(var(--v2-float-rotate, 0deg));
+	}
+	50% {
+		transform: translateY(-7px) rotate(var(--v2-float-rotate, 0deg));
+	}
+}
+
+@keyframes v2-dash-flow {
+	to {
+		stroke-dashoffset: -18;
+	}
+}
+
+/* Thin, branded scrollbar for the chat message area. Tokens auto-adapt to
+   dark mode via the [data-v2-theme] overrides. */
+.v2-chat-scroll {
+	scrollbar-width: thin;
+	scrollbar-color: var(--v2-brand-teal) transparent;
+}
+
+.v2-chat-scroll::-webkit-scrollbar {
+	width: 4px;
+}
+
+.v2-chat-scroll::-webkit-scrollbar-track {
+	background: transparent;
+}
+
+.v2-chat-scroll::-webkit-scrollbar-thumb {
+	background-color: var(--v2-brand-teal);
+	border-radius: 999px;
+}
+
+.v2-chat-scroll::-webkit-scrollbar-thumb:hover {
+	background-color: var(--v2-brand-teal-dark);
+}
+
+.v2-quiet-scroll {
+	scrollbar-width: thin;
+	scrollbar-color: var(--v2-border-default) transparent;
+}
+
+.v2-quiet-scroll::-webkit-scrollbar {
+	width: 4px;
+}
+
+.v2-quiet-scroll::-webkit-scrollbar-track {
+	background: transparent;
+}
+
+.v2-quiet-scroll::-webkit-scrollbar-thumb {
+	background-color: var(--v2-border-default);
+	border-radius: 999px;
+}
+
+@keyframes fadeSlideIn {
+	from {
+		opacity: 0;
+		transform: translateY(6px) scale(0.99);
+	}
+	to {
+		opacity: 1;
+		transform: translateY(0) scale(1);
+	}
+}
+
+@keyframes fadeSwap {
+	from {
+		opacity: 0;
+		transform: translateY(4px);
+	}
+	to {
+		opacity: 1;
+		transform: translateY(0);
+	}
+}
+
+/* Staggered reveal for ValuePropsBlock items — tiny rise + fade as each
+   point lands in place. Callers stagger via `animation-delay: idx * 80ms`. */
+@keyframes v2-value-prop-in {
+	from {
+		opacity: 0;
+		transform: translateY(4px);
+	}
+	to {
+		opacity: 1;
+		transform: translateY(0);
+	}
+}
+
+@keyframes streamWordFadeIn {
+	from {
+		opacity: 0;
+		filter: blur(2px);
+	}
+	to {
+		opacity: 1;
+		filter: blur(0);
+	}
+}
+
+/* Progress wipe — left-to-right scale, used by how-it-works step badge.
+   Uses the `scale` property (not `transform`) to compose with Tailwind v4's
+   scale-x-* utilities, which set `scale: var(--tw-scale-x) var(--tw-scale-y)`. */
+@keyframes v2-wipe {
+	from {
+		scale: 0 1;
+	}
+	to {
+		scale: 1 1;
+	}
+}
+
+/* iOS-style typing indicator bounce, used by the ChatMockup mockup. */
+@keyframes typingBounce {
+	0%,
+	80%,
+	100% {
+		transform: translateY(0);
+		opacity: 0.4;
+	}
+	40% {
+		transform: translateY(-4px);
+		opacity: 1;
+	}
+}
+
+/* Confetti burst on a rare-tier worth reveal — the dopamine moment that drives
+   screenshots. Each piece is positioned/colored/delayed inline by the caller. */
+@keyframes v2-confetti-fall {
+	0% {
+		opacity: 0;
+		transform: translate3d(0, -8%, 0) rotate(0deg);
+	}
+	8% {
+		opacity: 1;
+	}
+	100% {
+		opacity: 0;
+		transform: translate3d(var(--v2-confetti-x, 0), 105%, 0) rotate(var(--v2-confetti-r, 540deg));
+	}
+}
+
+/* Spring-ish entrance for the share/hero card as the result lands. */
+@keyframes v2-result-pop {
+	0% {
+		opacity: 0;
+		transform: translateY(10px) scale(0.96);
+	}
+	60% {
+		transform: translateY(0) scale(1.012);
+	}
+	100% {
+		opacity: 1;
+		transform: translateY(0) scale(1);
+	}
+}
+
+.animate-v2-result-pop {
+	animation: v2-result-pop 0.6s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* Partners supply-network: dashed connectors flow toward the matching core. */
+@keyframes v2-stream-dash {
+	to {
+		stroke-dashoffset: -16;
+	}
+}
+
+/* Partners supply-network: matching core breathes a soft ring. */
+@keyframes v2-core-pulse {
+	0%,
+	100% {
+		transform: scale(1);
+		opacity: 0.55;
+	}
+	50% {
+		transform: scale(1.12);
+		opacity: 0;
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	[data-v2] *,
+	[data-v2] *::before,
+	[data-v2] *::after {
+		animation-duration: 0.01ms !important;
+		animation-iteration-count: 1 !important;
+		transition-duration: 0.01ms !important;
+		scroll-behavior: auto !important;
+	}
+}
+
+[data-v2] ::selection {
+	background: color-mix(in srgb, var(--v2-brand-teal) 20%, transparent);
+	color: var(--v2-text-body);
+}
+
+/* ============================================
+   v2 PROSE CONTENT STYLES
+   Renders pre-rendered blog HTML with v2 design tokens.
+   Scoped to [data-v2] .v2-prose-content — no global leakage.
+   ============================================ */
+
+[data-v2] .v2-prose-content h1,
+[data-v2] .v2-prose-content h2,
+[data-v2] .v2-prose-content h3,
+[data-v2] .v2-prose-content h4 {
+	font-family: var(--v2-font-heading);
+	color: var(--v2-text-primary);
+	scroll-margin-top: 8rem;
+}
+
+[data-v2] .v2-prose-content h1::first-letter,
+[data-v2] .v2-prose-content h2::first-letter,
+[data-v2] .v2-prose-content h3::first-letter,
+[data-v2] .v2-prose-content h4::first-letter {
+	text-transform: uppercase;
+}
+
+[data-v2] .v2-prose-content h1 {
+	font-size: 1.875rem;
+	font-weight: 600;
+	margin-top: 2.5rem;
+	margin-bottom: 1rem;
+}
+
+[data-v2] .v2-prose-content h2 {
+	font-size: 1.75rem;
+	font-weight: 600;
+	line-height: 1.3;
+	margin-top: 3rem;
+	margin-bottom: 1.25rem;
+}
+
+[data-v2] .v2-prose-content h3 {
+	font-size: 1.5rem;
+	font-weight: 600;
+	line-height: 1.3;
+	margin-top: 3rem;
+	margin-bottom: 1.25rem;
+}
+
+[data-v2] .v2-prose-content h4 {
+	font-size: 1.25rem;
+	font-weight: 500;
+	line-height: 1.4;
+	margin-top: 2rem;
+	margin-bottom: 0.75rem;
+}
+
+[data-v2] .v2-prose-content p {
+	font-family: var(--v2-font-body);
+	color: var(--v2-text-body);
+	font-size: 1rem;
+	line-height: 1.75;
+	margin-bottom: 1.25rem;
+}
+
+[data-v2] .v2-prose-content a {
+	color: var(--v2-text-primary);
+	text-decoration: underline;
+}
+
+[data-v2] .v2-prose-content a:hover {
+	color: var(--v2-brand-teal);
+}
+
+[data-v2] .v2-prose-content ul {
+	list-style-type: disc;
+	margin-left: 1.5rem;
+	margin-bottom: 1.25rem;
+}
+
+[data-v2] .v2-prose-content ol {
+	list-style-type: decimal;
+	margin-left: 1.5rem;
+	margin-bottom: 1.25rem;
+}
+
+[data-v2] .v2-prose-content li {
+	font-family: var(--v2-font-body);
+	color: var(--v2-text-body);
+	line-height: 1.75;
+	margin-bottom: 0.5rem;
+}
+
+[data-v2] .v2-prose-content blockquote {
+	border-left: 4px solid var(--v2-border-warm);
+	padding-left: 1rem;
+	font-style: italic;
+	color: var(--v2-text-muted);
+}
+
+[data-v2] .v2-prose-content code {
+	background-color: var(--v2-bg-input-solid);
+	color: var(--v2-text-primary);
+	padding-left: 0.375rem;
+	padding-right: 0.375rem;
+	border-radius: 0.25rem;
+}
+
+[data-v2] .v2-prose-content pre {
+	background-color: var(--v2-bg-input-solid);
+	border: 1px solid var(--v2-border-default);
+	padding: 1rem;
+	border-radius: 0.5rem;
+	overflow-x: auto;
+}
+
+[data-v2] .v2-prose-content pre code {
+	background-color: transparent;
+	padding: 0;
+	border-radius: 0;
+}
+
+[data-v2] .v2-prose-content img {
+	display: block;
+	max-width: 100%;
+	max-height: 28rem;
+	width: auto;
+	margin: 2rem auto;
+	border-radius: var(--v2-radius-md);
+}

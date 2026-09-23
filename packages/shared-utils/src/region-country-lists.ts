@@ -1,0 +1,53 @@
+import type { Region } from "./top-universities-na.ts";
+
+export const REGION_COUNTRY_NAMES: Record<Region, readonly string[]> = {
+	dach: ["Germany", "Austria", "Switzerland", "Liechtenstein"],
+	na: ["United States", "Canada"],
+	europe: [
+		"United Kingdom",
+		"Ireland",
+		"France",
+		"Italy",
+		"Spain",
+		"Portugal",
+		"Netherlands",
+		"Belgium",
+		"Luxembourg",
+		"Monaco",
+		"Andorra",
+		"San Marino",
+		"Vatican City",
+		"Malta",
+		"Sweden",
+		"Denmark",
+		"Finland",
+		"Norway",
+		"Iceland",
+		"Faroe Islands",
+		"Poland",
+		"Czechia",
+		"Slovakia",
+		"Hungary",
+		"Romania",
+		"Bulgaria",
+		"Moldova",
+		"Slovenia",
+		"Croatia",
+		"Serbia",
+		"Bosnia and Herzegovina",
+		"Montenegro",
+		"North Macedonia",
+		"Albania",
+		"Kosovo",
+		"Greece",
+		"Cyprus",
+		"Turkey",
+		"Estonia",
+		"Latvia",
+		"Lithuania",
+	],
+};
+
+export function getCountriesInRegion(region: Region): readonly string[] {
+	return REGION_COUNTRY_NAMES[region];
+}

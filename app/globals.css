@@ -1,5 +1,221 @@
+@import "../src/styles/legacy-tokens.css";
+@import "../src/styles/v2-globals.css";
 @import "tailwindcss";
+@import "tw-animate-css";
+@plugin "@tailwindcss/typography";
+@config "../tailwind.config.ts";
 
-body {
-  font-family: system-ui, sans-serif;
+/* ===========================================
+   BASE LAYER STYLES
+   Fix for Tailwind v4 migration - restore base border colors
+   =========================================== */
+
+@layer base {
+	*,
+	::after,
+	::before,
+	::backdrop,
+	::file-selector-button {
+		border-color: var(--legacy-color-border-primary, currentColor);
+	}
+
+	body {
+		background-color: var(--legacy-color-bg-primary);
+		color: var(--legacy-color-text-primary);
+	}
+}
+
+.prose-content h1,
+.prose-content h2,
+.prose-content h3,
+.prose-content h4 {
+	scroll-margin-top: 8rem;
+}
+
+.prose-content h1::first-letter,
+.prose-content h2::first-letter,
+.prose-content h3::first-letter,
+.prose-content h4::first-letter {
+	text-transform: uppercase;
+}
+
+.scrollbar-hide {
+	-ms-overflow-style: none;
+	scrollbar-width: none;
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+	display: none;
+}
+
+.blog-chip-scroll::-webkit-scrollbar {
+	width: 0 !important;
+	height: 0 !important;
+	display: none !important;
+}
+
+.prose-content h1 > a::first-letter,
+.prose-content h2 > a::first-letter,
+.prose-content h3 > a::first-letter,
+.prose-content h4 > a::first-letter {
+	text-transform: uppercase;
+}
+
+/* ===========================================
+   SONNER TOAST STYLES
+   =========================================== */
+
+/* Custom Sonner toast styles for dark theme */
+[data-sonner-toaster] {
+	--normal-bg: #1a1a2e;
+	--normal-border: #2d3748;
+	--normal-text: #f3f5fb;
+	--success-bg: #1a1a2e;
+	--success-border: #10b981;
+	--success-text: #f3f5fb;
+	--error-bg: #1a1a2e;
+	--error-border: #ef4444;
+	--error-text: #f3f5fb;
+	--warning-bg: #1a1a2e;
+	--warning-border: #f59e0b;
+	--warning-text: #f3f5fb;
+	--info-bg: #1a1a2e;
+	--info-border: #a855f7;
+	--info-text: #f3f5fb;
+}
+
+[data-sonner-toaster] [data-sonner-toast] {
+	background: var(--normal-bg);
+	border: 1px solid var(--normal-border);
+	color: var(--normal-text);
+	backdrop-filter: blur(8px);
+	-webkit-backdrop-filter: blur(8px);
+	box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+	border-radius: 12px;
+}
+
+[data-sonner-toaster] [data-sonner-toast][data-type="success"] {
+	background: var(--success-bg);
+	border-color: var(--success-border);
+}
+
+[data-sonner-toaster] [data-sonner-toast][data-type="error"] {
+	background: var(--error-bg);
+	border-color: var(--error-border);
+}
+
+[data-sonner-toaster] [data-sonner-toast][data-type="warning"] {
+	background: var(--warning-bg);
+	border-color: var(--warning-border);
+}
+
+[data-sonner-toaster] [data-sonner-toast][data-type="info"] {
+	background: var(--info-bg);
+	border-color: var(--info-border);
+}
+
+/* Mobile-only soft fade for the last visible card in /jobs and /companies hubs.
+   Used to hint "more roles beyond" without occupying layout space the way a
+   masked tail wrapper would. Disabled at sm+ where the dedicated tail row
+   takes over instead. */
+.v2-hub-mobile-card-fade {
+	-webkit-mask-image: linear-gradient(to bottom, black 0%, black 20%, transparent 65%);
+	mask-image: linear-gradient(to bottom, black 0%, black 20%, transparent 65%);
+}
+@media (min-width: 640px) {
+	.v2-hub-mobile-card-fade {
+		-webkit-mask-image: none;
+		mask-image: none;
+	}
+}
+
+/* Vertical fade applied to the tablet/desktop "tail row" of cards in /jobs and
+   /companies hubs. Top stays opaque, bottom fades to transparent so the cards
+   visually dissolve into the next CTA section. */
+.v2-hub-tail-fade {
+	-webkit-mask-image: linear-gradient(to bottom, black 0%, black 15%, transparent 75%);
+	mask-image: linear-gradient(to bottom, black 0%, black 15%, transparent 75%);
+}
+
+/* ===========================================
+   FEATURE STYLES (map, elo, manifesto)
+   Inlined so Tailwind and @shadcn/lint resolve these class names.
+   =========================================== */
+
+@keyframes eloSweep {
+	from {
+		transform: translateX(-58%);
+	}
+	to {
+		transform: translateX(58%);
+	}
+}
+
+@keyframes eloGleam {
+	0% {
+		transform: translateX(-100%);
+	}
+	38%,
+	100% {
+		transform: translateX(100%);
+	}
+}
+
+@keyframes map-ticker {
+	from {
+		transform: translateX(0);
+	}
+	to {
+		transform: translateX(-50%);
+	}
+}
+
+@keyframes map-cluster-pulse {
+	0% {
+		box-shadow: 0 0 0 0 rgba(0, 90, 95, 0.35);
+	}
+	70% {
+		box-shadow: 0 0 0 14px rgba(0, 90, 95, 0);
+	}
+	100% {
+		box-shadow: 0 0 0 0 rgba(0, 90, 95, 0);
+	}
+}
+
+.map-cluster-pulse {
+	animation: map-cluster-pulse 2.4s ease-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.map-cluster-pulse,
+	.map-ticker-track {
+		animation: none;
+	}
+}
+
+.manifesto-progress {
+	transform: scaleX(0);
+	transform-origin: 0 50%;
+}
+
+@supports (animation-timeline: scroll()) {
+	.manifesto-progress {
+		animation: manifesto-progress-grow linear both;
+		animation-timeline: scroll(root block);
+	}
+}
+
+@keyframes manifesto-progress-grow {
+	from {
+		transform: scaleX(0);
+	}
+	to {
+		transform: scaleX(1);
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.manifesto-progress {
+		animation: none;
+	}
 }
