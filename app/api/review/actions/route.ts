@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { reviewItemKey } from "@/lib/categories";
 import { decisions } from "@/data/store";
 import { randomLatency } from "@/lib/latency";
+import { currentUser } from "@/lib/session";
 import type { ReviewActionRequest } from "@/types";
 
 const FAILURE_RATE = 0.1;
@@ -16,7 +17,15 @@ function isActionRequest(body: unknown): body is ReviewActionRequest {
   );
 }
 
+async function forbidViewers() {
+  const user = await currentUser();
+  if (user?.role === "viewer") return NextResponse.json({ error: "Viewers can't make decisions" }, { status: 403 });
+  return null;
+}
+
 export async function POST(request: Request) {
+  const forbidden = await forbidViewers();
+  if (forbidden) return forbidden;
   const body: unknown = await request.json();
   if (!isActionRequest(body)) return NextResponse.json({ error: "Invalid request" }, { status: 400 });
   if (body.action === "request_intro" && body.jobId === null) {
@@ -34,6 +43,8 @@ export async function POST(request: Request) {
 }
 
 export async function DELETE(request: Request) {
+  const forbidden = await forbidViewers();
+  if (forbidden) return forbidden;
   const body: unknown = await request.json();
   const { talentId, jobId } = (body ?? {}) as Record<string, unknown>;
   if (typeof talentId !== "string" || !(typeof jobId === "string" || jobId === null)) {

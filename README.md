@@ -19,6 +19,15 @@ pnpm typecheck
 
 Node 22+. You won't need any accounts, env vars, or a database.
 
+## Signing in
+
+The app is behind a mock login. The password for both accounts is `review-demo`:
+
+| Email | Role |
+|---|---|
+| `robin@tidewater.example` | owner, who can decide on candidates |
+| `sam@tidewater.example` | viewer, who is read-only (actions return 403) |
+
 ## The task
 
 Redesign and rebuild the review board. Plan for about **4–6 hours**. We care much more about depth on the core loop than about coverage.
@@ -31,6 +40,7 @@ It should include:
 4. **Undo.** Mistakes happen at this speed.
 5. **Real-world states:** loading, empty (one role has nobody waiting, and one is paused), errors, and slow responses.
 6. **Mobile.** Hiring managers review on their phones too.
+7. **Sign-in and roles.** The login page is part of the redesign, and viewers need a read-only board that makes sense.
 
 Choose your own stack inside the Next.js app. Any component or animation library is fine; tell us why you picked it. Anything you don't have time for, write down in `NOTES.md`.
 
@@ -38,13 +48,16 @@ Choose your own stack inside the Next.js app. Any component or animation library
 
 | Endpoint | What it does |
 |---|---|
+| `POST /api/auth/login` | `{ email, password }`, which sets the session cookie. Wrong credentials return 401 |
+| `POST /api/auth/logout` | Clears the session |
+| `GET /api/me` | The signed-in user (`name`, `email`, `companyName`, `role`) |
 | `GET /api/roles` | The company's roles, some `open` and one `paused` |
 | `GET /api/review?roleId=` | The review feed (`ReviewListData`). Omit `roleId` for all roles |
 | `GET /api/talents/:talentId` | Full candidate profile (`TalentProfile`) |
 | `POST /api/review/actions` | `{ talentId, jobId, action: "request_intro" \| "pass", noFitCategories?, interestCompanyCategory?, text? }` |
 | `DELETE /api/review/actions` | `{ talentId, jobId }`, which undoes a decision |
 
-Types live in `src/types.ts` and the data in `src/data/`. Decisions are stored in memory and reset when the dev server restarts.
+Types live in `src/types.ts` and the data in `src/data/`. Every endpoint except login returns 401 when you're signed out. Decisions are stored in memory and reset when the dev server restarts.
 
 The API behaves like a real network on purpose: responses take **300–1500 ms**, and **about 1 in 10 actions fails** with a 500.
 

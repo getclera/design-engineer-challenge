@@ -2,9 +2,11 @@
 
 import { useEffect, useState } from "react";
 import { PASS_CATEGORIES, STREAM_LABELS, streamOf } from "@/lib/categories";
+import type { User } from "@/data/users";
 import type { ReviewItem, ReviewListData, Role, TalentProfile } from "@/types";
 
 export function ReviewBoard() {
+  const [user, setUser] = useState<User | null>(null);
   const [roles, setRoles] = useState<Role[]>([]);
   const [roleId, setRoleId] = useState("");
   const [feed, setFeed] = useState<ReviewListData | null>(null);
@@ -12,6 +14,12 @@ export function ReviewBoard() {
   const [profile, setProfile] = useState<TalentProfile | null>(null);
   const [passReason, setPassReason] = useState("");
   const [message, setMessage] = useState("");
+
+  useEffect(() => {
+    fetch("/api/me")
+      .then((res) => res.json())
+      .then(setUser);
+  }, []);
 
   useEffect(() => {
     fetch("/api/roles")
@@ -53,8 +61,23 @@ export function ReviewBoard() {
     setFeed(await refreshed.json());
   }
 
+  async function logout() {
+    await fetch("/api/auth/logout", { method: "POST" });
+    window.location.href = "/login";
+  }
+
   return (
     <div className="p-4">
+      <div className="flex justify-end gap-2">
+        {user && (
+          <span>
+            {user.name} ({user.companyName})
+          </span>
+        )}
+        <button onClick={logout} className="border px-2">
+          Log out
+        </button>
+      </div>
       <h1 className="text-2xl font-bold">Review</h1>
       <p>Everyone waiting on your decision</p>
 
