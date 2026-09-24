@@ -306,6 +306,13 @@ export function useReviewBoard(
 
 	const dismissPanel = useCallback(() => setPanel(null), []);
 
+	// From the reason step back to "Which role?" (only for people who came without a role).
+	const backToRole = useCallback(() => {
+		if (!panel || panel.item.roleId) return;
+		setRolePicker({ item: panel.item, action: panel.mode === "pass" ? "pass" : "request_intro" });
+		setPanel(null);
+	}, [panel]);
+
 	const selectItem = useCallback(
 		(item: ReviewItem) => {
 			clearFollowThrough();
@@ -361,6 +368,7 @@ export function useReviewBoard(
 		confirmIntro,
 		setPanelText,
 		dismissPanel,
+		backToRole,
 		flushHeldIntro,
 		selectPrev,
 		selectNext,

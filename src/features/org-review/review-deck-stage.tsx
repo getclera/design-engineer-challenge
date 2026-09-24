@@ -10,7 +10,7 @@ import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { useState } from "react";
 import { AdminPassButton } from "./admin-pass-button";
 import { useReviewBoardContext } from "./review-board-context";
-import { ReviewDecisionFooter } from "./review-decision-footer";
+import { ReviewDecisionPopover } from "./review-decision-popover";
 import { ReviewFitReason } from "./review-fit-reason";
 import { ReviewHeaderMeta } from "./review-header-meta";
 import { ReviewProfileShell } from "./review-profile-shell";
@@ -86,7 +86,7 @@ export function ReviewDeckStage({ orgId, selectedRoleId, viewerIsPlatformAdmin =
 												size="unstyled"
 												aria-expanded={expanded}
 												onClick={() => setExpanded((v) => !v)}
-												className="flex items-center gap-1.5 font-v2-body font-medium text-v2-text-brand text-xs"
+												className="focus-ring flex items-center gap-1.5 rounded-v2-sm font-v2-body font-medium text-v2-text-brand text-xs"
 											>
 												{expanded ? <ArrowsInSimple size={14} /> : <ArrowsOutSimple size={14} />}
 												Full profile
@@ -98,22 +98,23 @@ export function ReviewDeckStage({ orgId, selectedRoleId, viewerIsPlatformAdmin =
 							}
 							fallback={item ? <ReviewProfileShell item={item} /> : null}
 							footer={
-								<>
-									<ReviewDecisionFooter />
-									{item && !board.panel && (
-										<TalentDecisionActionBar
-											alreadyInterested={streamOf(item.bucket) === "interest"}
-											isPending={board.isPending(item)}
-											onInterview={() => board.openIntro(item)}
-											onPass={() => board.openPass(item)}
-											leadingAction={
-												viewerIsPlatformAdmin ? (
-													<AdminPassButton orgId={orgId} item={item} roleId={selectedRoleId} iconOnly />
-												) : undefined
-											}
-										/>
-									)}
-								</>
+								item && (
+									<ReviewDecisionPopover orgId={orgId}>
+										<div>
+											<TalentDecisionActionBar
+												alreadyInterested={streamOf(item.bucket) === "interest"}
+												isPending={board.isPending(item)}
+												onInterview={() => board.openIntro(item)}
+												onPass={() => board.openPass(item)}
+												leadingAction={
+													viewerIsPlatformAdmin ? (
+														<AdminPassButton orgId={orgId} item={item} roleId={selectedRoleId} iconOnly />
+													) : undefined
+												}
+											/>
+										</div>
+									</ReviewDecisionPopover>
+								)
 							}
 						/>
 					</Card>

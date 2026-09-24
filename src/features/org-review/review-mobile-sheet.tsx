@@ -2,8 +2,7 @@
 
 import { TalentDecisionActionBar } from "@v2/features/org-shared-cards";
 import { OrgTalentProfileSheet } from "@v2/features/org-talent-profile";
-import { useReviewBoardContext } from "./review-board-context";
-import { ReviewDecisionFooter } from "./review-decision-footer";
+import { ReviewDecisionPopover } from "./review-decision-popover";
 import { type ReviewItem, streamOf } from "./types";
 
 interface ReviewMobileSheetProps {
@@ -25,7 +24,6 @@ export function ReviewMobileSheet({
 	onInterview,
 	onPass,
 }: ReviewMobileSheetProps) {
-	const board = useReviewBoardContext();
 	return (
 		<OrgTalentProfileSheet
 			open={open}
@@ -39,17 +37,16 @@ export function ReviewMobileSheet({
 			trackingSource={talent?.source ?? null}
 			footer={
 				talent && (
-					<>
-						<ReviewDecisionFooter />
-						{!board.panel && (
+					<ReviewDecisionPopover orgId={orgId}>
+						<div>
 							<TalentDecisionActionBar
 								alreadyInterested={streamOf(talent.bucket) === "interest"}
 								isPending={isPending}
 								onInterview={() => onInterview(talent)}
 								onPass={() => onPass(talent)}
 							/>
-						)}
-					</>
+						</div>
+					</ReviewDecisionPopover>
 				)
 			}
 		/>

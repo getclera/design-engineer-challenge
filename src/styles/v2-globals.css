@@ -460,6 +460,14 @@
 	--animate-v2-stream-dash: v2-stream-dash 1.2s linear infinite;
 }
 
+/* The one keyboard-focus ring (matches Button). New and touched controls use it instead of per-component rings. */
+@utility focus-ring {
+	outline: none;
+	&:focus-visible {
+		box-shadow: 0 0 0 2px var(--v2-brand-teal);
+	}
+}
+
 @utility gradient-v2-brand {
 	background-image: linear-gradient(to bottom, var(--v2-brand-teal), var(--v2-brand-teal-dark));
 }

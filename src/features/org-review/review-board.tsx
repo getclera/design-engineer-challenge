@@ -5,7 +5,6 @@ import { EmptyState } from "@v2/components/data-display";
 import { Card } from "@v2/components/ui/card";
 import { TooltipProvider } from "@v2/components/ui/tooltip";
 import { useTalentBoardOpen, useTalentDecisionKeyboard } from "@v2/features/org-shared-cards";
-import { RolePickerModal } from "@v2/features/org-shared-modals";
 import { prefetchOrgTalentProfile } from "@v2/features/org-talent-profile";
 import { useMediaQuery } from "@v2/hooks/use-media-query";
 import { usePersistFilterParams } from "@v2/hooks/use-persisted-search";
@@ -269,13 +268,15 @@ export function ReviewBoard({
 									)}
 								</div>
 							</Card>
-							<div className="hidden min-h-0 lg:block">
-								<ReviewDeckStage
-									orgId={orgId}
-									selectedRoleId={selectedRoleId}
-									viewerIsPlatformAdmin={viewerIsPlatformAdmin}
-								/>
-							</div>
+							{!isMobile && (
+								<div className="min-h-0">
+									<ReviewDeckStage
+										orgId={orgId}
+										selectedRoleId={selectedRoleId}
+										viewerIsPlatformAdmin={viewerIsPlatformAdmin}
+									/>
+								</div>
+							)}
 						</div>
 					)}
 				</div>
@@ -315,17 +316,6 @@ export function ReviewBoard({
 					reason={board.hmWarningReason}
 					hmName={board.hmWarningHmName}
 					hmContactId={board.hmWarningHmContactId}
-				/>
-				<RolePickerModal
-					orgId={orgId}
-					isOpen={!!board.rolePickerItem}
-					talentName={board.rolePickerItem?.talentName ?? ""}
-					action={board.rolePickerAction}
-					isPending={board.rolePickerItem ? board.isPending(board.rolePickerItem) : false}
-					onOpenChange={(open) => {
-						if (!open) board.closeRolePicker();
-					}}
-					onConfirm={board.confirmRolePicker}
 				/>
 			</TooltipProvider>
 		</ReviewBoardProvider>
