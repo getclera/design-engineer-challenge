@@ -45,10 +45,10 @@ export function useTalentDecisionKeyboard<TItem>({
 			} else if (e.key === "ArrowDown") {
 				e.preventDefault();
 				onSelectNext();
-			} else if (e.key === "Enter") {
+			} else if (e.key === "Enter" || e.key === "ArrowRight") {
 				e.preventDefault();
 				onIntro(selected);
-			} else if (e.key === "Backspace") {
+			} else if (e.key === "Backspace" || e.key === "ArrowLeft") {
 				e.preventDefault();
 				onOpenPass(selected);
 			} else if (onMaybe && (e.key === "m" || e.key === "M")) {

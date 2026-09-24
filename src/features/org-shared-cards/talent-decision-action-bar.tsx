@@ -17,7 +17,7 @@ interface TalentDecisionActionBarProps {
 	middleAction?: ReactNode;
 }
 
-const KBD = "ml-1 rounded bg-black/15 px-1 text-2xs leading-4";
+const KBD = "rounded bg-black/15 px-1 text-2xs leading-4";
 
 export function TalentDecisionActionBar({
 	alreadyInterested,
@@ -35,9 +35,8 @@ export function TalentDecisionActionBar({
 			{leadingAction}
 			<TalentDecisionTooltip label="Not a fit for this role. Moves to Passed, undo anytime.">
 				<Button variant="ghost" className="flex-2 gap-1.5" disabled={isPending} onClick={onPass}>
-					<X size={16} weight="bold" />
+					{showHints ? <span className={KBD}>←</span> : <X size={16} weight="bold" />}
 					Pass
-					{showHints && <span className={KBD}>⌫</span>}
 				</Button>
 			</TalentDecisionTooltip>
 			{middleAction}
@@ -51,7 +50,7 @@ export function TalentDecisionActionBar({
 				<Button variant="primary" className="flex-3 gap-1.5" disabled={isPending} onClick={onInterview}>
 					<PaperPlaneTilt size={16} weight="fill" />
 					{alreadyInterested ? "Make an intro" : "Request intro"}
-					{showHints && <span className={KBD}>↵</span>}
+					{showHints && <span className={KBD}>→</span>}
 				</Button>
 			</TalentDecisionTooltip>
 		</div>

@@ -12,8 +12,8 @@ const GROUPS: [string, [string[], string][]][] = [
 	[
 		"Decide",
 		[
-			[["↵"], "Request intro"],
-			[["⌫"], "Pass"],
+			[["→", "↵"], "Request intro"],
+			[["←", "⌫"], "Pass"],
 			[["M"], "Maybe"],
 		],
 	],

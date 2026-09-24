@@ -64,6 +64,11 @@ export function ReviewDecisionPopover({
 		options = isPass ? PASS_DECISION_CATEGORIES : INTRO_DECISION_CATEGORIES;
 	}
 
+	const close = () => {
+		board.dismissPanel();
+		board.closeRolePicker();
+	};
+
 	const choose = (option: Option | undefined, text?: string) => {
 		if (isRoleStep) {
 			if (option) board.confirmRolePicker(option.id);
@@ -85,9 +90,7 @@ export function ReviewDecisionPopover({
 		<Popover
 			open={!!item && !disabled}
 			onOpenChange={(open) => {
-				if (open) return;
-				board.dismissPanel();
-				board.closeRolePicker();
+				if (!open) close();
 			}}
 		>
 			<PopoverAnchor asChild>{children}</PopoverAnchor>
@@ -115,6 +118,7 @@ export function ReviewDecisionPopover({
 						back={canGoBack && panel?.roleIdOverride ? roles.find((r) => r.id === panel.roleIdOverride)?.position : undefined}
 						onBack={board.backToRole}
 						onChoose={choose}
+						onClose={close}
 					/>
 				)}
 			</PopoverContent>
@@ -130,9 +134,10 @@ interface DecisionOptionsProps {
 	back?: string;
 	onBack: () => void;
 	onChoose: (option: Option | undefined, text?: string) => void;
+	onClose: () => void;
 }
 
-function DecisionOptions({ title, options, initial, withText, back, onBack, onChoose }: DecisionOptionsProps) {
+function DecisionOptions({ title, options, initial, withText, back, onBack, onChoose, onClose }: DecisionOptionsProps) {
 	const [hl, setHl] = useState(initial);
 	const [text, setText] = useState("");
 	const inputRef = useRef<HTMLInputElement>(null);
@@ -148,6 +153,9 @@ function DecisionOptions({ title, options, initial, withText, back, onBack, onCh
 			} else if (e.key === "Enter") {
 				e.preventDefault();
 				onChoose(options[hl]);
+			} else if (e.key === "ArrowLeft" || e.key === "ArrowRight") {
+				e.preventDefault();
+				onClose();
 			} else if (digit >= 1 && digit <= options.length) {
 				e.preventDefault();
 				onChoose(options[digit - 1]);
@@ -160,7 +168,7 @@ function DecisionOptions({ title, options, initial, withText, back, onBack, onCh
 		};
 		window.addEventListener("keydown", onKey);
 		return () => window.removeEventListener("keydown", onKey);
-	}, [options, hl, withText, onChoose]);
+	}, [options, hl, withText, onChoose, onClose]);
 
 	return (
 		<div role="listbox" aria-label={title}>

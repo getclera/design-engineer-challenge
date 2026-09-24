@@ -8,9 +8,8 @@ import { useTalentBoardOpen, useTalentDecisionKeyboard } from "@v2/features/org-
 import { prefetchOrgTalentProfile } from "@v2/features/org-talent-profile";
 import { useMediaQuery } from "@v2/hooks/use-media-query";
 import { usePersistFilterParams } from "@v2/hooks/use-persisted-search";
-import { Cards, Coffee, SidebarSimple } from "@phosphor-icons/react";
+import { CaretRight, Cards, Coffee, SidebarSimple } from "@phosphor-icons/react";
 import { Button } from "@v2/components/ui/button";
-import { Kbd } from "@v2/components/ui/kbd";
 import { cn } from "@v2/lib/utils";
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { SendoutListEntry } from "@/services/api/organizations";
@@ -195,9 +194,12 @@ export function ReviewBoard({
 		if (key === " ") setFullProfile((open) => !open);
 		else if (key === "l" || key === "L") setListHidden((hidden) => !hidden);
 		else if (key === "?") setHelpOpen((open) => !open);
+		// Viewers can't decide, so ←/→ just move between people.
+		else if (!canDecide && key === "ArrowRight") board.selectNext();
+		else if (!canDecide && key === "ArrowLeft") board.selectPrev();
 		else return false;
 		return true;
-	}, []);
+	}, [canDecide, board.selectNext, board.selectPrev]);
 
 	const anyModalOpen = !!board.rolePickerItem || board.hmWarningOpen;
 	useTalentDecisionKeyboard({
@@ -288,21 +290,10 @@ export function ReviewBoard({
 						<div
 							className={cn(
 								REVIEW_BOARD_GRID_CLASSES,
-								listHidden && !isMobile && "lg:grid-cols-[2.5rem_minmax(0,1fr)]",
+								listHidden && !isMobile && "lg:grid-cols-1",
 							)}
 						>
-							{isMobile && !mobileList ? null : listHidden && !isMobile ? (
-								<Button
-									variant="ghost"
-									aria-label="Show list"
-									title="Show list (L)"
-									onClick={() => setListHidden(false)}
-									className="h-full w-10 min-w-10 flex-col justify-center gap-2 rounded-v2-lg px-0 text-v2-text-tertiary"
-								>
-									<SidebarSimple size={16} />
-									<Kbd>L</Kbd>
-								</Button>
-							) : (
+							{(isMobile && !mobileList) || (listHidden && !isMobile) ? null : (
 								<Card className={REVIEW_LEFT_CARD_CLASSES}>
 									{showScopeBar && (
 										<ReviewScopeBar
@@ -357,7 +348,19 @@ export function ReviewBoard({
 								</Card>
 							)}
 							{!(isMobile && mobileList) && (
-								<div className="flex min-h-0 flex-col gap-2">
+								<div className="relative flex min-h-0 flex-col gap-2">
+									{listHidden && !isMobile && (
+										<Button
+											variant="unstyled"
+											size="unstyled"
+											aria-label="Show list"
+											title="Show list (L)"
+											onClick={() => setListHidden(false)}
+											className="focus-ring absolute top-1/2 left-0 z-10 grid h-18 w-5.5 -translate-y-1/2 place-items-center rounded-r-v2-lg border border-v2-border-default border-l-0 bg-v2-bg-card text-v2-text-tertiary shadow-v2-content transition-[width] hover:w-7 hover:text-v2-text-primary"
+										>
+											<CaretRight size={16} />
+										</Button>
+									)}
 									<div className="min-h-0 flex-1">
 										<ReviewDeckStage
 											orgId={orgId}
