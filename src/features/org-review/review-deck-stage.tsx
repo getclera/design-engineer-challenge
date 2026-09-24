@@ -26,6 +26,10 @@ interface ReviewDeckStageProps {
 	/** Full profile open (Space); owned by the board so the keyboard can toggle it. */
 	expanded: boolean;
 	onExpandedChange: (expanded: boolean) => void;
+	/** Phone: drag the card right to request an intro, left to pass. */
+	swipe?: boolean;
+	/** The phone sheet is open and owns the decision popup. */
+	decisionsInSheet?: boolean;
 }
 
 // The card leaves toward the decision (pass left, intro right, maybe down); picking someone else just fades.
@@ -38,6 +42,7 @@ const cardMotion = {
 			? { opacity: 0, y: "30%" }
 			: { opacity: 0, x: `${(move ? EXIT[move] : 0) * 110}%`, rotate: (move ? EXIT[move] : 0) * 6 },
 };
+const SWIPE_DISTANCE = 100;
 const fadeMotion = { initial: { opacity: 0 }, animate: { opacity: 1 }, exit: { opacity: 0 } };
 
 export function ReviewDeckStage({
@@ -47,6 +52,8 @@ export function ReviewDeckStage({
 	canDecide,
 	expanded,
 	onExpandedChange,
+	swipe = false,
+	decisionsInSheet = false,
 }: ReviewDeckStageProps) {
 	const board = useReviewBoardContext();
 	const item = board.selected;
@@ -68,6 +75,13 @@ export function ReviewDeckStage({
 					animate="animate"
 					exit="exit"
 					transition={{ duration: 0.22, ease: [0.2, 0.8, 0.2, 1] }}
+					drag={swipe && canDecide && item ? "x" : false}
+					dragSnapToOrigin
+					onDragEnd={(_, { offset }) => {
+						if (!item || Math.abs(offset.x) < SWIPE_DISTANCE) return;
+						if (offset.x > 0) board.openIntro(item);
+						else board.openPass(item);
+					}}
 					className={cn("relative", expanded && "h-full")}
 				>
 					<Card className={cn("overflow-hidden p-0", expanded && "h-full")}>
@@ -108,7 +122,7 @@ export function ReviewDeckStage({
 											>
 												{expanded ? <ArrowsInSimple size={14} /> : <ArrowsOutSimple size={14} />}
 												Full profile
-												<Kbd>Space</Kbd>
+												<Kbd className="hidden lg:inline-flex">Space</Kbd>
 											</Button>
 										</div>
 									</>
@@ -120,7 +134,7 @@ export function ReviewDeckStage({
 								(!canDecide ? (
 									<ReviewViewOnlyNote />
 								) : (
-									<ReviewDecisionPopover orgId={orgId}>
+									<ReviewDecisionPopover orgId={orgId} disabled={decisionsInSheet}>
 										<div>
 											<TalentDecisionActionBar
 												alreadyInterested={streamOf(item.bucket) === "interest"}

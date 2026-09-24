@@ -8,7 +8,7 @@ import { useTalentBoardOpen, useTalentDecisionKeyboard } from "@v2/features/org-
 import { prefetchOrgTalentProfile } from "@v2/features/org-talent-profile";
 import { useMediaQuery } from "@v2/hooks/use-media-query";
 import { usePersistFilterParams } from "@v2/hooks/use-persisted-search";
-import { Coffee, SidebarSimple } from "@phosphor-icons/react";
+import { Cards, Coffee, SidebarSimple } from "@phosphor-icons/react";
 import { Button } from "@v2/components/ui/button";
 import { Kbd } from "@v2/components/ui/kbd";
 import { cn } from "@v2/lib/utils";
@@ -113,6 +113,8 @@ export function ReviewBoard({
 	const isMobile = useMediaQuery("(max-width: 1023px)");
 	const queryClient = useQueryClient();
 	const [mobileTalent, setMobileTalent] = useState<ReviewItem | null>(null);
+	// Phone: the deck comes first; the list is one tap away.
+	const [mobileList, setMobileList] = useState(false);
 	const listRef = useRef<HTMLDivElement>(null);
 	usePrefetchNextProfile(orgId, board.items, board.selectedKey);
 
@@ -131,9 +133,9 @@ export function ReviewBoard({
 	const handleSelect = useCallback(
 		(item: ReviewItem) => {
 			board.selectItem(item);
-			if (isMobile) setMobileTalent(item);
+			setMobileList(false); // phone: picking someone goes back to their card
 		},
-		[board, isMobile],
+		[board],
 	);
 	const openTalent = useTalentBoardOpen(orgId, "review");
 	const handleOpen = useCallback((item: ReviewItem) => openTalent(item.talentId), [openTalent]);
@@ -228,6 +230,18 @@ export function ReviewBoard({
 						{reviewView !== "passed" && !incomingEmpty && (
 							<ReviewStreamFilter streams={board.streams} counts={board.streamCounts} onChange={handleStreamsChange} />
 						)}
+						{isMobile && reviewView !== "passed" && (
+							<Button
+								variant="ghost"
+								size="compact-icon"
+								aria-label={mobileList ? "Show card" : "Show list"}
+								aria-pressed={mobileList}
+								onClick={() => setMobileList((open) => !open)}
+								className="ml-auto"
+							>
+								{mobileList ? <Cards size={16} /> : <SidebarSimple size={16} />}
+							</Button>
+						)}
 					</div>
 
 					{board.loadFailed ? (
@@ -277,7 +291,7 @@ export function ReviewBoard({
 								listHidden && !isMobile && "lg:grid-cols-[2.5rem_minmax(0,1fr)]",
 							)}
 						>
-							{listHidden && !isMobile ? (
+							{isMobile && !mobileList ? null : listHidden && !isMobile ? (
 								<Button
 									variant="ghost"
 									aria-label="Show list"
@@ -342,7 +356,7 @@ export function ReviewBoard({
 									</div>
 								</Card>
 							)}
-							{!isMobile && (
+							{!(isMobile && mobileList) && (
 								<div className="flex min-h-0 flex-col gap-2">
 									<div className="min-h-0 flex-1">
 										<ReviewDeckStage
@@ -351,12 +365,17 @@ export function ReviewBoard({
 											viewerIsPlatformAdmin={viewerIsPlatformAdmin}
 											canDecide={canDecide}
 											expanded={fullProfile}
-											onExpandedChange={setFullProfile}
+											// Phone: the full profile is the live bottom sheet instead of growing the card.
+											onExpandedChange={isMobile ? () => setMobileTalent(board.selected) : setFullProfile}
+											swipe={isMobile}
+											decisionsInSheet={!!mobileTalent}
 										/>
 									</div>
-									<div className="flex justify-end">
-										<ReviewShortcutsHelp open={helpOpen} onOpenChange={setHelpOpen} canDecide={canDecide} />
-									</div>
+									{!isMobile && (
+										<div className="flex justify-end">
+											<ReviewShortcutsHelp open={helpOpen} onOpenChange={setHelpOpen} canDecide={canDecide} />
+										</div>
+									)}
 								</div>
 							)}
 						</div>

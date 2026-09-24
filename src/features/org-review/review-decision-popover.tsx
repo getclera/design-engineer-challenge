@@ -27,7 +27,16 @@ const firstNameOf = (name: string) => name.split(" ")[0] || name;
  * The step after Pass / Request intro, anchored 8px above the decision buttons (`children`):
  * "Which role?" first for people without one, then the reason. ↑↓ or 1–9, Enter, Esc goes back a step.
  */
-export function ReviewDecisionPopover({ orgId, children }: { orgId: string; children: ReactNode }) {
+export function ReviewDecisionPopover({
+	orgId,
+	disabled = false,
+	children,
+}: {
+	orgId: string;
+	/** Another surface (the phone sheet) is showing the same decision. */
+	disabled?: boolean;
+	children: ReactNode;
+}) {
 	const board = useReviewBoardContext();
 	const { panel, rolePickerItem } = board;
 	const item = rolePickerItem ?? panel?.item ?? null;
@@ -74,7 +83,7 @@ export function ReviewDecisionPopover({ orgId, children }: { orgId: string; chil
 
 	return (
 		<Popover
-			open={!!item}
+			open={!!item && !disabled}
 			onOpenChange={(open) => {
 				if (open) return;
 				board.dismissPanel();
