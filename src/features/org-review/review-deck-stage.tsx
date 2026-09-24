@@ -7,7 +7,6 @@ import { Kbd } from "@v2/components/ui/kbd";
 import { TalentBoardDetailPane, TalentDecisionActionBar } from "@v2/features/org-shared-cards";
 import { cn } from "@v2/lib/utils";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
-import { useState } from "react";
 import { AdminPassButton } from "./admin-pass-button";
 import { useReviewBoardContext } from "./review-board-context";
 import { ReviewDecisionPopover } from "./review-decision-popover";
@@ -21,6 +20,9 @@ interface ReviewDeckStageProps {
 	orgId: string;
 	selectedRoleId: string | undefined;
 	viewerIsPlatformAdmin?: boolean;
+	/** Full profile open (Space); owned by the board so the keyboard can toggle it. */
+	expanded: boolean;
+	onExpandedChange: (expanded: boolean) => void;
 }
 
 // The card leaves toward the decision (pass left, intro right, maybe down); picking someone else just fades.
@@ -35,16 +37,16 @@ const cardMotion = {
 };
 const fadeMotion = { initial: { opacity: 0 }, animate: { opacity: 1 }, exit: { opacity: 0 } };
 
-export function ReviewDeckStage({ orgId, selectedRoleId, viewerIsPlatformAdmin = false }: ReviewDeckStageProps) {
+export function ReviewDeckStage({
+	orgId,
+	selectedRoleId,
+	viewerIsPlatformAdmin = false,
+	expanded,
+	onExpandedChange,
+}: ReviewDeckStageProps) {
 	const board = useReviewBoardContext();
 	const item = board.selected;
 	const key = item ? reviewItemKey(item) : "none";
-	const [expanded, setExpanded] = useState(false);
-	const [shownKey, setShownKey] = useState(key);
-	if (key !== shownKey) {
-		setShownKey(key);
-		setExpanded(false);
-	}
 	const reduceMotion = useReducedMotion();
 	const similar = item ? board.similarTo.get(key) : undefined;
 
@@ -100,7 +102,7 @@ export function ReviewDeckStage({ orgId, selectedRoleId, viewerIsPlatformAdmin =
 												variant="unstyled"
 												size="unstyled"
 												aria-expanded={expanded}
-												onClick={() => setExpanded((v) => !v)}
+												onClick={() => onExpandedChange(!expanded)}
 												className="focus-ring flex items-center gap-1.5 rounded-v2-sm font-v2-body font-medium text-v2-text-brand text-xs"
 											>
 												{expanded ? <ArrowsInSimple size={14} /> : <ArrowsOutSimple size={14} />}

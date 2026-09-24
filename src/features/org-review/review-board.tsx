@@ -8,6 +8,10 @@ import { useTalentBoardOpen, useTalentDecisionKeyboard } from "@v2/features/org-
 import { prefetchOrgTalentProfile } from "@v2/features/org-talent-profile";
 import { useMediaQuery } from "@v2/hooks/use-media-query";
 import { usePersistFilterParams } from "@v2/hooks/use-persisted-search";
+import { SidebarSimple } from "@phosphor-icons/react";
+import { Button } from "@v2/components/ui/button";
+import { Kbd } from "@v2/components/ui/kbd";
+import { cn } from "@v2/lib/utils";
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { SendoutListEntry } from "@/services/api/organizations";
 import {
@@ -35,6 +39,7 @@ import { ReviewLeftList } from "./review-left-list";
 import { ReviewMobileSheet } from "./review-mobile-sheet";
 import { ReviewRoleFilter } from "./review-role-filter";
 import { ReviewScopeBar } from "./review-scope-bar";
+import { ReviewShortcutsHelp } from "./review-shortcuts-help";
 import { ReviewStreamFilter } from "./review-stream-filter";
 import { parseReviewStreams, serializeReviewStreams, setReviewUrlParams } from "./review-url";
 import { type ReviewItem, type ReviewStream, reviewItemKey } from "./types";
@@ -170,6 +175,23 @@ export function ReviewBoard({
 		[setStreams],
 	);
 
+	// Screen-level view state the keyboard also drives: full profile (Space), list (L), shortcuts (?).
+	const [listHidden, setListHidden] = useState(false);
+	const [helpOpen, setHelpOpen] = useState(false);
+	const [fullProfile, setFullProfile] = useState(false);
+	const [profileKey, setProfileKey] = useState(board.selectedKey);
+	if (profileKey !== board.selectedKey) {
+		setProfileKey(board.selectedKey);
+		setFullProfile(false);
+	}
+	const handleScreenKey = useCallback((key: string) => {
+		if (key === " ") setFullProfile((open) => !open);
+		else if (key === "l" || key === "L") setListHidden((hidden) => !hidden);
+		else if (key === "?") setHelpOpen((open) => !open);
+		else return false;
+		return true;
+	}, []);
+
 	const anyModalOpen = !!board.rolePickerItem || board.hmWarningOpen;
 	useTalentDecisionKeyboard({
 		selected: board.selected,
@@ -178,6 +200,7 @@ export function ReviewBoard({
 		onIntro: board.openIntro,
 		onOpenPass: board.openPass,
 		onMaybe: board.openMaybe,
+		onKey: handleScreenKey,
 		onSelectPrev: board.selectPrev,
 		onSelectNext: board.selectNext,
 	});
@@ -231,65 +254,91 @@ export function ReviewBoard({
 							/>
 						</div>
 					) : (
-						<div className={REVIEW_BOARD_GRID_CLASSES}>
-							<Card className={REVIEW_LEFT_CARD_CLASSES}>
-								{showScopeBar && (
-									<ReviewScopeBar
-										drops={sendoutDrops}
-										activeNanoId={activeSendout?.nanoId}
-										feedTalentIds={board.feedTalentIds}
-										onSelect={selectSendout}
-										onClear={clearSendoutScope}
-										className="border-b border-v2-border-divider"
-									/>
-								)}
-								<ReviewHeader
-									remaining={board.items.length}
-									reviewed={board.reviewedCount}
-									truncated={reviewView !== "maybe" && board.truncated}
-									maybe={reviewView === "maybe"}
-								/>
-								<div ref={listRef} className="max-h-[calc(100dvh-16rem)] min-h-0 flex-1 overflow-y-auto lg:max-h-none">
-									{board.items.length === 0 ? (
-										<EmptyState
-											heading={
-												reviewView === "maybe" ? "No maybes yet" : incomingEmpty ? "All reviewed" : "Nothing here"
-											}
-											description={
-												reviewView === "maybe"
-													? "Press M when you're unsure about someone. They wait here until you decide."
-													: incomingEmpty
-														? "Nothing waiting on you for this role."
-														: "No candidates match this filter right now."
-											}
-										/>
-									) : (
-										<ReviewLeftList
-											items={board.items}
-											selectedKey={board.selectedKey}
-											onSelect={handleSelect}
-											onOpen={isMobile ? undefined : handleOpen}
-											onPrefetch={handlePrefetch}
-											onIntro={isMobile ? undefined : handleListIntro}
-											onPass={isMobile ? undefined : handleListPass}
-											isPending={board.isPending}
-											isFailed={board.isFailed}
-											onRetry={board.retry}
-											similarTo={board.similarTo}
-											chipsFor={board.chipsFor}
-											onCardVisible={board.onCardVisible}
-											onCardSeen={board.onCardSeen}
+						<div
+							className={cn(
+								REVIEW_BOARD_GRID_CLASSES,
+								listHidden && !isMobile && "lg:grid-cols-[2.5rem_minmax(0,1fr)]",
+							)}
+						>
+							{listHidden && !isMobile ? (
+								<Button
+									variant="ghost"
+									aria-label="Show list"
+									title="Show list (L)"
+									onClick={() => setListHidden(false)}
+									className="h-full w-10 min-w-10 flex-col justify-center gap-2 rounded-v2-lg px-0 text-v2-text-tertiary"
+								>
+									<SidebarSimple size={16} />
+									<Kbd>L</Kbd>
+								</Button>
+							) : (
+								<Card className={REVIEW_LEFT_CARD_CLASSES}>
+									{showScopeBar && (
+										<ReviewScopeBar
+											drops={sendoutDrops}
+											activeNanoId={activeSendout?.nanoId}
+											feedTalentIds={board.feedTalentIds}
+											onSelect={selectSendout}
+											onClear={clearSendoutScope}
+											className="border-b border-v2-border-divider"
 										/>
 									)}
-								</div>
-							</Card>
-							{!isMobile && (
-								<div className="min-h-0">
-									<ReviewDeckStage
-										orgId={orgId}
-										selectedRoleId={selectedRoleId}
-										viewerIsPlatformAdmin={viewerIsPlatformAdmin}
+									<ReviewHeader
+										remaining={board.items.length}
+										reviewed={board.reviewedCount}
+										truncated={reviewView !== "maybe" && board.truncated}
+										maybe={reviewView === "maybe"}
+										onHide={isMobile ? undefined : () => setListHidden(true)}
 									/>
+									<div ref={listRef} className="max-h-[calc(100dvh-16rem)] min-h-0 flex-1 overflow-y-auto lg:max-h-none">
+										{board.items.length === 0 ? (
+											<EmptyState
+												heading={
+													reviewView === "maybe" ? "No maybes yet" : incomingEmpty ? "All reviewed" : "Nothing here"
+												}
+												description={
+													reviewView === "maybe"
+														? "Press M when you're unsure about someone. They wait here until you decide."
+														: incomingEmpty
+															? "Nothing waiting on you for this role."
+															: "No candidates match this filter right now."
+												}
+											/>
+										) : (
+											<ReviewLeftList
+												items={board.items}
+												selectedKey={board.selectedKey}
+												onSelect={handleSelect}
+												onOpen={isMobile ? undefined : handleOpen}
+												onPrefetch={handlePrefetch}
+												onIntro={isMobile ? undefined : handleListIntro}
+												onPass={isMobile ? undefined : handleListPass}
+												isPending={board.isPending}
+												isFailed={board.isFailed}
+												onRetry={board.retry}
+												similarTo={board.similarTo}
+												chipsFor={board.chipsFor}
+												onCardVisible={board.onCardVisible}
+												onCardSeen={board.onCardSeen}
+											/>
+										)}
+									</div>
+								</Card>
+							)}
+							{!isMobile && (
+								<div className="flex min-h-0 flex-col gap-2">
+									<div className="min-h-0 flex-1">
+										<ReviewDeckStage
+											orgId={orgId}
+											selectedRoleId={selectedRoleId}
+											viewerIsPlatformAdmin={viewerIsPlatformAdmin}
+											expanded={fullProfile}
+											onExpandedChange={setFullProfile}
+										/>
+									</div>
+									<div className="flex justify-end">
+										<ReviewShortcutsHelp open={helpOpen} onOpenChange={setHelpOpen} />
+									</div>
 								</div>
 							)}
 						</div>

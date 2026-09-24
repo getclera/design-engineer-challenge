@@ -9,6 +9,8 @@ interface UseTalentDecisionKeyboardParams<TItem> {
 	onIntro: (item: TItem) => void;
 	onOpenPass: (item: TItem) => void;
 	onMaybe?: (item: TItem) => void;
+	/** Screen-level keys (e.g. Space, L, ?); return true when handled. Runs even with nobody selected. */
+	onKey?: (key: string) => boolean;
 	onSelectPrev: () => void;
 	onSelectNext: () => void;
 }
@@ -20,14 +22,20 @@ export function useTalentDecisionKeyboard<TItem>({
 	onIntro,
 	onOpenPass,
 	onMaybe,
+	onKey,
 	onSelectPrev,
 	onSelectNext,
 }: UseTalentDecisionKeyboardParams<TItem>) {
 	useEffect(() => {
 		if (!enabled || panelOpen) return;
-		const onKey = (e: KeyboardEvent) => {
+		const handleKey = (e: KeyboardEvent) => {
 			const el = e.target;
 			if (el instanceof HTMLElement && (el.tagName === "INPUT" || el.tagName === "TEXTAREA" || el.isContentEditable)) {
+				return;
+			}
+			if (e.metaKey || e.ctrlKey || e.altKey) return;
+			if (onKey?.(e.key)) {
+				e.preventDefault();
 				return;
 			}
 			if (!selected || e.repeat) return; // a held key never decides more than one person
@@ -43,12 +51,12 @@ export function useTalentDecisionKeyboard<TItem>({
 			} else if (e.key === "Backspace") {
 				e.preventDefault();
 				onOpenPass(selected);
-			} else if (onMaybe && (e.key === "m" || e.key === "M") && !e.metaKey && !e.ctrlKey) {
+			} else if (onMaybe && (e.key === "m" || e.key === "M")) {
 				e.preventDefault();
 				onMaybe(selected);
 			}
 		};
-		window.addEventListener("keydown", onKey);
-		return () => window.removeEventListener("keydown", onKey);
-	}, [selected, enabled, panelOpen, onIntro, onOpenPass, onMaybe, onSelectPrev, onSelectNext]);
+		window.addEventListener("keydown", handleKey);
+		return () => window.removeEventListener("keydown", handleKey);
+	}, [selected, enabled, panelOpen, onIntro, onOpenPass, onMaybe, onKey, onSelectPrev, onSelectNext]);
 }
