@@ -84,6 +84,7 @@ function IdentityPublicZone({
 				<UserAvatar
 					src={data.avatarUrl}
 					name={name}
+					generated
 					fallback={identiconSeed ? <Identicon seed={identiconSeed} /> : undefined}
 					size="lg"
 					className={cn("border border-v2-border-warm", compact ? "size-14" : "size-17")}
