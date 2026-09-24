@@ -13,6 +13,8 @@ interface TalentDecisionActionBarProps {
 	onPass: () => void;
 	showShortcuts?: boolean;
 	leadingAction?: ReactNode;
+	/** Rendered between Pass and Request intro (Review's Maybe). */
+	middleAction?: ReactNode;
 }
 
 const KBD = "ml-1 rounded bg-black/15 px-1 text-2xs leading-4";
@@ -24,6 +26,7 @@ export function TalentDecisionActionBar({
 	onPass,
 	showShortcuts = true,
 	leadingAction,
+	middleAction,
 }: TalentDecisionActionBarProps) {
 	const isDesktop = useMediaQuery("(min-width: 1024px)");
 	const showHints = showShortcuts && isDesktop;
@@ -37,6 +40,7 @@ export function TalentDecisionActionBar({
 					{showHints && <span className={KBD}>⌫</span>}
 				</Button>
 			</TalentDecisionTooltip>
+			{middleAction}
 			<TalentDecisionTooltip
 				label={
 					alreadyInterested

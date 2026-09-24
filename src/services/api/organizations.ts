@@ -84,7 +84,8 @@ interface DashboardActionRequest {
 interface DashboardActionByTalentJobRequest {
 	talentId: string;
 	jobId: string;
-	action: "request_intro" | "pass";
+	action: "request_intro" | "pass" | "maybe";
+	maybeNote?: string;
 	rejectReason?: string;
 	noFitCategory?: string;
 	noFitCategories?: string[];
@@ -372,9 +373,9 @@ function submitOrgFeedback(orgId: string, payload: SubmitOrgFeedbackRequest) {
 
 function reverseDashboardAction(
 	orgId: string,
-	data: { opportunityId: number; action: "pass" },
+	data: { opportunityId: number; action: "pass" | "maybe" },
 ): Promise<ApiResult<Record<string, unknown>>> {
-	return callApi<Record<string, unknown>, { opportunityId: number; action: "pass" }>(
+	return callApi<Record<string, unknown>, { opportunityId: number; action: "pass" | "maybe" }>(
 		`/api/organizations/${orgId}/dashboard/reverse-action`,
 		data,
 		{ method: "PATCH" },

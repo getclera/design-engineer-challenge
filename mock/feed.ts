@@ -36,7 +36,12 @@ export function findReviewItemByOpportunity(opportunityId: number): ReviewItem |
 }
 
 export function buildReviewFeed({ roleId }: { roleId: string | null }): ReviewListData {
-  const pending = allReviewItems().filter((item) => !decisions.has(reviewItemKey(item)));
+  // Maybe keeps someone pending: they stay in the feed, flagged with their note.
+  const pending = allReviewItems().flatMap((item) => {
+    const decision = decisions.get(reviewItemKey(item));
+    if (!decision) return [item];
+    return decision.action === "maybe" ? [{ ...item, maybe: { note: decision.note ?? "" } }] : [];
+  });
 
   const byRole = Object.fromEntries(
     ROLES.filter((role) => role.status === "active").map((role) => {

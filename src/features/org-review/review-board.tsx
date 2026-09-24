@@ -30,7 +30,7 @@ import { ReviewBoardSkeleton } from "./review-board-skeleton";
 import { ReviewDeckStage } from "./review-deck-stage";
 import { ReviewEmpty } from "./review-empty";
 import { ReviewHeader } from "./review-header";
-import { ReviewIncomingToggle } from "./review-incoming-toggle";
+import { ReviewIncomingToggle, type ReviewView } from "./review-incoming-toggle";
 import { ReviewLeftList } from "./review-left-list";
 import { ReviewMobileSheet } from "./review-mobile-sheet";
 import { ReviewRoleFilter } from "./review-role-filter";
@@ -92,11 +92,18 @@ export function ReviewBoard({
 	}, []);
 	useDefaultReviewRole(orgId, roleParam === undefined && !talentId, applyDefaultRole);
 	const { data: sendoutDrops = [] } = useSendoutLists(orgId, selectedRoleId);
-	const board = useReviewBoard(orgId, selectedRoleId, talentId, parseReviewStreams(streams), activeSendout?.talentIds);
+	const [reviewView, setReviewView] = useState<ReviewView>(view === "passed" || view === "maybe" ? view : "unreviewed");
+	const board = useReviewBoard(
+		orgId,
+		selectedRoleId,
+		talentId,
+		parseReviewStreams(streams),
+		activeSendout?.talentIds,
+		reviewView === "maybe",
+	);
 	const isMobile = useMediaQuery("(max-width: 1023px)");
 	const queryClient = useQueryClient();
 	const [mobileTalent, setMobileTalent] = useState<ReviewItem | null>(null);
-	const [showPassed, setShowPassed] = useState(view === "passed");
 	const listRef = useRef<HTMLDivElement>(null);
 	usePrefetchNextProfile(orgId, board.items, board.selectedKey);
 
@@ -151,9 +158,9 @@ export function ReviewBoard({
 		mobilePanelWasOpen.current = false;
 	}, [mobilePanelOpen]);
 
-	const handleViewChange = useCallback((passed: boolean) => {
-		setShowPassed(passed);
-		setReviewUrlParams({ view: passed ? "passed" : undefined });
+	const handleViewChange = useCallback((next: ReviewView) => {
+		setReviewView(next);
+		setReviewUrlParams({ view: next === "unreviewed" ? undefined : next });
 	}, []);
 	const { setStreams } = board;
 	const handleStreamsChange = useCallback(
@@ -168,9 +175,10 @@ export function ReviewBoard({
 	useTalentDecisionKeyboard({
 		selected: board.selected,
 		enabled: !isMobile && !anyModalOpen,
-		panelOpen: !!board.panel,
+		panelOpen: !!board.panel || !!board.maybeItem,
 		onIntro: board.openIntro,
 		onOpenPass: board.openPass,
+		onMaybe: board.openMaybe,
 		onSelectPrev: board.selectPrev,
 		onSelectNext: board.selectNext,
 	});
@@ -188,14 +196,14 @@ export function ReviewBoard({
 			<TooltipProvider delayDuration={150}>
 				<div className="flex flex-col gap-3">
 					<div className={REVIEW_CONTROL_BAR_CLASSES}>
-						<ReviewIncomingToggle showPassed={showPassed} onChange={handleViewChange} />
+						<ReviewIncomingToggle view={reviewView} onChange={handleViewChange} />
 						<ReviewRoleFilter orgId={orgId} roleId={selectedRoleId} byRole={board.byRole} onChange={handleRoleChange} />
-						{!showPassed && !incomingEmpty && (
+						{reviewView !== "passed" && !incomingEmpty && (
 							<ReviewStreamFilter streams={board.streams} counts={board.streamCounts} onChange={handleStreamsChange} />
 						)}
 					</div>
 
-					{showPassed ? (
+					{reviewView === "passed" ? (
 						<PassedView orgId={orgId} selectedRoleId={selectedRoleId} viewerIsPlatformAdmin={viewerIsPlatformAdmin} />
 					) : board.isSwitching ? (
 						<ReviewBoardGridSkeleton />
@@ -239,16 +247,21 @@ export function ReviewBoard({
 								<ReviewHeader
 									remaining={board.items.length}
 									reviewed={board.reviewedCount}
-									truncated={board.truncated}
+									truncated={reviewView !== "maybe" && board.truncated}
+									maybe={reviewView === "maybe"}
 								/>
 								<div ref={listRef} className="max-h-[calc(100dvh-16rem)] min-h-0 flex-1 overflow-y-auto lg:max-h-none">
 									{board.items.length === 0 ? (
 										<EmptyState
-											heading={incomingEmpty ? "All reviewed" : "Nothing here"}
+											heading={
+												reviewView === "maybe" ? "No maybes yet" : incomingEmpty ? "All reviewed" : "Nothing here"
+											}
 											description={
-												incomingEmpty
-													? "Nothing waiting on you for this role."
-													: "No candidates match this filter right now."
+												reviewView === "maybe"
+													? "Press M when you're unsure about someone. They wait here until you decide."
+													: incomingEmpty
+														? "Nothing waiting on you for this role."
+														: "No candidates match this filter right now."
 											}
 										/>
 									) : (

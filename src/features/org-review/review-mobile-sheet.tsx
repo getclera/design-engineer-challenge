@@ -3,6 +3,7 @@
 import { TalentDecisionActionBar } from "@v2/features/org-shared-cards";
 import { OrgTalentProfileSheet } from "@v2/features/org-talent-profile";
 import { ReviewDecisionPopover } from "./review-decision-popover";
+import { ReviewMaybeButton } from "./review-maybe-button";
 import { type ReviewItem, streamOf } from "./types";
 
 interface ReviewMobileSheetProps {
@@ -44,6 +45,7 @@ export function ReviewMobileSheet({
 								isPending={isPending}
 								onInterview={() => onInterview(talent)}
 								onPass={() => onPass(talent)}
+								middleAction={<ReviewMaybeButton item={talent} isPending={isPending} />}
 							/>
 						</div>
 					</ReviewDecisionPopover>

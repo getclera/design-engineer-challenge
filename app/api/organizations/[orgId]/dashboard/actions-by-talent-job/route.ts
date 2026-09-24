@@ -7,7 +7,8 @@ const FAILURE_RATE = 0.1;
 interface ActionRequest {
   talentId: string;
   jobId: string;
-  action: "request_intro" | "pass";
+  action: "request_intro" | "pass" | "maybe";
+  maybeNote?: string;
   noFitCategories?: string[];
   interestCompanyCategory?: string;
 }
@@ -25,8 +26,9 @@ export async function PATCH(request: Request) {
   if (Math.random() < FAILURE_RATE) return error("Something went wrong", 500);
 
   decisions.set(reviewItemKey(item), {
-    action: body.action === "request_intro" ? "interview" : "pass",
+    action: body.action === "request_intro" ? "interview" : body.action,
     decidedAt: new Date().toISOString(),
+    note: body.maybeNote,
   });
   return json({ success: true, opportunityId: item.opportunityId });
 }

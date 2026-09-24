@@ -9,12 +9,13 @@ import { toast } from "sonner";
 import { orgDashboardKeys } from "@/lib/query-keys";
 import { organizations } from "@/services/api";
 import { type ReviewItem, reviewItemKey } from "../types";
-import { removeFromReviewFeed } from "./feed-cache";
+import { removeFromReviewFeed, setMaybeInReviewFeed } from "./feed-cache";
 import { invalidateOrgDashboard } from "./invalidate-org-dashboard";
 
 interface ReviewActionPayload {
 	item: ReviewItem;
-	action: "request_intro" | "pass";
+	action: "request_intro" | "pass" | "maybe";
+	maybeNote?: string;
 	rejectReason?: string;
 	noFitCategory?: string;
 	noFitCategories?: string[];
@@ -44,6 +45,7 @@ export function useReviewAction(orgId: string, roleId?: string, callbacks?: Revi
 		mutationFn: async ({
 			item,
 			action,
+			maybeNote,
 			rejectReason,
 			noFitCategory,
 			noFitCategories,
@@ -57,6 +59,7 @@ export function useReviewAction(orgId: string, roleId?: string, callbacks?: Revi
 				talentId: item.talentId,
 				jobId,
 				action,
+				maybeNote,
 				rejectReason,
 				noFitCategory,
 				noFitCategories,
@@ -66,15 +69,19 @@ export function useReviewAction(orgId: string, roleId?: string, callbacks?: Revi
 			if (!result.ok) throw new Error(result.error.message);
 			return result.data;
 		},
-		onMutate: async ({ item, action }) => {
+		onMutate: async ({ item, action, maybeNote }) => {
 			setPendingKeys((prev) => new Set(prev).add(reviewItemKey(item)));
 			await queryClient.cancelQueries({ queryKey });
-			const previous = removeFromReviewFeed(queryClient, queryKey, item);
+			const previous =
+				action === "maybe"
+					? setMaybeInReviewFeed(queryClient, queryKey, item, { note: maybeNote ?? "" })
+					: removeFromReviewFeed(queryClient, queryKey, item);
 			const toastId = `review-action:${reviewItemKey(item)}`;
-			if (action !== "request_intro") callbacks?.onPassed?.({ toastId, item, opportunityId: item.opportunityId });
+			if (action === "pass") callbacks?.onPassed?.({ toastId, item, opportunityId: item.opportunityId });
 			return { previous, toastId };
 		},
 		onSuccess: (_data, { item, action }) => {
+			if (action === "maybe") return;
 			posthog?.capture(
 				action === "request_intro"
 					? OrgDashboardEvents.CANDIDATE_ACTION_INTRO_REQUESTED
@@ -82,9 +89,9 @@ export function useReviewAction(orgId: string, roleId?: string, callbacks?: Revi
 				{ org_id: orgId, role_id: item.roleId, talent_id: item.talentId, surface: "review" },
 			);
 		},
-		onError: (error, _variables, context) => {
+		onError: (error, variables, context) => {
 			if (context?.previous) queryClient.setQueryData(queryKey, context.previous);
-			callbacks?.onFailed?.();
+			if (variables.action !== "maybe") callbacks?.onFailed?.();
 			const notOpen = error instanceof Error && error.message.includes(TALENT_NOT_OPEN_ERROR);
 			toast.error(notOpen ? "This candidate is not currently open to opportunities." : "Something went wrong", {
 				id: context?.toastId,

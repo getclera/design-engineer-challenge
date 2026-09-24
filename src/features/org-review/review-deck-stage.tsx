@@ -13,6 +13,7 @@ import { useReviewBoardContext } from "./review-board-context";
 import { ReviewDecisionPopover } from "./review-decision-popover";
 import { ReviewFitReason } from "./review-fit-reason";
 import { ReviewHeaderMeta } from "./review-header-meta";
+import { ReviewMaybeButton } from "./review-maybe-button";
 import { ReviewProfileShell } from "./review-profile-shell";
 import { reviewItemKey, streamOf } from "./types";
 
@@ -22,11 +23,15 @@ interface ReviewDeckStageProps {
 	viewerIsPlatformAdmin?: boolean;
 }
 
-// The card leaves toward the decision (pass left, intro right); picking someone else just fades.
+// The card leaves toward the decision (pass left, intro right, maybe down); picking someone else just fades.
+const EXIT = { pass: -1, intro: 1 } as const;
 const cardMotion = {
 	initial: { opacity: 0, y: 12, scale: 0.98 },
 	animate: { opacity: 1, y: 0, scale: 1 },
-	exit: (dir: number) => ({ opacity: 0, x: `${dir * 110}%`, rotate: dir * 6 }),
+	exit: (move: "pass" | "intro" | "maybe" | null) =>
+		move === "maybe"
+			? { opacity: 0, y: "30%" }
+			: { opacity: 0, x: `${(move ? EXIT[move] : 0) * 110}%`, rotate: (move ? EXIT[move] : 0) * 6 },
 };
 const fadeMotion = { initial: { opacity: 0 }, animate: { opacity: 1 }, exit: { opacity: 0 } };
 
@@ -41,7 +46,6 @@ export function ReviewDeckStage({ orgId, selectedRoleId, viewerIsPlatformAdmin =
 		setExpanded(false);
 	}
 	const reduceMotion = useReducedMotion();
-	const dir = board.lastMove === "pass" ? -1 : board.lastMove === "intro" ? 1 : 0;
 
 	return (
 		<div className={cn("relative", expanded && "h-full")}>
@@ -51,10 +55,10 @@ export function ReviewDeckStage({ orgId, selectedRoleId, viewerIsPlatformAdmin =
 					className="absolute inset-x-3 top-3 -bottom-2 rounded-v2-lg border border-v2-border-warm bg-v2-bg-card"
 				/>
 			)}
-			<AnimatePresence initial={false} mode="popLayout" custom={dir}>
+			<AnimatePresence initial={false} mode="popLayout" custom={board.lastMove}>
 				<motion.div
 					key={key}
-					custom={dir}
+					custom={board.lastMove}
 					variants={reduceMotion ? fadeMotion : cardMotion}
 					initial="initial"
 					animate="animate"
@@ -106,6 +110,7 @@ export function ReviewDeckStage({ orgId, selectedRoleId, viewerIsPlatformAdmin =
 												isPending={board.isPending(item)}
 												onInterview={() => board.openIntro(item)}
 												onPass={() => board.openPass(item)}
+												middleAction={<ReviewMaybeButton item={item} isPending={board.isPending(item)} />}
 												leadingAction={
 													viewerIsPlatformAdmin ? (
 														<AdminPassButton orgId={orgId} item={item} roleId={selectedRoleId} iconOnly />

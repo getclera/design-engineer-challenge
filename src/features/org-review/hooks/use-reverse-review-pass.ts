@@ -5,12 +5,14 @@ import { toast } from "sonner";
 import { orgDashboardKeys } from "@/lib/query-keys";
 import { organizations } from "@/services/api";
 import type { ReviewItem } from "../types";
-import { insertIntoReviewFeed } from "./feed-cache";
+import { insertIntoReviewFeed, setMaybeInReviewFeed } from "./feed-cache";
 import { invalidateOrgDashboard } from "./invalidate-org-dashboard";
 
 interface ReverseReviewPassInput {
 	item: ReviewItem;
 	opportunityId: number;
+	/** What is being undone; the server just clears the decision. */
+	action?: "pass" | "maybe";
 }
 
 interface ReverseReviewPassCallbacks {
@@ -22,14 +24,17 @@ export function useReverseReviewPass(orgId: string, callbacks?: ReverseReviewPas
 	const queryKey = orgDashboardKeys.review(orgId, undefined);
 
 	return useMutation({
-		mutationFn: async ({ opportunityId }: ReverseReviewPassInput) => {
-			const result = await organizations.reverseDashboardAction(orgId, { opportunityId, action: "pass" });
+		mutationFn: async ({ opportunityId, action = "pass" }: ReverseReviewPassInput) => {
+			const result = await organizations.reverseDashboardAction(orgId, { opportunityId, action });
 			if (!result.ok) throw new Error(result.error.message);
 			return result.data;
 		},
-		onMutate: async ({ item }) => {
+		onMutate: async ({ item, action }) => {
 			await queryClient.cancelQueries({ queryKey });
-			const previous = insertIntoReviewFeed(queryClient, queryKey, item);
+			const previous =
+				action === "maybe"
+					? setMaybeInReviewFeed(queryClient, queryKey, item, null)
+					: insertIntoReviewFeed(queryClient, queryKey, item);
 			return { previous };
 		},
 		onError: (error, _variables, context) => {

@@ -1,11 +1,12 @@
 import { cookies } from "next/headers";
 import { findUserByEmail, type MockUser, USERS } from "./users";
 
-export type DecisionAction = "interview" | "pass";
+export type DecisionAction = "interview" | "pass" | "maybe";
 
 interface Decision {
   action: DecisionAction;
   decidedAt: string;
+  note?: string;
 }
 
 const globalStore = globalThis as unknown as { __reviewDecisions?: Map<string, Decision> };

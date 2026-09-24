@@ -39,6 +39,7 @@ export function useReviewBoard(
 	initialTalentId?: string,
 	initialStreams?: ReviewStream[],
 	sendoutTalentIds?: readonly string[],
+	showMaybe = false,
 ) {
 	const { data, isLoading, isPlaceholderData } = useReviewItems(orgId, roleId);
 
@@ -59,7 +60,8 @@ export function useReviewBoard(
 	const [streams, setStreams] = useState<ReviewStream[]>(initialStreams ?? [...REVIEW_STREAMS]);
 	const [reviewedCount, setReviewedCount] = useState(0);
 	// Which way the deck card leaves: the last decision taken.
-	const [lastMove, setLastMove] = useState<"pass" | "intro" | null>(null);
+	const [lastMove, setLastMove] = useState<"pass" | "intro" | "maybe" | null>(null);
+	const [maybeItem, setMaybeItem] = useState<ReviewItem | null>(null);
 	const rolePickerItem = rolePicker?.item ?? null;
 
 	const panelTextRef = useRef("");
@@ -123,8 +125,11 @@ export function useReviewBoard(
 	}, [data, sendoutScope]);
 	const feedTalentIds = useMemo(() => new Set((data?.items ?? []).map((item) => item.talentId)), [data]);
 	const items = useMemo(
-		() => feed.filter((i) => streams.includes(streamOf(i.bucket)) && reviewItemKey(i) !== heldKey),
-		[feed, streams, heldKey],
+		() =>
+			feed.filter(
+				(i) => streams.includes(streamOf(i.bucket)) && reviewItemKey(i) !== heldKey && !!i.maybe === showMaybe,
+			),
+		[feed, streams, heldKey, showMaybe],
 	);
 	const roleFeedCount = data?.items?.length ?? 0;
 	const streamCounts = useMemo(() => {
@@ -306,6 +311,40 @@ export function useReviewBoard(
 
 	const dismissPanel = useCallback(() => setPanel(null), []);
 
+	const openMaybe = useCallback(
+		(item: ReviewItem) => {
+			flushHeldIntro();
+			clearFollowThrough();
+			setPanel(null);
+			setMaybeItem(item);
+		},
+		[flushHeldIntro, clearFollowThrough],
+	);
+
+	// Maybe parks the person (still pending) in the Maybe tab, with an optional note.
+	const confirmMaybe = useCallback(
+		(note: string) => {
+			if (!maybeItem) return;
+			const item = maybeItem;
+			const key = reviewItemKey(item);
+			mutate({ item, action: "maybe", maybeNote: note || undefined });
+			setMaybeItem(null);
+			setLastMove("maybe");
+			advance(item);
+			toast.success(`Moved ${item.talentName.split(" ")[0]} to Maybe`, {
+				id: `review-action:${key}`,
+				action: {
+					label: "Undo",
+					onClick: () => {
+						reversePass.mutate({ item, opportunityId: item.opportunityId, action: "maybe" });
+						setSelectedKey(key);
+					},
+				},
+			});
+		},
+		[maybeItem, mutate, advance, reversePass],
+	);
+
 	// From the reason step back to "Which role?" (only for people who came without a role).
 	const backToRole = useCallback(() => {
 		if (!panel || panel.item.roleId) return;
@@ -369,6 +408,10 @@ export function useReviewBoard(
 		setPanelText,
 		dismissPanel,
 		backToRole,
+		maybeItem,
+		openMaybe,
+		confirmMaybe,
+		closeMaybe: () => setMaybeItem(null),
 		flushHeldIntro,
 		selectPrev,
 		selectNext,

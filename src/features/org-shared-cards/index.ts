@@ -5,4 +5,5 @@ export { TalentBoardCard } from "./talent-board-card";
 export { TalentBoardDetailPane } from "./talent-board-detail-pane";
 export { TalentBoardProfileSkeleton } from "./talent-board-profile-skeleton";
 export { TalentDecisionActionBar } from "./talent-decision-action-bar";
+export { TalentDecisionTooltip } from "./talent-decision-tooltip";
 export { useTalentImpressions } from "./use-talent-impressions";

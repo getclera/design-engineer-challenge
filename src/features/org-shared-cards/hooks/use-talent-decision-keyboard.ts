@@ -8,6 +8,7 @@ interface UseTalentDecisionKeyboardParams<TItem> {
 	panelOpen: boolean;
 	onIntro: (item: TItem) => void;
 	onOpenPass: (item: TItem) => void;
+	onMaybe?: (item: TItem) => void;
 	onSelectPrev: () => void;
 	onSelectNext: () => void;
 }
@@ -18,6 +19,7 @@ export function useTalentDecisionKeyboard<TItem>({
 	panelOpen,
 	onIntro,
 	onOpenPass,
+	onMaybe,
 	onSelectPrev,
 	onSelectNext,
 }: UseTalentDecisionKeyboardParams<TItem>) {
@@ -41,9 +43,12 @@ export function useTalentDecisionKeyboard<TItem>({
 			} else if (e.key === "Backspace") {
 				e.preventDefault();
 				onOpenPass(selected);
+			} else if (onMaybe && (e.key === "m" || e.key === "M") && !e.metaKey && !e.ctrlKey) {
+				e.preventDefault();
+				onMaybe(selected);
 			}
 		};
 		window.addEventListener("keydown", onKey);
 		return () => window.removeEventListener("keydown", onKey);
-	}, [selected, enabled, panelOpen, onIntro, onOpenPass, onSelectPrev, onSelectNext]);
+	}, [selected, enabled, panelOpen, onIntro, onOpenPass, onMaybe, onSelectPrev, onSelectNext]);
 }

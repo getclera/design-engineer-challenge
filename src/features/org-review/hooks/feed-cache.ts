@@ -42,3 +42,20 @@ export function insertIntoReviewFeed(queryClient: QueryClient, queryKey: QueryKe
 	});
 	return previous;
 }
+
+/** Maybe keeps the person pending: flag them in place (no count changes) so they move to the Maybe tab. */
+export function setMaybeInReviewFeed(
+	queryClient: QueryClient,
+	queryKey: QueryKey,
+	item: ReviewItem,
+	maybe: ReviewItem["maybe"],
+) {
+	const previous = queryClient.getQueryData<ReviewListData>(queryKey);
+	if (!previous) return previous;
+	const key = reviewItemKey(item);
+	queryClient.setQueryData<ReviewListData>(queryKey, {
+		...previous,
+		items: previous.items.map((i) => (reviewItemKey(i) === key ? { ...i, maybe } : i)),
+	});
+	return previous;
+}

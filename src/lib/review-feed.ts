@@ -21,6 +21,8 @@ export interface ReviewItem {
 	receivedAt: string | null;
 	companies: { name: string; logoUrl: string | null }[];
 	school: { name: string; logoUrl: string | null } | null;
+	/** Set while the hiring manager has parked this person in Maybe. */
+	maybe?: { note: string } | null;
 }
 
 export interface ReviewBucketCounts {
