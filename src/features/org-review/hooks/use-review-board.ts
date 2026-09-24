@@ -43,7 +43,7 @@ export function useReviewBoard(
 	sendoutTalentIds?: readonly string[],
 	showMaybe = false,
 ) {
-	const { data, isLoading, isPlaceholderData } = useReviewItems(orgId, roleId);
+	const { data, isLoading, isPlaceholderData, isError, refetch } = useReviewItems(orgId, roleId);
 
 	const initialSelectedKey = initialTalentId
 		? reviewItemKey({ talentId: initialTalentId, roleId: roleId ?? null })
@@ -383,6 +383,8 @@ export function useReviewBoard(
 		items,
 		truncated: data?.truncated ?? false,
 		isLoading,
+		loadFailed: isError && (!data || isPlaceholderData),
+		retryLoad: refetch,
 		isSwitching: isPlaceholderData,
 		chipsFor,
 		onCardVisible,

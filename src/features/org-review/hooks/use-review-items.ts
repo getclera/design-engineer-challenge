@@ -9,5 +9,7 @@ export function useReviewItems(orgId: string, roleId?: string) {
 		staleTime: 10_000,
 		placeholderData: keepPreviousData,
 		enabled: !!orgId,
+		// A failed load keeps retrying quietly, so the error screen can promise "we'll try again".
+		refetchInterval: (query) => (query.state.status === "error" ? 8_000 : false),
 	});
 }

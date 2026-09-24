@@ -8,7 +8,7 @@ import { useTalentBoardOpen, useTalentDecisionKeyboard } from "@v2/features/org-
 import { prefetchOrgTalentProfile } from "@v2/features/org-talent-profile";
 import { useMediaQuery } from "@v2/hooks/use-media-query";
 import { usePersistFilterParams } from "@v2/hooks/use-persisted-search";
-import { SidebarSimple } from "@phosphor-icons/react";
+import { Coffee, SidebarSimple } from "@phosphor-icons/react";
 import { Button } from "@v2/components/ui/button";
 import { Kbd } from "@v2/components/ui/kbd";
 import { cn } from "@v2/lib/utils";
@@ -53,8 +53,12 @@ interface ReviewBoardProps {
 	sendoutNanoId?: string;
 	sendoutTalentIds?: readonly string[];
 	canUseTalentSearch: boolean;
+	/** Viewers browse only: the server refuses their decisions, so we don't offer them. */
+	canDecide?: boolean;
 	viewerIsPlatformAdmin?: boolean;
 }
+
+const ignore = () => {};
 
 export function ReviewBoard({
 	orgId,
@@ -65,6 +69,7 @@ export function ReviewBoard({
 	sendoutNanoId,
 	sendoutTalentIds,
 	canUseTalentSearch,
+	canDecide = true,
 	viewerIsPlatformAdmin = false,
 }: ReviewBoardProps) {
 	const [selectedRoleId, setSelectedRoleId] = useState<string | undefined>(
@@ -197,9 +202,9 @@ export function ReviewBoard({
 		selected: board.selected,
 		enabled: !isMobile && !anyModalOpen,
 		panelOpen: !!board.panel || !!board.maybeItem,
-		onIntro: board.openIntro,
-		onOpenPass: board.openPass,
-		onMaybe: board.openMaybe,
+		onIntro: canDecide ? board.openIntro : ignore,
+		onOpenPass: canDecide ? board.openPass : ignore,
+		onMaybe: canDecide ? board.openMaybe : undefined,
 		onKey: handleScreenKey,
 		onSelectPrev: board.selectPrev,
 		onSelectNext: board.selectNext,
@@ -225,7 +230,19 @@ export function ReviewBoard({
 						)}
 					</div>
 
-					{reviewView === "passed" ? (
+					{board.loadFailed ? (
+						<EmptyState
+							live
+							icon={<Coffee />}
+							heading="Our server is on a coffee break"
+							description="Your candidates are safe and nothing you decided is lost. We'll try again on our own."
+							actions={
+								<Button variant="ghost" onClick={() => board.retryLoad()}>
+									Try now
+								</Button>
+							}
+						/>
+					) : reviewView === "passed" ? (
 						<PassedView orgId={orgId} selectedRoleId={selectedRoleId} viewerIsPlatformAdmin={viewerIsPlatformAdmin} />
 					) : board.isSwitching ? (
 						<ReviewBoardGridSkeleton />
@@ -311,8 +328,8 @@ export function ReviewBoard({
 												onSelect={handleSelect}
 												onOpen={isMobile ? undefined : handleOpen}
 												onPrefetch={handlePrefetch}
-												onIntro={isMobile ? undefined : handleListIntro}
-												onPass={isMobile ? undefined : handleListPass}
+												onIntro={isMobile || !canDecide ? undefined : handleListIntro}
+												onPass={isMobile || !canDecide ? undefined : handleListPass}
 												isPending={board.isPending}
 												isFailed={board.isFailed}
 												onRetry={board.retry}
@@ -332,12 +349,13 @@ export function ReviewBoard({
 											orgId={orgId}
 											selectedRoleId={selectedRoleId}
 											viewerIsPlatformAdmin={viewerIsPlatformAdmin}
+											canDecide={canDecide}
 											expanded={fullProfile}
 											onExpandedChange={setFullProfile}
 										/>
 									</div>
 									<div className="flex justify-end">
-										<ReviewShortcutsHelp open={helpOpen} onOpenChange={setHelpOpen} />
+										<ReviewShortcutsHelp open={helpOpen} onOpenChange={setHelpOpen} canDecide={canDecide} />
 									</div>
 								</div>
 							)}
@@ -347,6 +365,7 @@ export function ReviewBoard({
 
 				<ReviewMobileSheet
 					orgId={orgId}
+					canDecide={canDecide}
 					talent={mobileTalent}
 					open={!!mobileTalent && isMobile}
 					isPending={mobileTalent ? board.isPending(mobileTalent) : false}

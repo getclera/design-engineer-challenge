@@ -39,11 +39,13 @@ const GROUPS: [string, [string[], string][]][] = [
 
 interface ReviewShortcutsHelpProps {
 	open: boolean;
+	/** Viewers only get the "Move around" keys. */
+	canDecide: boolean;
 	onOpenChange: (open: boolean) => void;
 }
 
 /** Round "?" in the deck's corner: all keyboard shortcuts, plus a one-time tip that they exist. */
-export function ReviewShortcutsHelp({ open, onOpenChange }: ReviewShortcutsHelpProps) {
+export function ReviewShortcutsHelp({ open, onOpenChange, canDecide }: ReviewShortcutsHelpProps) {
 	const [showTip, setShowTip] = useState(false);
 	useEffect(() => {
 		try {
@@ -56,6 +58,10 @@ export function ReviewShortcutsHelp({ open, onOpenChange }: ReviewShortcutsHelpP
 			localStorage.setItem(TIP_SEEN_KEY, "1");
 		} catch {}
 	};
+	// Opening the shortcuts (button or "?") means the tip did its job.
+	useEffect(() => {
+		if (open) dismissTip();
+	}, [open]);
 
 	return (
 		<div className="flex items-center gap-2">
@@ -69,10 +75,7 @@ export function ReviewShortcutsHelp({ open, onOpenChange }: ReviewShortcutsHelpP
 			)}
 			<Popover
 				open={open}
-				onOpenChange={(next) => {
-					onOpenChange(next);
-					if (next) dismissTip();
-				}}
+				onOpenChange={onOpenChange}
 			>
 				<PopoverTrigger asChild>
 					<Button
@@ -89,7 +92,7 @@ export function ReviewShortcutsHelp({ open, onOpenChange }: ReviewShortcutsHelpP
 						<p className="font-v2-heading font-medium text-sm text-v2-text-primary">Keyboard shortcuts</p>
 						<Kbd>Esc</Kbd>
 					</div>
-					{GROUPS.map(([group, rows]) => (
+					{GROUPS.slice(canDecide ? 0 : 2).map(([group, rows]) => (
 						<section key={group} className="pt-3">
 							<h3 className="pb-1 font-v2-body font-medium text-2xs text-v2-text-muted uppercase tracking-wider">
 								{group}

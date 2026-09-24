@@ -61,7 +61,7 @@ async function OrgReviewContent({
 	const roleId = role === "all" ? undefined : role;
 	const queryClient = new QueryClient({ defaultOptions: { queries: { staleTime: Number.POSITIVE_INFINITY } } });
 
-	const [sendoutScope, { canUseTalentSearch }] = await Promise.all([
+	const [sendoutScope, { canUseTalentSearch, viewerOrgRole }] = await Promise.all([
 		sendout ? loadSendoutScope({ orgId, nanoId: sendout }) : null,
 		loadOrgShell({ orgId }),
 	]);
@@ -85,6 +85,7 @@ async function OrgReviewContent({
 					sendoutNanoId={sendoutScope ? sendout : undefined}
 					sendoutTalentIds={sendoutScope?.talentIds}
 					canUseTalentSearch={canUseTalentSearch}
+					canDecide={viewerOrgRole !== "viewer"}
 					viewerIsPlatformAdmin={viewerIsPlatformAdmin}
 				/>
 			</AdminPageShell>

@@ -4,10 +4,12 @@ import { TalentDecisionActionBar } from "@v2/features/org-shared-cards";
 import { OrgTalentProfileSheet } from "@v2/features/org-talent-profile";
 import { ReviewDecisionPopover } from "./review-decision-popover";
 import { ReviewMaybeButton } from "./review-maybe-button";
+import { ReviewViewOnlyNote } from "./review-view-only-note";
 import { type ReviewItem, streamOf } from "./types";
 
 interface ReviewMobileSheetProps {
 	orgId: string;
+	canDecide: boolean;
 	talent: ReviewItem | null;
 	open: boolean;
 	isPending: boolean;
@@ -18,6 +20,7 @@ interface ReviewMobileSheetProps {
 
 export function ReviewMobileSheet({
 	orgId,
+	canDecide,
 	talent,
 	open,
 	isPending,
@@ -37,7 +40,10 @@ export function ReviewMobileSheet({
 			surface="review"
 			trackingSource={talent?.source ?? null}
 			footer={
-				talent && (
+				talent &&
+				(!canDecide ? (
+					<ReviewViewOnlyNote />
+				) : (
 					<ReviewDecisionPopover orgId={orgId}>
 						<div>
 							<TalentDecisionActionBar
@@ -49,7 +55,7 @@ export function ReviewMobileSheet({
 							/>
 						</div>
 					</ReviewDecisionPopover>
-				)
+				))
 			}
 		/>
 	);

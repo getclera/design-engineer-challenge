@@ -8,18 +8,21 @@ import { TalentBoardDetailPane, TalentDecisionActionBar } from "@v2/features/org
 import { cn } from "@v2/lib/utils";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { AdminPassButton } from "./admin-pass-button";
+import { REVIEW_DECK_GHOST_CLASSES } from "./constants";
 import { useReviewBoardContext } from "./review-board-context";
 import { ReviewDecisionPopover } from "./review-decision-popover";
 import { ReviewFitReason } from "./review-fit-reason";
 import { ReviewHeaderMeta } from "./review-header-meta";
 import { ReviewMaybeButton } from "./review-maybe-button";
 import { ReviewProfileShell } from "./review-profile-shell";
+import { ReviewViewOnlyNote } from "./review-view-only-note";
 import { reviewItemKey, streamOf } from "./types";
 
 interface ReviewDeckStageProps {
 	orgId: string;
 	selectedRoleId: string | undefined;
 	viewerIsPlatformAdmin?: boolean;
+	canDecide: boolean;
 	/** Full profile open (Space); owned by the board so the keyboard can toggle it. */
 	expanded: boolean;
 	onExpandedChange: (expanded: boolean) => void;
@@ -41,6 +44,7 @@ export function ReviewDeckStage({
 	orgId,
 	selectedRoleId,
 	viewerIsPlatformAdmin = false,
+	canDecide,
 	expanded,
 	onExpandedChange,
 }: ReviewDeckStageProps) {
@@ -53,10 +57,7 @@ export function ReviewDeckStage({
 	return (
 		<div className={cn("relative", expanded && "h-full")}>
 			{board.items.length > 1 && (
-				<div
-					aria-hidden="true"
-					className="absolute inset-x-3 top-3 -bottom-2 rounded-v2-lg border border-v2-border-warm bg-v2-bg-card"
-				/>
+				<div aria-hidden="true" className={REVIEW_DECK_GHOST_CLASSES} />
 			)}
 			<AnimatePresence initial={false} mode="popLayout" custom={board.lastMove}>
 				<motion.div
@@ -115,7 +116,10 @@ export function ReviewDeckStage({
 							}
 							fallback={item ? <ReviewProfileShell item={item} /> : null}
 							footer={
-								item && (
+								item &&
+								(!canDecide ? (
+									<ReviewViewOnlyNote />
+								) : (
 									<ReviewDecisionPopover orgId={orgId}>
 										<div>
 											<TalentDecisionActionBar
@@ -132,7 +136,7 @@ export function ReviewDeckStage({
 											/>
 										</div>
 									</ReviewDecisionPopover>
-								)
+								))
 							}
 						/>
 					</Card>
