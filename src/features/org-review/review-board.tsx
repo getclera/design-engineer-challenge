@@ -42,7 +42,7 @@ import { ReviewScopeBar } from "./review-scope-bar";
 import { ReviewShortcutsHelp } from "./review-shortcuts-help";
 import { ReviewStreamFilter } from "./review-stream-filter";
 import { parseReviewStreams, serializeReviewStreams, setReviewUrlParams } from "./review-url";
-import { type ReviewItem, type ReviewStream, reviewItemKey } from "./types";
+import type { ReviewItem, ReviewStream } from "./types";
 
 interface ReviewBoardProps {
 	orgId: string;

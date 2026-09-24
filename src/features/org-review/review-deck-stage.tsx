@@ -141,7 +141,13 @@ export function ReviewDeckStage({
 												isPending={board.isPending(item)}
 												onInterview={() => board.openIntro(item)}
 												onPass={() => board.openPass(item)}
-												middleAction={<ReviewMaybeButton item={item} isPending={board.isPending(item)} />}
+												middleAction={
+														<ReviewMaybeButton
+															item={item}
+															isPending={board.isPending(item)}
+															disabled={decisionsInSheet}
+														/>
+													}
 												leadingAction={
 													viewerIsPlatformAdmin ? (
 														<AdminPassButton orgId={orgId} item={item} roleId={selectedRoleId} iconOnly />

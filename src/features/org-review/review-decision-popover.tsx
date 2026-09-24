@@ -152,7 +152,10 @@ function DecisionOptions({ title, options, initial, withText, back, onBack, onCh
 				e.preventDefault();
 				onChoose(options[digit - 1]);
 			} else if (withText && e.key.length === 1) {
-				inputRef.current?.focus(); // typing starts the "something else" answer
+				// Typing starts the "something else" answer; keep the first letter too.
+				e.preventDefault();
+				setText((t) => t + e.key);
+				inputRef.current?.focus();
 			}
 		};
 		window.addEventListener("keydown", onKey);

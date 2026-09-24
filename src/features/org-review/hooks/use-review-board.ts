@@ -2,13 +2,12 @@
 
 import { HELD_ACTION_WINDOW_MS, useHeldAction, useTalentImpressions } from "@v2/features/org-shared-cards";
 import { useDeferredEntityChips } from "@v2/hooks/use-deferred-entity-chips";
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { orgTalents } from "@/services/api/org-talents";
 import { isHmLinkWarningSuppressed } from "../hm-warning-cookie";
 import {
 	REVIEW_STREAMS,
-	type ReviewBucketCounts,
 	type ReviewItem,
 	type ReviewListData,
 	type ReviewStream,
@@ -65,8 +64,6 @@ export function useReviewBoard(
 	const [lastMove, setLastMove] = useState<"pass" | "intro" | "maybe" | null>(null);
 	const [maybeItem, setMaybeItem] = useState<ReviewItem | null>(null);
 	const rolePickerItem = rolePicker?.item ?? null;
-
-	const panelTextRef = useRef("");
 
 	const countReviewed = useCallback(() => setReviewedCount((c) => c + 1), []);
 	const uncountReviewed = useCallback(() => setReviewedCount((c) => Math.max(0, c - 1)), []);
@@ -153,10 +150,6 @@ export function useReviewBoard(
 		"review",
 		useMemo(() => ({ roleId, streams }), [roleId, streams]),
 	);
-	const counts: ReviewBucketCounts = useMemo(
-		() => data?.counts ?? { all: 0, intro_request: 0, role_specific: 0, weekly_drop: 0, public_drop: 0 },
-		[data],
-	);
 	const selected = useMemo(
 		() => items.find((i) => reviewItemKey(i) === selectedKey) ?? items[0] ?? null,
 		[items, selectedKey],
@@ -226,7 +219,6 @@ export function useReviewBoard(
 				return;
 			}
 			flushHeldIntro();
-			panelTextRef.current = "";
 			setPanel({ mode: "intro", item });
 		},
 		[readinessFor, flushHeldIntro],
@@ -235,7 +227,6 @@ export function useReviewBoard(
 	const openPass = useCallback(
 		(item: ReviewItem) => {
 			flushHeldIntro();
-			panelTextRef.current = "";
 			if (item.roleId) setPanel({ mode: "pass", item });
 			else setRolePicker({ item, action: "pass" });
 		},
@@ -248,7 +239,7 @@ export function useReviewBoard(
 			commitIntro(panel.item, {
 				roleIdOverride: panel.roleIdOverride,
 				category: args.category,
-				text: args.text ?? (panelTextRef.current.trim() || undefined),
+				text: args.text,
 			});
 		},
 		[panel, commitIntro],
@@ -258,7 +249,6 @@ export function useReviewBoard(
 		(roleIdChoice: string) => {
 			if (!rolePicker) return;
 			if (rolePicker.action === "pass") {
-				panelTextRef.current = "";
 				setPanel({ mode: "pass", item: rolePicker.item, roleIdOverride: roleIdChoice });
 				setRolePicker(null);
 				return;
@@ -275,7 +265,6 @@ export function useReviewBoard(
 				});
 				return;
 			}
-			panelTextRef.current = "";
 			setPanel({ mode: "intro", item: rolePicker.item, roleIdOverride: roleIdChoice });
 			setRolePicker(null);
 		},
@@ -286,7 +275,6 @@ export function useReviewBoard(
 		if (!hmWarning) return;
 		const { item, roleIdChoice } = hmWarning;
 		setHmWarning(null);
-		panelTextRef.current = "";
 		setPanel({ mode: "intro", item, roleIdOverride: roleIdChoice });
 	}, [hmWarning]);
 
@@ -311,10 +299,6 @@ export function useReviewBoard(
 		},
 		[panel, mutate, advance, countReviewed, similarTo],
 	);
-
-	const setPanelText = useCallback((text: string) => {
-		panelTextRef.current = text;
-	}, []);
 
 	const dismissPanel = useCallback(() => setPanel(null), []);
 
@@ -413,17 +397,14 @@ export function useReviewBoard(
 		confirmRolePicker,
 		confirmPass,
 		confirmIntro,
-		setPanelText,
 		dismissPanel,
 		backToRole,
 		maybeItem,
 		openMaybe,
 		confirmMaybe,
 		closeMaybe: () => setMaybeItem(null),
-		flushHeldIntro,
 		selectPrev,
 		selectNext,
-		counts,
 		byRole: data?.byRole ?? EMPTY_BY_ROLE,
 		pausedPending: data?.pausedPending ?? EMPTY_PAUSED_PENDING,
 		feedTalentIds,

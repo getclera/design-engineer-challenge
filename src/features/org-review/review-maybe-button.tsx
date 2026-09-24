@@ -12,10 +12,19 @@ import { useReviewBoardContext } from "./review-board-context";
 import { type ReviewItem, reviewItemKey } from "./types";
 
 /** "Maybe" for the decision bar: parks the person with an optional note, in a popup centred on the button. */
-export function ReviewMaybeButton({ item, isPending }: { item: ReviewItem; isPending: boolean }) {
+export function ReviewMaybeButton({
+	item,
+	isPending,
+	disabled = false,
+}: {
+	item: ReviewItem;
+	isPending: boolean;
+	/** Another copy (the phone sheet) owns the popup right now. */
+	disabled?: boolean;
+}) {
 	const board = useReviewBoardContext();
 	const showHint = useMediaQuery("(min-width: 1024px)");
-	const open = !!board.maybeItem && reviewItemKey(board.maybeItem) === reviewItemKey(item);
+	const open = !disabled && !!board.maybeItem && reviewItemKey(board.maybeItem) === reviewItemKey(item);
 
 	return (
 		<Popover open={open} onOpenChange={(next) => (next ? board.openMaybe(item) : board.closeMaybe())}>
