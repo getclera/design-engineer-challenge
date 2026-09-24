@@ -34,6 +34,8 @@ export function useTalentDecisionKeyboard<TItem>({
 				return;
 			}
 			if (e.metaKey || e.ctrlKey || e.altKey) return;
+			// Space on a focused button presses that button; don't also toggle the screen.
+			if (e.key === " " && el instanceof Element && el.closest("button,a,[role=button],summary")) return;
 			if (onKey?.(e.key)) {
 				e.preventDefault();
 				return;

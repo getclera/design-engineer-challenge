@@ -1,6 +1,6 @@
 "use client";
 
-import { PaperPlaneTilt, X } from "@phosphor-icons/react";
+import { PaperPlaneTilt } from "@phosphor-icons/react";
 import { Button } from "@v2/components/ui/button";
 import { useMediaQuery } from "@v2/hooks/use-media-query";
 import type { ReactNode } from "react";
@@ -35,7 +35,7 @@ export function TalentDecisionActionBar({
 			{leadingAction}
 			<TalentDecisionTooltip label="Not a fit for this role. Moves to Passed, undo anytime.">
 				<Button variant="ghost" className="flex-2 gap-1.5" disabled={isPending} onClick={onPass}>
-					{showHints ? <span className={KBD}>←</span> : <X size={16} weight="bold" />}
+					{showHints && <span className={KBD}>←</span>}
 					Pass
 				</Button>
 			</TalentDecisionTooltip>

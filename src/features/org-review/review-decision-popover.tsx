@@ -146,7 +146,8 @@ function DecisionOptions({ title, options, initial, withText, back, onBack, onCh
 	useEffect(() => {
 		const onKey = (e: KeyboardEvent) => {
 			if (e.target === inputRef.current || e.metaKey || e.ctrlKey || e.altKey) return;
-			const digit = Number.parseInt(e.key, 10);
+			// The physical key, so Shift+1 still picks option 1.
+			const digit = Number(/^Digit([1-9])$/.exec(e.code)?.[1]);
 			if (e.key === "ArrowDown" || e.key === "ArrowUp") {
 				e.preventDefault();
 				setHl((h) => (h + (e.key === "ArrowDown" ? 1 : options.length - 1)) % options.length);
