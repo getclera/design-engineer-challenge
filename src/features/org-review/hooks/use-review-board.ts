@@ -58,6 +58,8 @@ export function useReviewBoard(
 	const { readinessFor } = useRoleIntroReadiness(orgId);
 	const [streams, setStreams] = useState<ReviewStream[]>(initialStreams ?? [...REVIEW_STREAMS]);
 	const [reviewedCount, setReviewedCount] = useState(0);
+	// Which way the deck card leaves: the last decision taken.
+	const [lastMove, setLastMove] = useState<"pass" | "intro" | null>(null);
 	const rolePickerItem = rolePicker?.item ?? null;
 
 	const panelTextRef = useRef("");
@@ -181,6 +183,7 @@ export function useReviewBoard(
 				text: args.text ?? null,
 			});
 			countReviewed();
+			setLastMove("intro");
 			advance(item);
 			startFollowThrough(item, args.roleIdOverride);
 			setPanel(null);
@@ -290,6 +293,7 @@ export function useReviewBoard(
 				roleIdOverride,
 			});
 			countReviewed();
+			setLastMove("pass");
 			advance(item);
 			setPanel(null);
 		},
@@ -305,6 +309,7 @@ export function useReviewBoard(
 	const selectItem = useCallback(
 		(item: ReviewItem) => {
 			clearFollowThrough();
+			setLastMove(null);
 			setSelectedKey(reviewItemKey(item));
 			orgTalents.recordTalentView(orgId, { talentId: item.talentId, source: "review" }).catch(() => {});
 		},
@@ -333,6 +338,7 @@ export function useReviewBoard(
 		onCardSeen,
 		selected,
 		selectedKey: selected ? reviewItemKey(selected) : null,
+		lastMove,
 		isPending,
 		selectItem,
 		panel,

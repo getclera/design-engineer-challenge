@@ -3,6 +3,7 @@
 import { X } from "@phosphor-icons/react";
 import { Button } from "@v2/components/ui/button";
 import { DialogOverlay } from "@v2/components/ui/dialog";
+import { Kbd } from "@v2/components/ui/kbd";
 import { cn } from "@v2/lib/utils";
 import { Dialog as DialogPrimitive, VisuallyHidden } from "radix-ui";
 import { type ReactNode, useCallback } from "react";
@@ -44,9 +45,7 @@ function DetailSheet({ open, onOpenChange, title, a11yTitle, children, footer, c
 							className="flex size-auto items-center gap-1 rounded-v2-md p-1.5 text-v2-text-secondary hover:bg-v2-bg-input-solid"
 							aria-label="Close"
 						>
-							<span className="hidden rounded bg-v2-bg-input-solid px-1.5 py-0.5 font-medium text-2xs text-v2-text-tertiary md:inline-flex">
-								Esc
-							</span>
+							<Kbd className="hidden bg-v2-bg-input-solid md:inline-flex">Esc</Kbd>
 							<X size={16} />
 						</Button>
 					</div>

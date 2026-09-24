@@ -18,6 +18,7 @@ interface TalentBoardDetailPaneProps {
 	footer?: ReactNode;
 	emptyHeading?: string;
 	emptyDescription?: string;
+	compact?: boolean;
 }
 
 function TalentBoardDetailPane({
@@ -32,6 +33,7 @@ function TalentBoardDetailPane({
 	footer,
 	emptyHeading = "Select a candidate",
 	emptyDescription = "Pick someone on the left to see their full profile here.",
+	compact,
 }: TalentBoardDetailPaneProps) {
 	const { data: bundle, isError } = useOrgTalentProfile(orgId, talentId ?? "");
 
@@ -51,6 +53,7 @@ function TalentBoardDetailPane({
 						tracking={tracking}
 						aboveHeader={profileMeta}
 						belowFacts={profileBelowFacts}
+						compact={compact}
 					/>
 				) : isError ? (
 					<EmptyState heading="Could not load profile" description="Something went wrong. Please try again." />

@@ -18,7 +18,6 @@ import {
 	REVIEW_BOARD_GRID_CLASSES,
 	REVIEW_CONTROL_BAR_CLASSES,
 	REVIEW_LEFT_CARD_CLASSES,
-	REVIEW_RIGHT_CARD_CLASSES,
 } from "./constants";
 import { HmRequiredModal } from "./hm-required-modal";
 import { useDefaultReviewRole } from "./hooks/use-default-review-role";
@@ -29,12 +28,12 @@ import { PassedView } from "./passed-view";
 import { ReviewBoardProvider } from "./review-board-context";
 import { ReviewBoardGridSkeleton } from "./review-board-grid-skeleton";
 import { ReviewBoardSkeleton } from "./review-board-skeleton";
+import { ReviewDeckStage } from "./review-deck-stage";
 import { ReviewEmpty } from "./review-empty";
 import { ReviewHeader } from "./review-header";
 import { ReviewIncomingToggle } from "./review-incoming-toggle";
 import { ReviewLeftList } from "./review-left-list";
 import { ReviewMobileSheet } from "./review-mobile-sheet";
-import { ReviewRightPane } from "./review-right-pane";
 import { ReviewRoleFilter } from "./review-role-filter";
 import { ReviewScopeBar } from "./review-scope-bar";
 import { ReviewStreamFilter } from "./review-stream-filter";
@@ -270,13 +269,13 @@ export function ReviewBoard({
 									)}
 								</div>
 							</Card>
-							<Card className={REVIEW_RIGHT_CARD_CLASSES}>
-								<ReviewRightPane
+							<div className="hidden min-h-0 lg:block">
+								<ReviewDeckStage
 									orgId={orgId}
 									selectedRoleId={selectedRoleId}
 									viewerIsPlatformAdmin={viewerIsPlatformAdmin}
 								/>
-							</Card>
+							</div>
 						</div>
 					)}
 				</div>

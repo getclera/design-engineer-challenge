@@ -121,6 +121,8 @@ interface TalentProfileContentProps {
 	tracking?: OrgTalentTracking;
 	aboveHeader?: ReactNode;
 	belowFacts?: ReactNode;
+	/** Only the identity card (header, facts, belowFacts); the review deck's card front. */
+	compact?: boolean;
 }
 
 function TalentProfileContent({
@@ -131,6 +133,7 @@ function TalentProfileContent({
 	tracking,
 	aboveHeader,
 	belowFacts,
+	compact = false,
 }: TalentProfileContentProps) {
 	const { header, mergedProfile, preferences } = bundle;
 
@@ -183,25 +186,29 @@ function TalentProfileContent({
 				{belowFacts}
 			</Card>
 
-			<ExperienceCard
-				talentId={header.id}
-				experiences={mergedProfile.experiences.map(toProfileExperience)}
-				yearsExperience={header.yearsExperience}
-				showYoeInternals={false}
-				showRecalculate={false}
-			/>
+			{!compact && (
+				<>
+					<ExperienceCard
+						talentId={header.id}
+						experiences={mergedProfile.experiences.map(toProfileExperience)}
+						yearsExperience={header.yearsExperience}
+						showYoeInternals={false}
+						showRecalculate={false}
+					/>
 
-			<EducationCard education={mergedProfile.education.map(toProfileEducation)} />
+					<EducationCard education={mergedProfile.education.map(toProfileEducation)} />
 
-			<PreferencesOverviewCard data={preferences} visaDetails={preferences.visaDetails} />
+					<PreferencesOverviewCard data={preferences} visaDetails={preferences.visaDetails} />
 
-			<ResumeCard talentId={header.id} scope={header.resumeScope} />
+					<ResumeCard talentId={header.id} scope={header.resumeScope} />
 
-			<SkillsCard skills={mergedProfile.skills.map(toProfileSkill)} />
+					<SkillsCard skills={mergedProfile.skills.map(toProfileSkill)} />
 
-			<LanguagesCard languages={mergedProfile.languages.map(toProfileLanguage)} />
+					<LanguagesCard languages={mergedProfile.languages.map(toProfileLanguage)} />
 
-			<SecondarySectionsCard certifications={mergedProfile.certifications} />
+					<SecondarySectionsCard certifications={mergedProfile.certifications} />
+				</>
+			)}
 		</div>
 	);
 }
