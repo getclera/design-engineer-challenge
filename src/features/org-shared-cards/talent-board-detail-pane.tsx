@@ -1,6 +1,7 @@
 "use client";
 
 import { EmptyState } from "@v2/components/data-display";
+import { Button } from "@v2/components/ui/button";
 import type { OrgTalentTracking } from "@v2/components/tracking";
 import { useOrgTalentProfile } from "@v2/features/org-talent-profile";
 import { TalentProfileContent } from "@v2/features/talent-profile";
@@ -35,7 +36,7 @@ function TalentBoardDetailPane({
 	emptyDescription = "Pick someone on the left to see their full profile here.",
 	compact,
 }: TalentBoardDetailPaneProps) {
-	const { data: bundle, isError } = useOrgTalentProfile(orgId, talentId ?? "");
+	const { data: bundle, isError, refetch, isRefetching } = useOrgTalentProfile(orgId, talentId ?? "");
 
 	if (!talentId) {
 		return <EmptyState heading={emptyHeading} description={emptyDescription} />;
@@ -56,7 +57,15 @@ function TalentBoardDetailPane({
 						compact={compact}
 					/>
 				) : isError ? (
-					<EmptyState heading="Could not load profile" description="Something went wrong. Please try again." />
+					<EmptyState
+						heading="Could not load profile"
+						description="Something went wrong. Please try again."
+						actions={
+							<Button variant="ghost" size="sm" disabled={isRefetching} onClick={() => refetch()}>
+								Try again
+							</Button>
+						}
+					/>
 				) : (
 					fallback
 				)}

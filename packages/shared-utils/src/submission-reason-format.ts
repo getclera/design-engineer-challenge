@@ -72,7 +72,6 @@ export function extractFitReasonHook(input: string | null | undefined): string |
 	if (!input) return null;
 	const normalized = input.replace(/\\n/g, "\n");
 	if (!normalized.trim()) return null;
-	if (!normalized.includes("\n")) return null;
 
 	const stripped = stripSlackMrkdwn(firstBlockOf(normalized)).trim();
 	if (!stripped) return null;
