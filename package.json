@@ -11,6 +11,7 @@
   },
   "dependencies": {
     "@hookform/resolvers": "^5.4.0",
+    "@outpacelabs/avatars": "^0.6.0",
     "@phosphor-icons/react": "^2.1.10",
     "@tanstack/react-query": "^5.101.4",
     "@tanstack/react-virtual": "^3.14.11",

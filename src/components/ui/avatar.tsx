@@ -1,8 +1,9 @@
 "use client";
 
+import { GradientAvatar } from "@outpacelabs/avatars";
 import { User } from "@phosphor-icons/react";
 import { cn } from "@v2/lib/utils";
-import { getInitials, optimizedImageUrl } from "@v2/utils/format";
+import { optimizedImageUrl } from "@v2/utils/format";
 import { cva, type VariantProps } from "class-variance-authority";
 import { Avatar as AvatarPrimitive } from "radix-ui";
 import * as React from "react";
@@ -75,9 +76,14 @@ interface UserAvatarProps extends VariantProps<typeof avatarVariants> {
 
 const UserAvatar = React.forwardRef<HTMLSpanElement, UserAvatarProps>(
 	({ src, name, size, className, fallbackClassName, fallback, alt = "" }, ref) => {
-		const initials = name ? getInitials(name) : "";
+		// No photo (or it failed): a generated dither avatar, stable per person, instead of grey initials.
 		const fallbackContent =
-			fallback ?? (initials || <User weight="fill" className="size-1/2 opacity-60" aria-hidden="true" />);
+			fallback ??
+			(name ? (
+				<GradientAvatar seed={name} size={40} pattern="dither" className="size-full" />
+			) : (
+				<User weight="fill" className="size-1/2 opacity-60" aria-hidden="true" />
+			));
 		const decorative = alt === "";
 		return (
 			<Avatar ref={ref} size={size} className={className}>
