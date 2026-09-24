@@ -194,12 +194,13 @@ export function ReviewBoard({
 		if (key === " ") setFullProfile((open) => !open);
 		else if (key === "l" || key === "L") setListHidden((hidden) => !hidden);
 		else if (key === "?") setHelpOpen((open) => !open);
+		else if (canDecide && (key === "z" || key === "Z")) board.undoLast();
 		// Viewers can't decide, so ←/→ just move between people.
 		else if (!canDecide && key === "ArrowRight") board.selectNext();
 		else if (!canDecide && key === "ArrowLeft") board.selectPrev();
 		else return false;
 		return true;
-	}, [canDecide, board.selectNext, board.selectPrev]);
+	}, [canDecide, board.selectNext, board.selectPrev, board.undoLast]);
 
 	const anyModalOpen = !!board.rolePickerItem || board.hmWarningOpen;
 	useTalentDecisionKeyboard({
@@ -226,6 +227,19 @@ export function ReviewBoard({
 		<ReviewBoardProvider value={board}>
 			<TooltipProvider delayDuration={150}>
 				<div className="flex flex-col gap-3">
+					{/* No positioned parent up to <main>, so the tab hangs on the app sidebar's edge, mid-screen. */}
+					{listHidden && !isMobile && (
+						<Button
+							variant="unstyled"
+							size="unstyled"
+							aria-label="Show list"
+							title="Show list (L)"
+							onClick={() => setListHidden(false)}
+							className="focus-ring absolute top-1/2 left-0 z-10 grid h-18 w-5.5 -translate-y-1/2 place-items-center rounded-r-v2-lg border border-v2-border-default border-l-0 bg-v2-bg-card text-v2-text-tertiary shadow-v2-content transition-[width] hover:w-7 hover:text-v2-text-primary"
+						>
+							<CaretRight size={16} />
+						</Button>
+					)}
 					<div className={REVIEW_CONTROL_BAR_CLASSES}>
 						<ReviewIncomingToggle view={reviewView} onChange={handleViewChange} />
 						<ReviewRoleFilter orgId={orgId} roleId={selectedRoleId} byRole={board.byRole} onChange={handleRoleChange} />
@@ -344,23 +358,16 @@ export function ReviewBoard({
 												onCardSeen={board.onCardSeen}
 											/>
 										)}
+										{reviewView === "unreviewed" && board.truncated && board.items.length > 0 && (
+											<p className="px-4 py-3 text-center font-v2-body text-v2-text-tertiary text-xs">
+												More arrive when you clear these
+											</p>
+										)}
 									</div>
 								</Card>
 							)}
 							{!(isMobile && mobileList) && (
-								<div className="relative flex min-h-0 flex-col gap-2">
-									{listHidden && !isMobile && (
-										<Button
-											variant="unstyled"
-											size="unstyled"
-											aria-label="Show list"
-											title="Show list (L)"
-											onClick={() => setListHidden(false)}
-											className="focus-ring absolute top-1/2 left-0 z-10 grid h-18 w-5.5 -translate-y-1/2 place-items-center rounded-r-v2-lg border border-v2-border-default border-l-0 bg-v2-bg-card text-v2-text-tertiary shadow-v2-content transition-[width] hover:w-7 hover:text-v2-text-primary"
-										>
-											<CaretRight size={16} />
-										</Button>
-									)}
+								<div className="flex min-h-0 flex-col gap-2">
 									<div className="min-h-0 flex-1">
 										<ReviewDeckStage
 											orgId={orgId}

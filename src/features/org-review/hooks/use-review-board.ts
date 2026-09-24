@@ -2,7 +2,9 @@
 
 import { HELD_ACTION_WINDOW_MS, useHeldAction, useTalentImpressions } from "@v2/features/org-shared-cards";
 import { useDeferredEntityChips } from "@v2/hooks/use-deferred-entity-chips";
-import { useCallback, useMemo, useState } from "react";
+import { useRolesList } from "@v2/features/org-roles";
+import { INTRO_DECISION_CATEGORIES, PASS_DECISION_CATEGORIES } from "@v2/features/org-shared-modals";
+import { type CSSProperties, useCallback, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { orgTalents } from "@/services/api/org-talents";
 import { isHmLinkWarningSuppressed } from "../hm-warning-cookie";
@@ -15,7 +17,7 @@ import {
 	streamOf,
 } from "../types";
 import { useReverseReviewPass } from "./use-reverse-review-pass";
-import { type ReviewPassedToast, useReviewAction } from "./use-review-action";
+import { useReviewAction } from "./use-review-action";
 import { useReviewItems } from "./use-review-items";
 import { useRoleIntroReadiness } from "./use-role-intro-readiness";
 import { useSimilarFollowThrough } from "./use-similar-follow-through";
@@ -25,6 +27,12 @@ export type ReviewPanelState = { mode: "pass" | "intro"; item: ReviewItem; roleI
 
 const EMPTY_BY_ROLE: ReviewListData["byRole"] = {};
 const EMPTY_PAUSED_PENDING: ReviewListData["pausedPending"] = {};
+
+const firstNameOf = (item: ReviewItem) => item.talentName.split(" ")[0] || item.talentName;
+const reasonLabel = (categories: { id: string; label: string }[], args: { category?: string; text?: string }) =>
+	args.text?.trim() || categories.find((c) => c.id === args.category)?.label;
+/** "Passed · Aiko · Not enough experience": the parts that exist, dot-separated. */
+const toastLine = (...parts: (string | false | undefined)[]) => parts.filter(Boolean).join(" · ");
 
 interface HeldIntro {
 	item: ReviewItem;
@@ -69,23 +77,32 @@ export function useReviewBoard(
 	const uncountReviewed = useCallback(() => setReviewedCount((c) => Math.max(0, c - 1)), []);
 
 	const reversePass = useReverseReviewPass(orgId, { onFailed: countReviewed });
-	const onPassed = useCallback(
-		({ toastId, item, opportunityId }: ReviewPassedToast) => {
-			toast.success(`Passed on ${item.talentName}`, {
-				id: toastId,
-				action: {
-					label: "Undo",
-					onClick: () => {
-						reversePass.mutate({ item, opportunityId });
-						setSelectedKey(reviewItemKey(item));
-						uncountReviewed();
-					},
-				},
-			});
-		},
-		[reversePass, uncountReviewed],
-	);
-	const { mutation, isPending, isFailed, retry } = useReviewAction(orgId, roleId, { onPassed, onFailed: uncountReviewed });
+	// Decision toasts: 5s with a countdown bar; Undo (or Z) reverses the latest one.
+	const undoRef = useRef<(() => void) | null>(null);
+	const undoToast = useCallback((id: string, message: string, undo: () => void) => {
+		const run = () => {
+			undoRef.current = null;
+			toast.dismiss(id);
+			undo();
+		};
+		undoRef.current = run;
+		const forget = () => {
+			if (undoRef.current === run) undoRef.current = null;
+		};
+		toast.success(message, {
+			id,
+			duration: HELD_ACTION_WINDOW_MS,
+			className: "toast-timer",
+			style: { "--toast-ms": `${HELD_ACTION_WINDOW_MS}ms` } as CSSProperties,
+			action: { label: "Undo", onClick: run },
+			onAutoClose: forget,
+			onDismiss: forget,
+		});
+	}, []);
+	const undoLast = useCallback(() => undoRef.current?.(), []);
+	const { data: roles } = useRolesList(orgId, false);
+
+	const { mutation, isPending, isFailed, retry } = useReviewAction(orgId, roleId, { onFailed: uncountReviewed });
 	const { mutate } = mutation;
 
 	const {
@@ -193,13 +210,20 @@ export function useReviewBoard(
 			if (pulled.length > 0) setSelectedKey(pulled[0]);
 			else advance(item);
 			setPanel(null);
-			toast.success("Intro requested", {
-				id: `held-intro:${reviewItemKey(item)}`,
-				duration: HELD_ACTION_WINDOW_MS,
-				action: { label: "Undo", onClick: () => undoHeldIntro(reviewItemKey(item)) },
-			});
+			const role = args.roleIdOverride && roles?.find((r) => r.id === args.roleIdOverride)?.position;
+			undoToast(
+				`held-intro:${reviewItemKey(item)}`,
+				toastLine(
+					"Intro requested",
+					firstNameOf(item),
+					reasonLabel(INTRO_DECISION_CATEGORIES, args),
+					role,
+					pulled.length > 0 && `${pulled.length} similar added`,
+				),
+				() => undoHeldIntro(reviewItemKey(item)),
+			);
 		},
-		[hold, undoHeldIntro, countReviewed, advance, pullSimilar, similarTo],
+		[hold, undoHeldIntro, countReviewed, advance, pullSimilar, similarTo, roles, undoToast],
 	);
 
 	const openIntro = useCallback(
@@ -296,8 +320,17 @@ export function useReviewBoard(
 			setLastMove("pass");
 			advance(item);
 			setPanel(null);
+			undoToast(
+				`review-action:${reviewItemKey(item)}`,
+				toastLine("Passed", firstNameOf(item), reasonLabel(PASS_DECISION_CATEGORIES, args)),
+				() => {
+					reversePass.mutate({ item, opportunityId: item.opportunityId });
+					setSelectedKey(reviewItemKey(item));
+					uncountReviewed();
+				},
+			);
 		},
-		[panel, mutate, advance, countReviewed, similarTo],
+		[panel, mutate, advance, countReviewed, similarTo, undoToast, reversePass, uncountReviewed],
 	);
 
 	const dismissPanel = useCallback(() => setPanel(null), []);
@@ -321,18 +354,12 @@ export function useReviewBoard(
 			setMaybeItem(null);
 			setLastMove("maybe");
 			advance(item);
-			toast.success(`Moved ${item.talentName.split(" ")[0]} to Maybe`, {
-				id: `review-action:${key}`,
-				action: {
-					label: "Undo",
-					onClick: () => {
-						reversePass.mutate({ item, opportunityId: item.opportunityId, action: "maybe" });
-						setSelectedKey(key);
-					},
-				},
+			undoToast(`review-action:${key}`, `Moved ${firstNameOf(item)} to Maybe`, () => {
+				reversePass.mutate({ item, opportunityId: item.opportunityId, action: "maybe" });
+				setSelectedKey(key);
 			});
 		},
-		[maybeItem, mutate, advance, reversePass],
+		[maybeItem, mutate, advance, reversePass, undoToast],
 	);
 
 	// From the reason step back to "Which role?" (only for people who came without a role).
@@ -364,6 +391,7 @@ export function useReviewBoard(
 	}, [items, selected, selectItem]);
 
 	return {
+		undoLast,
 		items,
 		truncated: data?.truncated ?? false,
 		isLoading,

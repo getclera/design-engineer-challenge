@@ -468,6 +468,29 @@
 	}
 }
 
+/* Countdown bar on a toast that sets --toast-ms; pauses with the toast on hover. */
+@utility toast-timer {
+	overflow: hidden;
+	&::after {
+		content: "";
+		position: absolute;
+		inset: auto 0 0 0;
+		height: 2px;
+		background: var(--v2-brand-teal);
+		transform-origin: left;
+		animation: toast-timer var(--toast-ms) linear forwards;
+	}
+	[data-sonner-toaster]:hover &::after {
+		animation-play-state: paused;
+	}
+}
+
+@keyframes toast-timer {
+	to {
+		transform: scaleX(0);
+	}
+}
+
 @utility gradient-v2-brand {
 	background-image: linear-gradient(to bottom, var(--v2-brand-teal), var(--v2-brand-teal-dark));
 }

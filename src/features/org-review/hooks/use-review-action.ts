@@ -26,14 +26,7 @@ interface ReviewActionPayload {
 	similarAnchorTalentId?: string;
 }
 
-export interface ReviewPassedToast {
-	toastId: string;
-	item: ReviewItem;
-	opportunityId: number;
-}
-
 interface ReviewActionCallbacks {
-	onPassed?: (args: ReviewPassedToast) => void;
 	onFailed?: () => void;
 }
 
@@ -90,7 +83,6 @@ export function useReviewAction(orgId: string, roleId?: string, callbacks?: Revi
 					? setMaybeInReviewFeed(queryClient, queryKey, item, { note: maybeNote ?? "" })
 					: removeFromReviewFeed(queryClient, queryKey, item);
 			const toastId = `review-action:${reviewItemKey(item)}`;
-			if (action === "pass") callbacks?.onPassed?.({ toastId, item, opportunityId: item.opportunityId });
 			return { previous, toastId };
 		},
 		onSuccess: (_data, { item, action, similarAnchorTalentId }) => {

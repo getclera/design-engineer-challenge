@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 
-export const HELD_ACTION_WINDOW_MS = 3_000;
+export const HELD_ACTION_WINDOW_MS = 5_000;
 
 export function useHeldAction<T>(commit: (payload: T) => void, windowMs: number = HELD_ACTION_WINDOW_MS) {
 	const [held, setHeld] = useState<T | null>(null);

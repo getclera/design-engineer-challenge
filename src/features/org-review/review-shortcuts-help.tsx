@@ -24,6 +24,7 @@ const GROUPS: [string, [string[], string][]][] = [
 			[["1–9"], "Pick a reason directly"],
 			[["↵"], "Confirm"],
 			[["Esc"], "Back a step or cancel"],
+				[["Z"], "Undo last decision"],
 		],
 	],
 	[

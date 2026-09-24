@@ -22,7 +22,9 @@ export function ReviewBoardGridSkeleton() {
 			</Card>
 
 			<div className="relative hidden self-start lg:block">
-				<div aria-hidden="true" className={REVIEW_DECK_GHOST_CLASSES} />
+				{REVIEW_DECK_GHOST_CLASSES.map((ghost) => (
+					<div key={ghost} aria-hidden="true" className={ghost} />
+				))}
 				<Card className="relative overflow-hidden p-0">
 					<div className="flex items-center gap-4 px-5 py-4">
 						<Skeleton className="size-16 shrink-0 rounded-full" />
