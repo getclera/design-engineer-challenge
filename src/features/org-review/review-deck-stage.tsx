@@ -46,6 +46,7 @@ export function ReviewDeckStage({ orgId, selectedRoleId, viewerIsPlatformAdmin =
 		setExpanded(false);
 	}
 	const reduceMotion = useReducedMotion();
+	const similar = item ? board.similarTo.get(key) : undefined;
 
 	return (
 		<div className={cn("relative", expanded && "h-full")}>
@@ -83,6 +84,16 @@ export function ReviewDeckStage({ orgId, selectedRoleId, viewerIsPlatformAdmin =
 							profileBelowFacts={
 								item ? (
 									<>
+										{similar && (
+											<div className="border-t border-v2-border-warm/50 px-4 py-2 sm:px-5">
+												<p className="font-v2-body text-2xs font-medium uppercase tracking-wider text-v2-text-muted">
+													Similar profiles to {similar.anchor.talentName.split(" ")[0]}
+												</p>
+												<p className="mt-1 font-v2-body text-xs font-light leading-snug text-v2-text-secondary">
+													{similar.reason}
+												</p>
+											</div>
+										)}
 										<ReviewFitReason reason={item.fitReason} />
 										<div className="flex justify-end border-t border-v2-border-warm/50 px-4 py-1.5 sm:px-5">
 											<Button

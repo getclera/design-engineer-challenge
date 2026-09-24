@@ -20,6 +20,7 @@ import { type ReviewPassedToast, useReviewAction } from "./use-review-action";
 import { useReviewItems } from "./use-review-items";
 import { useRoleIntroReadiness } from "./use-role-intro-readiness";
 import { useSimilarFollowThrough } from "./use-similar-follow-through";
+import { useSimilarPicks } from "./use-similar-picks";
 
 export type ReviewPanelState = { mode: "pass" | "intro"; item: ReviewItem; roleIdOverride?: string };
 
@@ -31,6 +32,7 @@ interface HeldIntro {
 	roleIdOverride?: string;
 	category: string | null;
 	text: string | null;
+	similarAnchorTalentId?: string;
 }
 
 export function useReviewBoard(
@@ -104,6 +106,7 @@ export function useReviewBoard(
 					roleIdOverride: payload.roleIdOverride,
 					interestCompanyReason: payload.text?.trim() || undefined,
 					interestCompanyCategory: payload.category ?? undefined,
+					similarAnchorTalentId: payload.similarAnchorTalentId,
 				});
 			},
 			[mutate],
@@ -117,6 +120,7 @@ export function useReviewBoard(
 		setReviewedCount(0);
 	}
 
+	const { similarTo, start: pullSimilar, drop: dropSimilar, isDesktop } = useSimilarFollowThrough(orgId);
 	const heldKey = held ? reviewItemKey(held.item) : null;
 	const sendoutScope = useMemo(() => (sendoutTalentIds ? new Set(sendoutTalentIds) : null), [sendoutTalentIds]);
 	const feed = useMemo(() => {
@@ -124,13 +128,16 @@ export function useReviewBoard(
 		return sendoutScope ? all.filter((item) => sendoutScope.has(item.talentId)) : all;
 	}, [data, sendoutScope]);
 	const feedTalentIds = useMemo(() => new Set((data?.items ?? []).map((item) => item.talentId)), [data]);
-	const items = useMemo(
-		() =>
-			feed.filter(
-				(i) => streams.includes(streamOf(i.bucket)) && reviewItemKey(i) !== heldKey && !!i.maybe === showMaybe,
-			),
-		[feed, streams, heldKey, showMaybe],
-	);
+	const items = useMemo(() => {
+		const visible = feed.filter(
+			(i) => streams.includes(streamOf(i.bucket)) && reviewItemKey(i) !== heldKey && !!i.maybe === showMaybe,
+		);
+		// Similar profiles pulled forward after an intro go first.
+		// ponytail: they jump to the top, not to where the anchor sat; fine while reviewing top-down.
+		if (similarTo.size === 0) return visible;
+		const isPulled = (i: ReviewItem) => similarTo.has(reviewItemKey(i));
+		return [...visible.filter(isPulled), ...visible.filter((i) => !isPulled(i))];
+	}, [feed, streams, heldKey, showMaybe, similarTo]);
 	const roleFeedCount = data?.items?.length ?? 0;
 	const streamCounts = useMemo(() => {
 		const acc: Record<ReviewStream, number> = { curated: 0, drop: 0, interest: 0 };
@@ -154,8 +161,7 @@ export function useReviewBoard(
 		() => items.find((i) => reviewItemKey(i) === selectedKey) ?? items[0] ?? null,
 		[items, selectedKey],
 	);
-	const similar = useSimilarFollowThrough(orgId, selected);
-	const { start: startFollowThrough, clear: clearFollowThrough } = similar;
+	useSimilarPicks(orgId, isDesktop ? (selected?.roleId ?? null) : null, selected?.talentId ?? null);
 
 	const advance = useCallback(
 		(acted: Pick<ReviewItem, "talentId" | "roleId">) => {
@@ -170,13 +176,13 @@ export function useReviewBoard(
 		(key: string) => {
 			const cancelled = cancelHeldIntro((payload) => reviewItemKey(payload.item) === key);
 			if (!cancelled) return;
-			clearFollowThrough();
+			dropSimilar(key);
 			setPanel(null);
 			toast.dismiss(`held-intro:${key}`);
 			setSelectedKey(key);
 			uncountReviewed();
 		},
-		[cancelHeldIntro, uncountReviewed, clearFollowThrough],
+		[cancelHeldIntro, uncountReviewed, dropSimilar],
 	);
 
 	const commitIntro = useCallback(
@@ -186,11 +192,13 @@ export function useReviewBoard(
 				roleIdOverride: args.roleIdOverride,
 				category: args.category ?? null,
 				text: args.text ?? null,
+				similarAnchorTalentId: similarTo.get(reviewItemKey(item))?.anchor.talentId,
 			});
 			countReviewed();
 			setLastMove("intro");
-			advance(item);
-			startFollowThrough(item, args.roleIdOverride);
+			const pulled = pullSimilar(item, args.roleIdOverride);
+			if (pulled.length > 0) setSelectedKey(pulled[0]);
+			else advance(item);
 			setPanel(null);
 			toast.success("Intro requested", {
 				id: `held-intro:${reviewItemKey(item)}`,
@@ -198,7 +206,7 @@ export function useReviewBoard(
 				action: { label: "Undo", onClick: () => undoHeldIntro(reviewItemKey(item)) },
 			});
 		},
-		[hold, undoHeldIntro, countReviewed, advance, startFollowThrough],
+		[hold, undoHeldIntro, countReviewed, advance, pullSimilar, similarTo],
 	);
 
 	const openIntro = useCallback(
@@ -218,22 +226,20 @@ export function useReviewBoard(
 				return;
 			}
 			flushHeldIntro();
-			clearFollowThrough();
 			panelTextRef.current = "";
 			setPanel({ mode: "intro", item });
 		},
-		[readinessFor, flushHeldIntro, clearFollowThrough],
+		[readinessFor, flushHeldIntro],
 	);
 
 	const openPass = useCallback(
 		(item: ReviewItem) => {
 			flushHeldIntro();
-			clearFollowThrough();
 			panelTextRef.current = "";
 			if (item.roleId) setPanel({ mode: "pass", item });
 			else setRolePicker({ item, action: "pass" });
 		},
-		[flushHeldIntro, clearFollowThrough],
+		[flushHeldIntro],
 	);
 
 	const confirmIntro = useCallback(
@@ -296,13 +302,14 @@ export function useReviewBoard(
 				noFitCategories: categories && categories.length > 0 ? categories : undefined,
 				rejectReason: args.text?.trim() || undefined,
 				roleIdOverride,
+				similarAnchorTalentId: similarTo.get(reviewItemKey(item))?.anchor.talentId,
 			});
 			countReviewed();
 			setLastMove("pass");
 			advance(item);
 			setPanel(null);
 		},
-		[panel, mutate, advance, countReviewed],
+		[panel, mutate, advance, countReviewed, similarTo],
 	);
 
 	const setPanelText = useCallback((text: string) => {
@@ -314,11 +321,10 @@ export function useReviewBoard(
 	const openMaybe = useCallback(
 		(item: ReviewItem) => {
 			flushHeldIntro();
-			clearFollowThrough();
 			setPanel(null);
 			setMaybeItem(item);
 		},
-		[flushHeldIntro, clearFollowThrough],
+		[flushHeldIntro],
 	);
 
 	// Maybe parks the person (still pending) in the Maybe tab, with an optional note.
@@ -354,12 +360,11 @@ export function useReviewBoard(
 
 	const selectItem = useCallback(
 		(item: ReviewItem) => {
-			clearFollowThrough();
 			setLastMove(null);
 			setSelectedKey(reviewItemKey(item));
 			orgTalents.recordTalentView(orgId, { talentId: item.talentId, source: "review" }).catch(() => {});
 		},
-		[orgId, clearFollowThrough],
+		[orgId],
 	);
 
 	const selectPrev = useCallback(() => {
@@ -390,8 +395,7 @@ export function useReviewBoard(
 		retry,
 		selectItem,
 		panel,
-		followThrough: similar.followThrough,
-		continueReviewing: clearFollowThrough,
+		similarTo,
 		rolePickerItem,
 		rolePickerAction: rolePicker?.action,
 		hmWarningRoleId: hmWarning ? (hmWarning.roleIdChoice ?? hmWarning.item.roleId) : null,

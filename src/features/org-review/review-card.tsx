@@ -14,6 +14,8 @@ interface ReviewCardProps {
 	isPending?: boolean;
 	failed?: boolean;
 	onRetry?: () => void;
+	/** First name of the person whose intro pulled this card forward. */
+	similarToName?: string;
 	onSelect: () => void;
 	onOpen?: () => void;
 	onPrefetch: () => void;
@@ -30,6 +32,7 @@ export function ReviewCard({
 	isPending = false,
 	failed = false,
 	onRetry,
+	similarToName,
 	onSelect,
 	onOpen,
 	onPrefetch,
@@ -42,6 +45,11 @@ export function ReviewCard({
 	const hasActions = !!onIntro && !!onPass;
 	const tags = (
 		<>
+			{similarToName && (
+				<StatusPill tone="info" size="xs">
+					Similar profiles to {similarToName}
+				</StatusPill>
+			)}
 			{!item.roleId && (
 				<StatusPill tone="warning" size="xs">
 					No role yet
@@ -59,7 +67,7 @@ export function ReviewCard({
 			)}
 		</>
 	);
-	const hasTags = !item.roleId || !!item.maybe?.note || failed;
+	const hasTags = !!similarToName || !item.roleId || !!item.maybe?.note || failed;
 
 	const card = (
 		<TalentBoardCard

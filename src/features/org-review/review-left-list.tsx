@@ -2,6 +2,7 @@
 
 import type { EntityChipsState } from "@v2/hooks/use-deferred-entity-chips";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
+import type { SimilarTo } from "./hooks/use-similar-follow-through";
 import { ReviewCard } from "./review-card";
 import { type ReviewItem, reviewItemKey } from "./types";
 
@@ -16,6 +17,7 @@ interface ReviewLeftListProps {
 	isPending: (item: ReviewItem) => boolean;
 	isFailed: (item: ReviewItem) => boolean;
 	onRetry: (item: ReviewItem) => void;
+	similarTo: ReadonlyMap<string, SimilarTo>;
 	chipsFor: (talentId: string) => EntityChipsState;
 	onCardVisible: (talentId: string) => void;
 	onCardSeen: (talentId: string) => void;
@@ -32,6 +34,7 @@ export function ReviewLeftList({
 	isPending,
 	isFailed,
 	onRetry,
+	similarTo,
 	chipsFor,
 	onCardVisible,
 	onCardSeen,
@@ -50,6 +53,7 @@ export function ReviewLeftList({
 							isPending={isPending(item)}
 							failed={isFailed(item)}
 							onRetry={() => onRetry(item)}
+							similarToName={similarTo.get(reviewItemKey(item))?.anchor.talentName.split(" ")[0]}
 							onSelect={() => onSelect(item)}
 							onOpen={onOpen && (() => onOpen(item))}
 							onPrefetch={() => onPrefetch(item.talentId)}

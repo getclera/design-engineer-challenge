@@ -22,6 +22,8 @@ interface ReviewActionPayload {
 	interestCompanyReason?: string;
 	interestCompanyCategory?: string;
 	roleIdOverride?: string;
+	/** Set when deciding on a similar profile pulled forward after this talent's intro. */
+	similarAnchorTalentId?: string;
 }
 
 export interface ReviewPassedToast {
@@ -54,6 +56,7 @@ export function useReviewAction(orgId: string, roleId?: string, callbacks?: Revi
 			interestCompanyReason,
 			interestCompanyCategory,
 			roleIdOverride,
+			similarAnchorTalentId,
 		}: ReviewActionPayload) => {
 			const jobId = roleIdOverride ?? item.roleId;
 			if (!jobId) throw new Error("missing_role");
@@ -67,6 +70,8 @@ export function useReviewAction(orgId: string, roleId?: string, callbacks?: Revi
 				noFitCategories,
 				interestCompanyReason,
 				interestCompanyCategory,
+				origin: similarAnchorTalentId ? "similar_picks" : undefined,
+				similarAnchorTalentId,
 			});
 			if (!result.ok) throw new Error(result.error.message);
 			return result.data;
@@ -88,13 +93,24 @@ export function useReviewAction(orgId: string, roleId?: string, callbacks?: Revi
 			if (action === "pass") callbacks?.onPassed?.({ toastId, item, opportunityId: item.opportunityId });
 			return { previous, toastId };
 		},
-		onSuccess: (_data, { item, action }) => {
+		onSuccess: (_data, { item, action, similarAnchorTalentId }) => {
 			if (action === "maybe") return;
+			const intro = action === "request_intro";
 			posthog?.capture(
-				action === "request_intro"
-					? OrgDashboardEvents.CANDIDATE_ACTION_INTRO_REQUESTED
-					: OrgDashboardEvents.CANDIDATE_ACTION_PASSED,
-				{ org_id: orgId, role_id: item.roleId, talent_id: item.talentId, surface: "review" },
+				similarAnchorTalentId
+					? intro
+						? OrgDashboardEvents.SIMILAR_PICK_INTRO_REQUESTED
+						: OrgDashboardEvents.SIMILAR_PICK_PASSED
+					: intro
+						? OrgDashboardEvents.CANDIDATE_ACTION_INTRO_REQUESTED
+						: OrgDashboardEvents.CANDIDATE_ACTION_PASSED,
+				{
+					org_id: orgId,
+					role_id: item.roleId,
+					talent_id: item.talentId,
+					surface: "review",
+					anchor_talent_id: similarAnchorTalentId,
+				},
 			);
 		},
 		onError: (error, variables, context) => {

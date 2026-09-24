@@ -37,7 +37,6 @@ import { ReviewRoleFilter } from "./review-role-filter";
 import { ReviewScopeBar } from "./review-scope-bar";
 import { ReviewStreamFilter } from "./review-stream-filter";
 import { parseReviewStreams, serializeReviewStreams, setReviewUrlParams } from "./review-url";
-import { SimilarPicksModal } from "./similar-picks-modal";
 import { type ReviewItem, type ReviewStream, reviewItemKey } from "./types";
 
 interface ReviewBoardProps {
@@ -171,7 +170,7 @@ export function ReviewBoard({
 		[setStreams],
 	);
 
-	const anyModalOpen = !!board.rolePickerItem || board.hmWarningOpen || !!board.followThrough;
+	const anyModalOpen = !!board.rolePickerItem || board.hmWarningOpen;
 	useTalentDecisionKeyboard({
 		selected: board.selected,
 		enabled: !isMobile && !anyModalOpen,
@@ -276,6 +275,7 @@ export function ReviewBoard({
 											isPending={board.isPending}
 											isFailed={board.isFailed}
 											onRetry={board.retry}
+											similarTo={board.similarTo}
 											chipsFor={board.chipsFor}
 											onCardVisible={board.onCardVisible}
 											onCardSeen={board.onCardSeen}
@@ -312,14 +312,6 @@ export function ReviewBoard({
 					}}
 				/>
 
-				{board.followThrough && (
-					<SimilarPicksModal
-						key={reviewItemKey(board.followThrough.anchor)}
-						orgId={orgId}
-						followThrough={board.followThrough}
-						onContinue={board.continueReviewing}
-					/>
-				)}
 				<HmRequiredModal
 					isOpen={board.hmWarningOpen}
 					onOpenChange={(open) => {
