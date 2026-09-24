@@ -39,6 +39,8 @@ export function useReviewAction(orgId: string, roleId?: string, callbacks?: Revi
 	const queryClient = useQueryClient();
 	const posthog = usePostHog();
 	const [pendingKeys, setPendingKeys] = useState<Set<string>>(new Set());
+	// Decisions the server refused, kept so the list can offer Retry with the exact same request.
+	const [failed, setFailed] = useState<Map<string, ReviewActionPayload>>(new Map());
 	const queryKey = orgDashboardKeys.review(orgId, roleId);
 
 	const mutation = useMutation({
@@ -71,6 +73,12 @@ export function useReviewAction(orgId: string, roleId?: string, callbacks?: Revi
 		},
 		onMutate: async ({ item, action, maybeNote }) => {
 			setPendingKeys((prev) => new Set(prev).add(reviewItemKey(item)));
+			setFailed((prev) => {
+				if (!prev.has(reviewItemKey(item))) return prev;
+				const next = new Map(prev);
+				next.delete(reviewItemKey(item));
+				return next;
+			});
 			await queryClient.cancelQueries({ queryKey });
 			const previous =
 				action === "maybe"
@@ -92,9 +100,11 @@ export function useReviewAction(orgId: string, roleId?: string, callbacks?: Revi
 		onError: (error, variables, context) => {
 			if (context?.previous) queryClient.setQueryData(queryKey, context.previous);
 			if (variables.action !== "maybe") callbacks?.onFailed?.();
+			setFailed((prev) => new Map(prev).set(reviewItemKey(variables.item), variables));
 			const notOpen = error instanceof Error && error.message.includes(TALENT_NOT_OPEN_ERROR);
 			toast.error(notOpen ? "This candidate is not currently open to opportunities." : "Something went wrong", {
 				id: context?.toastId,
+				action: notOpen ? undefined : { label: "Retry", onClick: () => mutation.mutate(variables) },
 			});
 		},
 		onSettled: (_data, _error, { item }) => {
@@ -108,5 +118,10 @@ export function useReviewAction(orgId: string, roleId?: string, callbacks?: Revi
 	});
 
 	const isPending = (item: Pick<ReviewItem, "talentId" | "roleId">) => pendingKeys.has(reviewItemKey(item));
-	return { mutation, isPending };
+	const isFailed = (item: Pick<ReviewItem, "talentId" | "roleId">) => failed.has(reviewItemKey(item));
+	const retry = (item: Pick<ReviewItem, "talentId" | "roleId">) => {
+		const payload = failed.get(reviewItemKey(item));
+		if (payload) mutation.mutate(payload);
+	};
+	return { mutation, isPending, isFailed, retry };
 }

@@ -1,5 +1,7 @@
 "use client";
 
+import { Button } from "@v2/components/ui/button";
+import { StatusPill } from "@v2/components/ui/status-pill";
 import { TalentBoardCard } from "@v2/features/org-shared-cards";
 import type { EntityChipsState } from "@v2/hooks/use-deferred-entity-chips";
 import { ReviewCardActions } from "./review-card-actions";
@@ -10,6 +12,8 @@ interface ReviewCardProps {
 	item: ReviewItem;
 	isSelected: boolean;
 	isPending?: boolean;
+	failed?: boolean;
+	onRetry?: () => void;
 	onSelect: () => void;
 	onOpen?: () => void;
 	onPrefetch: () => void;
@@ -24,6 +28,8 @@ export function ReviewCard({
 	item,
 	isSelected,
 	isPending = false,
+	failed = false,
+	onRetry,
 	onSelect,
 	onOpen,
 	onPrefetch,
@@ -34,6 +40,26 @@ export function ReviewCard({
 	onSeen,
 }: ReviewCardProps) {
 	const hasActions = !!onIntro && !!onPass;
+	const tags = (
+		<>
+			{!item.roleId && (
+				<StatusPill tone="warning" size="xs">
+					No role yet
+				</StatusPill>
+			)}
+			{item.maybe?.note && (
+				<StatusPill tone="warning" size="xs" className="max-w-full truncate">
+					“{item.maybe.note}”
+				</StatusPill>
+			)}
+			{failed && (
+				<StatusPill tone="error" size="xs">
+					Not saved
+				</StatusPill>
+			)}
+		</>
+	);
+	const hasTags = !item.roleId || !!item.maybe?.note || failed;
 
 	const card = (
 		<TalentBoardCard
@@ -53,10 +79,25 @@ export function ReviewCard({
 			badge={item.source !== "passed" ? <StreamBadge stream={streamOf(item.bucket)} /> : undefined}
 			onVisible={() => onVisible(item.talentId)}
 			onSeen={onSeen && (() => onSeen(item.talentId))}
+			footer={hasTags ? <div className="flex flex-wrap gap-1.5">{tags}</div> : undefined}
 		/>
 	);
+	// The card is itself a button, so Retry sits beside it rather than inside.
+	const retry = failed && onRetry && (
+		<Button variant="ghost" size="compact" onClick={onRetry} className="absolute right-4 bottom-2.5">
+			Retry
+		</Button>
+	);
 
-	if (!hasActions) return card;
+	if (!hasActions)
+		return retry ? (
+			<div className="relative">
+				{card}
+				{retry}
+			</div>
+		) : (
+			card
+		);
 
 	return (
 		<div className="group relative">
@@ -68,6 +109,7 @@ export function ReviewCard({
 				onIntro={onIntro}
 				onPass={onPass}
 			/>
+			{retry}
 		</div>
 	);
 }

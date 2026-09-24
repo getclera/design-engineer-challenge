@@ -30,7 +30,7 @@ export function useTalentDecisionKeyboard<TItem>({
 			if (el instanceof HTMLElement && (el.tagName === "INPUT" || el.tagName === "TEXTAREA" || el.isContentEditable)) {
 				return;
 			}
-			if (!selected) return;
+			if (!selected || e.repeat) return; // a held key never decides more than one person
 			if (e.key === "ArrowUp") {
 				e.preventDefault();
 				onSelectPrev();

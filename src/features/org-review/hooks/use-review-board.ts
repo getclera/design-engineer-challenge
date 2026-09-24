@@ -86,7 +86,7 @@ export function useReviewBoard(
 		},
 		[reversePass, uncountReviewed],
 	);
-	const { mutation, isPending } = useReviewAction(orgId, roleId, { onPassed, onFailed: uncountReviewed });
+	const { mutation, isPending, isFailed, retry } = useReviewAction(orgId, roleId, { onPassed, onFailed: uncountReviewed });
 	const { mutate } = mutation;
 
 	const {
@@ -386,6 +386,8 @@ export function useReviewBoard(
 		selectedKey: selected ? reviewItemKey(selected) : null,
 		lastMove,
 		isPending,
+		isFailed,
+		retry,
 		selectItem,
 		panel,
 		followThrough: similar.followThrough,

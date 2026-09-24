@@ -8,7 +8,7 @@ import { Popover, PopoverAnchor, PopoverContent } from "@v2/components/ui/popove
 import { useRolesList } from "@v2/features/org-roles";
 import { INTRO_DECISION_CATEGORIES, PASS_DECISION_CATEGORIES } from "@v2/features/org-shared-modals";
 import { cn } from "@v2/lib/utils";
-import { type KeyboardEvent, type ReactNode, useEffect, useRef, useState } from "react";
+import { type ReactNode, useEffect, useRef, useState } from "react";
 import { bestFitRoleId } from "./best-fit-role";
 import { useRoleIntroReadiness } from "./hooks/use-role-intro-readiness";
 import { useReviewBoardContext } from "./review-board-context";
@@ -127,29 +127,31 @@ function DecisionOptions({ title, options, initial, withText, back, onBack, onCh
 	const [hl, setHl] = useState(initial);
 	const [text, setText] = useState("");
 	const inputRef = useRef<HTMLInputElement>(null);
-	const listRef = useRef<HTMLDivElement>(null);
-	// Keys drive the highlight, so the list itself takes focus (also when the step changes in place).
-	useEffect(() => listRef.current?.focus({ preventScroll: true }), []);
 
-	const onKeyDown = (e: KeyboardEvent) => {
-		if (e.target === inputRef.current) return;
-		const digit = Number.parseInt(e.key, 10);
-		if (e.key === "ArrowDown" || e.key === "ArrowUp") {
-			e.preventDefault();
-			setHl((h) => (h + (e.key === "ArrowDown" ? 1 : options.length - 1)) % options.length);
-		} else if (e.key === "Enter") {
-			e.preventDefault();
-			onChoose(options[hl]);
-		} else if (digit >= 1 && digit <= options.length) {
-			e.preventDefault();
-			onChoose(options[digit - 1]);
-		} else if (withText && e.key.length === 1 && !e.metaKey && !e.ctrlKey) {
-			inputRef.current?.focus(); // typing starts the "something else" answer
-		}
-	};
+	// While open, the popup owns the keyboard wherever focus is (like the old reason panel did).
+	useEffect(() => {
+		const onKey = (e: KeyboardEvent) => {
+			if (e.target === inputRef.current || e.metaKey || e.ctrlKey || e.altKey) return;
+			const digit = Number.parseInt(e.key, 10);
+			if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+				e.preventDefault();
+				setHl((h) => (h + (e.key === "ArrowDown" ? 1 : options.length - 1)) % options.length);
+			} else if (e.key === "Enter") {
+				e.preventDefault();
+				onChoose(options[hl]);
+			} else if (digit >= 1 && digit <= options.length) {
+				e.preventDefault();
+				onChoose(options[digit - 1]);
+			} else if (withText && e.key.length === 1) {
+				inputRef.current?.focus(); // typing starts the "something else" answer
+			}
+		};
+		window.addEventListener("keydown", onKey);
+		return () => window.removeEventListener("keydown", onKey);
+	}, [options, hl, withText, onChoose]);
 
 	return (
-		<div ref={listRef} role="listbox" aria-label={title} tabIndex={-1} onKeyDown={onKeyDown} className="outline-none">
+		<div role="listbox" aria-label={title}>
 			{back && (
 				<Button
 					variant="unstyled"

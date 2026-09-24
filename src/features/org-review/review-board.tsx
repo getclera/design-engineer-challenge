@@ -274,6 +274,8 @@ export function ReviewBoard({
 											onIntro={isMobile ? undefined : handleListIntro}
 											onPass={isMobile ? undefined : handleListPass}
 											isPending={board.isPending}
+											isFailed={board.isFailed}
+											onRetry={board.retry}
 											chipsFor={board.chipsFor}
 											onCardVisible={board.onCardVisible}
 											onCardSeen={board.onCardSeen}

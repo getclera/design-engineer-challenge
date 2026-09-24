@@ -14,6 +14,8 @@ interface ReviewLeftListProps {
 	onIntro?: (item: ReviewItem) => void;
 	onPass?: (item: ReviewItem) => void;
 	isPending: (item: ReviewItem) => boolean;
+	isFailed: (item: ReviewItem) => boolean;
+	onRetry: (item: ReviewItem) => void;
 	chipsFor: (talentId: string) => EntityChipsState;
 	onCardVisible: (talentId: string) => void;
 	onCardSeen: (talentId: string) => void;
@@ -28,6 +30,8 @@ export function ReviewLeftList({
 	onIntro,
 	onPass,
 	isPending,
+	isFailed,
+	onRetry,
 	chipsFor,
 	onCardVisible,
 	onCardSeen,
@@ -44,6 +48,8 @@ export function ReviewLeftList({
 							item={item}
 							isSelected={selectedKey === reviewItemKey(item)}
 							isPending={isPending(item)}
+							failed={isFailed(item)}
+							onRetry={() => onRetry(item)}
 							onSelect={() => onSelect(item)}
 							onOpen={onOpen && (() => onOpen(item))}
 							onPrefetch={() => onPrefetch(item.talentId)}
