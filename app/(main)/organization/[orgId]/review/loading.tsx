@@ -3,7 +3,7 @@ import { ReviewBoardSkeleton } from "@v2/features/org-review";
 
 export default function OrgReviewLoading() {
 	return (
-		<AdminPageShell title="Review" subtitle="Everyone waiting on your decision">
+		<AdminPageShell title="Review" subtitle="Everyone waiting on your decision" hideHeaderOnMobile>
 			<ReviewBoardSkeleton />
 		</AdminPageShell>
 	);

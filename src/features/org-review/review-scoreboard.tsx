@@ -85,7 +85,8 @@ export function ReviewScoreboard({ left, truncated, tally }: ReviewScoreboardPro
 				)}
 				<div className="h-full flex-1 rounded-[3px] bg-v2-border-divider" />
 			</div>
-			<div className="flex flex-wrap justify-between gap-x-4">
+			{/* Phone: "left" and the dots are enough; the pace line gives its height to the card. */}
+			<div className="flex flex-wrap justify-between gap-x-4 max-lg:hidden">
 				<span>{pace}</span>
 				<span>
 					{done} of {total}

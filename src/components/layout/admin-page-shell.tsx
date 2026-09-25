@@ -11,6 +11,8 @@ interface AdminPageShellProps {
 	breadcrumbLeafLabel?: string;
 	density?: "default" | "compact";
 	fillViewport?: boolean;
+	/** Phones: the title and subtitle stay for screen readers only, so the page's content starts higher. */
+	hideHeaderOnMobile?: boolean;
 	children: ReactNode;
 }
 
@@ -28,6 +30,7 @@ function AdminPageShell({
 	breadcrumbLeafLabel,
 	density = "default",
 	fillViewport = false,
+	hideHeaderOnMobile = false,
 	children,
 }: AdminPageShellProps) {
 	return (
@@ -39,7 +42,12 @@ function AdminPageShell({
 			)}
 		>
 			<PageBreadcrumbs leafLabel={breadcrumbLeafLabel} />
-			<header className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+			<header
+				className={cn(
+					"flex flex-col gap-3 md:flex-row md:items-center md:justify-between",
+					hideHeaderOnMobile && "max-lg:sr-only",
+				)}
+			>
 				<div className="flex shrink-0 items-center gap-2.5">
 					{titlePrefix}
 					<div className="flex flex-col gap-0.5">

@@ -43,8 +43,9 @@ function HeaderLinkButton({ href, label, icon }: HeaderLinkButtonProps) {
 		<Button asChild variant="ghost" size="compact" className="gap-1.5" title={`Open ${label.toLowerCase()}`}>
 			<a href={ensureProtocol(href)} target="_blank" rel="noopener noreferrer">
 				{icon}
-				{label}
-				{showHost && <span className="max-w-45 truncate text-v2-text-tertiary">{host}</span>}
+				{/* Phone: the icon alone, so the name next to it gets the width. */}
+				<span className="max-sm:sr-only">{label}</span>
+				{showHost && <span className="max-w-45 truncate text-v2-text-tertiary max-sm:hidden">{host}</span>}
 			</a>
 		</Button>
 	);

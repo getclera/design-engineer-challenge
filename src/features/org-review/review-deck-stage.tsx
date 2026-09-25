@@ -157,7 +157,8 @@ export function ReviewDeckStage({
 									</motion.span>
 								</>
 							)}
-							<Card className={cn("overflow-hidden p-0", expanded && "h-full")}>
+							{/* Phone: clip, not hidden, so the decision bar can stick to the bottom of the screen (thumb zone). */}
+							<Card className={cn("p-0 max-lg:overflow-clip lg:overflow-hidden", expanded && "h-full")}>
 								<TalentBoardDetailPane
 									orgId={orgId}
 									talentId={item?.talentId ?? null}

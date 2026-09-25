@@ -254,8 +254,10 @@ export function ReviewBoard({
 							<CaretRight size={16} />
 						</Button>
 					)}
-					<div className={REVIEW_CONTROL_BAR_CLASSES}>
+					<div className={cn(REVIEW_CONTROL_BAR_CLASSES, "max-lg:gap-y-1.5")}>
 						<ReviewIncomingToggle view={reviewView} onChange={handleViewChange} />
+						{/* Phone: the tabs get their own row; role, type and the list button share the next one. */}
+						{isMobile && <div aria-hidden className="basis-full" />}
 						<ReviewRoleFilter orgId={orgId} roleId={selectedRoleId} byRole={board.byRole} onChange={handleRoleChange} />
 						{reviewView !== "passed" && !incomingEmpty && (
 							<ReviewStreamFilter streams={board.streams} counts={board.streamCounts} onChange={handleStreamsChange} />
