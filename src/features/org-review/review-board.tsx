@@ -36,12 +36,14 @@ import { ReviewHeader } from "./review-header";
 import { ReviewIncomingToggle, type ReviewView } from "./review-incoming-toggle";
 import { ReviewLeftList } from "./review-left-list";
 import { ReviewMobileSheet } from "./review-mobile-sheet";
+import { ReviewRecap } from "./review-recap";
 import { ReviewRoleFilter } from "./review-role-filter";
 import { ReviewScopeBar } from "./review-scope-bar";
+import { ReviewScoreboard } from "./review-scoreboard";
 import { ReviewShortcutsHelp } from "./review-shortcuts-help";
 import { ReviewStreamFilter } from "./review-stream-filter";
 import { parseReviewStreams, serializeReviewStreams, setReviewUrlParams } from "./review-url";
-import type { ReviewItem, ReviewStream } from "./types";
+import { REVIEW_STREAMS, type ReviewItem, type ReviewStream } from "./types";
 
 interface ReviewBoardProps {
 	orgId: string;
@@ -223,7 +225,13 @@ export function ReviewBoard({
 	}
 
 	const incomingEmpty = board.streamCounts.all === 0;
-	const showEmptyState = incomingEmpty;
+	// Everyone in view decided during this visit (an intro may still be held for its undo window): recap.
+	const finished =
+		reviewView === "unreviewed" &&
+		board.items.length === 0 &&
+		board.tally.total > 0 &&
+		board.streams.length === REVIEW_STREAMS.length;
+	const showEmptyState = incomingEmpty || finished;
 	const showScopeBar = !!activeSendout || sendoutDrops.length > 0;
 
 	return (
@@ -301,92 +309,109 @@ export function ReviewBoard({
 								pausedPending={board.pausedPending}
 								onClearSendout={clearSendoutScope}
 								onRoleChange={handleRoleChange}
+								recap={
+									board.tally.total > 0
+										? (roleName) => (
+												<ReviewRecap
+													roleName={roleName}
+													tally={board.tally}
+													decisions={board.decisions}
+													onReviewMaybes={() => handleViewChange("maybe")}
+												/>
+											)
+										: undefined
+								}
 							/>
 						</div>
 					) : (
-						<div className={cn(REVIEW_BOARD_GRID_CLASSES, listHidden && !isMobile && "lg:grid-cols-1")}>
-							{(isMobile && !mobileList) || (listHidden && !isMobile) ? null : (
-								<Card className={REVIEW_LEFT_CARD_CLASSES}>
-									{showScopeBar && (
-										<ReviewScopeBar
-											drops={sendoutDrops}
-											activeNanoId={activeSendout?.nanoId}
-											feedTalentIds={board.feedTalentIds}
-											onSelect={selectSendout}
-											onClear={clearSendoutScope}
-											className="border-b border-v2-border-divider"
-										/>
-									)}
-									<ReviewHeader
-										maybe={reviewView === "maybe"}
-										onHide={isMobile ? undefined : () => setListHidden(true)}
-									/>
-									<div
-										ref={listRef}
-										className="max-h-[calc(100dvh-16rem)] min-h-0 flex-1 overflow-y-auto lg:max-h-none"
-									>
-										{board.items.length === 0 ? (
-											<EmptyState
-												heading={
-													reviewView === "maybe" ? "No maybes yet" : incomingEmpty ? "All reviewed" : "Nothing here"
-												}
-												description={
-													reviewView === "maybe"
-														? "Press M when you're unsure about someone. They wait here until you decide."
-														: incomingEmpty
-															? "Nothing waiting on you for this role."
-															: "No candidates match this filter right now."
-												}
-											/>
-										) : (
-											<ReviewLeftList
-												items={board.items}
-												selectedKey={board.selectedKey}
-												onSelect={handleSelect}
-												onOpen={isMobile ? undefined : handleOpen}
-												onPrefetch={handlePrefetch}
-												onIntro={isMobile || !canDecide ? undefined : handleListIntro}
-												onPass={isMobile || !canDecide ? undefined : handleListPass}
-												isPending={board.isPending}
-												isFailed={board.isFailed}
-												onRetry={board.retry}
-												similarTo={board.similarTo}
-												chipsFor={board.chipsFor}
-												onCardVisible={board.onCardVisible}
-												onCardSeen={board.onCardSeen}
-											/>
-										)}
-										{reviewView === "unreviewed" && board.truncated && board.items.length > 0 && (
-											<p className="px-4 py-3 text-center font-v2-body text-v2-text-tertiary text-xs">
-												More arrive when you clear these
-											</p>
-										)}
-									</div>
-								</Card>
+						<>
+							{reviewView === "unreviewed" && (
+								<ReviewScoreboard left={board.items.length} truncated={board.truncated} tally={board.tally} />
 							)}
-							{!(isMobile && mobileList) && (
-								<div className="flex min-h-0 flex-col gap-2">
-									<div className="min-h-0 flex-1">
-										<ReviewDeckStage
-											orgId={orgId}
-											selectedRoleId={selectedRoleId}
-											viewerIsPlatformAdmin={viewerIsPlatformAdmin}
-											canDecide={canDecide}
-											expanded={fullProfile}
-											// Phone: the full profile is the live bottom sheet instead of growing the card.
-											onExpandedChange={isMobile ? () => setMobileTalent(board.selected) : setFullProfile}
-											swipe={isMobile}
-											decisionsInSheet={!!mobileTalent}
+							<div className={cn(REVIEW_BOARD_GRID_CLASSES, listHidden && !isMobile && "lg:grid-cols-1")}>
+								{(isMobile && !mobileList) || (listHidden && !isMobile) ? null : (
+									<Card className={REVIEW_LEFT_CARD_CLASSES}>
+										{showScopeBar && (
+											<ReviewScopeBar
+												drops={sendoutDrops}
+												activeNanoId={activeSendout?.nanoId}
+												feedTalentIds={board.feedTalentIds}
+												onSelect={selectSendout}
+												onClear={clearSendoutScope}
+												className="border-b border-v2-border-divider"
+											/>
+										)}
+										<ReviewHeader
+											maybe={reviewView === "maybe"}
+											onHide={isMobile ? undefined : () => setListHidden(true)}
 										/>
-									</div>
-									{!isMobile && (
-										<div className="flex justify-end">
-											<ReviewShortcutsHelp open={helpOpen} onOpenChange={setHelpOpen} canDecide={canDecide} />
+										<div
+											ref={listRef}
+											className="max-h-[calc(100dvh-16rem)] min-h-0 flex-1 overflow-y-auto lg:max-h-none"
+										>
+											{board.items.length === 0 ? (
+												<EmptyState
+													heading={
+														reviewView === "maybe" ? "No maybes yet" : incomingEmpty ? "All reviewed" : "Nothing here"
+													}
+													description={
+														reviewView === "maybe"
+															? "Press M when you're unsure about someone. They wait here until you decide."
+															: incomingEmpty
+																? "Nothing waiting on you for this role."
+																: "No candidates match this filter right now."
+													}
+												/>
+											) : (
+												<ReviewLeftList
+													items={board.items}
+													selectedKey={board.selectedKey}
+													onSelect={handleSelect}
+													onOpen={isMobile ? undefined : handleOpen}
+													onPrefetch={handlePrefetch}
+													onIntro={isMobile || !canDecide ? undefined : handleListIntro}
+													onPass={isMobile || !canDecide ? undefined : handleListPass}
+													isPending={board.isPending}
+													isFailed={board.isFailed}
+													onRetry={board.retry}
+													similarTo={board.similarTo}
+													chipsFor={board.chipsFor}
+													onCardVisible={board.onCardVisible}
+													onCardSeen={board.onCardSeen}
+												/>
+											)}
+											{reviewView === "unreviewed" && board.truncated && board.items.length > 0 && (
+												<p className="px-4 py-3 text-center font-v2-body text-v2-text-tertiary text-xs">
+													More arrive when you clear these
+												</p>
+											)}
 										</div>
-									)}
-								</div>
-							)}
-						</div>
+									</Card>
+								)}
+								{!(isMobile && mobileList) && (
+									<div className="flex min-h-0 flex-col gap-2">
+										<div className="min-h-0 flex-1">
+											<ReviewDeckStage
+												orgId={orgId}
+												selectedRoleId={selectedRoleId}
+												viewerIsPlatformAdmin={viewerIsPlatformAdmin}
+												canDecide={canDecide}
+												expanded={fullProfile}
+												// Phone: the full profile is the live bottom sheet instead of growing the card.
+												onExpandedChange={isMobile ? () => setMobileTalent(board.selected) : setFullProfile}
+												swipe={isMobile}
+												decisionsInSheet={!!mobileTalent}
+											/>
+										</div>
+										{!isMobile && (
+											<div className="flex justify-end">
+												<ReviewShortcutsHelp open={helpOpen} onOpenChange={setHelpOpen} canDecide={canDecide} />
+											</div>
+										)}
+									</div>
+								)}
+							</div>
+						</>
 					)}
 				</div>
 

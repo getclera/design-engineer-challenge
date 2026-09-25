@@ -13,7 +13,7 @@ import { usePassedItems } from "./hooks/use-passed-items";
 import { useReviewBoardContext } from "./review-board-context";
 import { ReviewCard } from "./review-card";
 import { ReviewRowSkeleton } from "./review-row-skeleton";
-import type { ReviewItem } from "./types";
+import { type ReviewItem, reviewItemKey } from "./types";
 
 interface PassedViewProps {
 	orgId: string;
@@ -22,8 +22,10 @@ interface PassedViewProps {
 }
 
 export function PassedView({ orgId, selectedRoleId, viewerIsPlatformAdmin = false }: PassedViewProps) {
-	const { uncountReviewed } = useReviewBoardContext();
-	const { query, unpass } = usePassedItems(orgId, selectedRoleId, { onUnpassed: uncountReviewed });
+	const { uncountDecision } = useReviewBoardContext();
+	const { query, unpass } = usePassedItems(orgId, selectedRoleId, {
+		onUnpassed: (item) => uncountDecision(reviewItemKey(item)),
+	});
 	const [selected, setSelected] = useState<ReviewItem | null>(null);
 	const items = query.data?.items ?? [];
 	const { chipsFor, onCardVisible } = useDeferredEntityChips(

@@ -15,6 +15,7 @@ interface TalentBoardDetailPaneProps {
 	displayNameOverride?: string | null;
 	fallback: ReactNode;
 	profileMeta?: ReactNode;
+	profileAboveCard?: ReactNode;
 	profileBelowHeader?: ReactNode;
 	profileBelowFacts?: ReactNode;
 	footer?: ReactNode;
@@ -31,6 +32,7 @@ function TalentBoardDetailPane({
 	displayNameOverride,
 	fallback,
 	profileMeta,
+	profileAboveCard,
 	profileBelowHeader,
 	profileBelowFacts,
 	footer,
@@ -55,6 +57,7 @@ function TalentBoardDetailPane({
 						displayNameOverride={displayNameOverride}
 						tracking={tracking}
 						aboveHeader={profileMeta}
+						aboveCard={profileAboveCard}
 						belowHeader={profileBelowHeader}
 						belowFacts={profileBelowFacts}
 						compact={compact}

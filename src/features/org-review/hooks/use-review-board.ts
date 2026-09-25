@@ -8,6 +8,7 @@ import { type CSSProperties, useCallback, useEffect, useMemo, useRef, useState }
 import { toast } from "sonner";
 import { orgTalents } from "@/services/api/org-talents";
 import { isHmLinkWarningSuppressed } from "../hm-warning-cookie";
+import { sortByQueue } from "../review-queue";
 import {
 	REVIEW_STREAMS,
 	type ReviewItem,
@@ -22,6 +23,24 @@ import { useReviewItems } from "./use-review-items";
 import { useRoleIntroReadiness } from "./use-role-intro-readiness";
 import { useSimilarFollowThrough } from "./use-similar-follow-through";
 import { useSimilarPicks } from "./use-similar-picks";
+
+export type ReviewDecisionKind = "intro" | "pass" | "maybe";
+export interface ReviewDecision {
+	key: string;
+	name: string;
+	kind: ReviewDecisionKind;
+	/** Time spent on this card before deciding. */
+	seconds: number;
+}
+const PACE_CAP_SECONDS = 90;
+export interface ReviewTally {
+	intro: number;
+	pass: number;
+	maybe: number;
+	total: number;
+	seconds: number;
+	avgSeconds: number | null;
+}
 
 export type ReviewPanelState = { mode: "pass" | "intro"; item: ReviewItem; roleIdOverride?: string };
 
@@ -69,16 +88,27 @@ export function useReviewBoard(
 	} | null>(null);
 	const { readinessFor } = useRoleIntroReadiness(orgId);
 	const [streams, setStreams] = useState<ReviewStream[]>(initialStreams ?? [...REVIEW_STREAMS]);
-	const [reviewedCount, setReviewedCount] = useState(0);
+	// This visit's decisions, for the scoreboard and the recap; reset when the filter changes.
+	const [decisions, setDecisions] = useState<ReviewDecision[]>([]);
+	const lastDecisionAt = useRef(0);
 	// Which way the deck card leaves: the last decision taken.
 	const [lastMove, setLastMove] = useState<"pass" | "intro" | "maybe" | null>(null);
 	const [maybeItem, setMaybeItem] = useState<ReviewItem | null>(null);
 	const rolePickerItem = rolePicker?.item ?? null;
 
-	const countReviewed = useCallback(() => setReviewedCount((c) => c + 1), []);
-	const uncountReviewed = useCallback(() => setReviewedCount((c) => Math.max(0, c - 1)), []);
+	const countDecision = useCallback((item: ReviewItem, kind: ReviewDecisionKind) => {
+		const now = Date.now();
+		// Time on this card, capped so a coffee break doesn't wreck the pace.
+		const seconds = Math.min(PACE_CAP_SECONDS, Math.max(1, (now - (lastDecisionAt.current || now)) / 1000));
+		lastDecisionAt.current = now;
+		const key = reviewItemKey(item);
+		setDecisions((prev) => [...prev.filter((d) => d.key !== key), { key, name: firstNameOf(item), kind, seconds }]);
+	}, []);
+	const uncountDecision = useCallback((key: string) => setDecisions((prev) => prev.filter((d) => d.key !== key)), []);
 
-	const reversePass = useReverseReviewPass(orgId, { onFailed: countReviewed });
+	const reversePass = useReverseReviewPass(orgId, {
+		onFailed: ({ item, action }) => countDecision(item, action ?? "pass"),
+	});
 	// Decision toasts: 5s with a countdown bar; Undo (or Z) reverses the latest one.
 	const undoRef = useRef<{ id: string; run: () => void } | null>(null);
 	const undoToast = useCallback((id: string, message: string, undo: () => void) => {
@@ -113,7 +143,7 @@ export function useReviewBoard(
 			retryAnchors.current.set(reviewItemKey(item), selectedKeyRef.current);
 			// Nothing left to undo for a decision that didn't save; its toast became the error.
 			if (undoRef.current?.id === `review-action:${reviewItemKey(item)}`) undoRef.current = null;
-			if (action !== "maybe") uncountReviewed();
+			uncountDecision(reviewItemKey(item));
 		},
 	});
 	const { mutate } = mutation;
@@ -144,8 +174,12 @@ export function useReviewBoard(
 	const [prevFilterKey, setPrevFilterKey] = useState(filterKey);
 	if (filterKey !== prevFilterKey) {
 		setPrevFilterKey(filterKey);
-		setReviewedCount(0);
+		setDecisions([]);
 	}
+	// The first card's time counts from when this filter opened.
+	useEffect(() => {
+		lastDecisionAt.current = Date.now();
+	}, [filterKey]);
 
 	const { similarTo, start: pullSimilar, drop: dropSimilar, isDesktop } = useSimilarFollowThrough(orgId);
 	const heldKey = held ? reviewItemKey(held.item) : null;
@@ -156,8 +190,10 @@ export function useReviewBoard(
 	}, [data, sendoutScope]);
 	const feedTalentIds = useMemo(() => new Set((data?.items ?? []).map((item) => item.talentId)), [data]);
 	const items = useMemo(() => {
-		const visible = feed.filter(
-			(i) => streams.includes(streamOf(i.bucket)) && reviewItemKey(i) !== heldKey && !!i.maybe === showMaybe,
+		const visible = sortByQueue(
+			feed.filter(
+				(i) => streams.includes(streamOf(i.bucket)) && reviewItemKey(i) !== heldKey && !!i.maybe === showMaybe,
+			),
 		);
 		// Similar profiles pulled forward after an intro go first.
 		// ponytail: they jump to the top, not to where the anchor sat; fine while reviewing top-down.
@@ -215,9 +251,9 @@ export function useReviewBoard(
 			setPanel(null);
 			toast.dismiss(`held-intro:${key}`);
 			setSelectedKey(key);
-			uncountReviewed();
+			uncountDecision(key);
 		},
-		[cancelHeldIntro, uncountReviewed, dropSimilar],
+		[cancelHeldIntro, uncountDecision, dropSimilar],
 	);
 
 	const commitIntro = useCallback(
@@ -229,7 +265,7 @@ export function useReviewBoard(
 				text: args.text ?? null,
 				similarAnchorTalentId: similarTo.get(reviewItemKey(item))?.anchor.talentId,
 			});
-			countReviewed();
+			countDecision(item, "intro");
 			setLastMove("intro");
 			const pulled = pullSimilar(item, args.roleIdOverride);
 			if (pulled.length > 0) setSelectedKey(pulled[0]);
@@ -248,7 +284,7 @@ export function useReviewBoard(
 				() => undoHeldIntro(reviewItemKey(item)),
 			);
 		},
-		[hold, undoHeldIntro, countReviewed, advance, pullSimilar, similarTo, roles, undoToast],
+		[hold, undoHeldIntro, countDecision, advance, pullSimilar, similarTo, roles, undoToast],
 	);
 
 	const openIntro = useCallback(
@@ -341,7 +377,7 @@ export function useReviewBoard(
 				roleIdOverride,
 				similarAnchorTalentId: similarTo.get(reviewItemKey(item))?.anchor.talentId,
 			});
-			countReviewed();
+			countDecision(item, "pass");
 			setLastMove("pass");
 			advance(item);
 			setPanel(null);
@@ -351,11 +387,11 @@ export function useReviewBoard(
 				() => {
 					reversePass.mutate({ item, opportunityId: item.opportunityId });
 					setSelectedKey(reviewItemKey(item));
-					uncountReviewed();
+					uncountDecision(reviewItemKey(item));
 				},
 			);
 		},
-		[panel, mutate, advance, countReviewed, similarTo, undoToast, reversePass, uncountReviewed],
+		[panel, mutate, advance, countDecision, similarTo, undoToast, reversePass, uncountDecision],
 	);
 
 	const dismissPanel = useCallback(() => setPanel(null), []);
@@ -377,14 +413,16 @@ export function useReviewBoard(
 			const key = reviewItemKey(item);
 			mutate({ item, action: "maybe", maybeNote: note || undefined });
 			setMaybeItem(null);
+			countDecision(item, "maybe");
 			setLastMove("maybe");
 			advance(item);
 			undoToast(`review-action:${key}`, `Moved ${firstNameOf(item)} to Maybe`, () => {
 				reversePass.mutate({ item, opportunityId: item.opportunityId, action: "maybe" });
 				setSelectedKey(key);
+				uncountDecision(key);
 			});
 		},
-		[maybeItem, mutate, advance, reversePass, undoToast],
+		[maybeItem, mutate, advance, reversePass, undoToast, countDecision, uncountDecision],
 	);
 
 	// From the reason step back to "Which role?" (only for people who came without a role).
@@ -402,6 +440,15 @@ export function useReviewBoard(
 		},
 		[orgId],
 	);
+
+	const tally = useMemo<ReviewTally>(() => {
+		const acc = { intro: 0, pass: 0, maybe: 0, total: decisions.length, seconds: 0 };
+		for (const d of decisions) {
+			acc[d.kind]++;
+			acc.seconds += d.seconds;
+		}
+		return { ...acc, avgSeconds: acc.total > 0 ? Math.round(acc.seconds / acc.total) : null };
+	}, [decisions]);
 
 	const selectPrev = useCallback(() => {
 		const idx = selected ? items.findIndex((i) => reviewItemKey(i) === reviewItemKey(selected)) : -1;
@@ -465,7 +512,8 @@ export function useReviewBoard(
 		setStreams,
 		streamCounts,
 		roleFeedCount,
-		reviewedCount,
-		uncountReviewed,
+		decisions,
+		tally,
+		uncountDecision,
 	};
 }

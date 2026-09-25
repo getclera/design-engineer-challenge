@@ -10,7 +10,7 @@ import { invalidateOrgDashboard } from "./invalidate-org-dashboard";
 const PASSED_PAGE_SIZE = 50;
 
 interface PassedItemsCallbacks {
-	onUnpassed?: () => void;
+	onUnpassed?: (item: ReviewItem) => void;
 }
 
 export function usePassedItems(orgId: string, roleId?: string, callbacks?: PassedItemsCallbacks) {
@@ -45,8 +45,9 @@ export function usePassedItems(orgId: string, roleId?: string, callbacks?: Passe
 			if (previous) {
 				const items = previous.items.filter((i) => i.opportunityId !== opportunityId);
 				queryClient.setQueryData(queryKey, { items, totalCount: Math.max(0, previous.totalCount - 1) });
+				const unpassed = previous.items.find((i) => i.opportunityId === opportunityId);
+				if (unpassed) callbacks?.onUnpassed?.(unpassed);
 			}
-			callbacks?.onUnpassed?.();
 			return { previous };
 		},
 		onSuccess: () => toast.success("Brought back to your review queue"),

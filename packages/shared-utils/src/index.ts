@@ -1,5 +1,5 @@
 export { BUG_BOUNTY_EMAIL, PRESS_EMAIL, PRIVACY_EMAIL, SUPPORT_EMAIL, TALENT_EMAIL, UNSUBSCRIBE_EMAIL } from "./clera-emails.ts";
-export { formatCalendarYear, formatDateTime, formatMonthsDuration, formatMonthYear, formatTimeAgo, MS_PER_DAY } from "./date.ts";
+export { formatCalendarYear, formatDateTime, formatMonthsDuration, formatMonthYear, formatTimeAgo, formatTimeAgoCompact, MS_PER_DAY } from "./date.ts";
 export { isPersonalEmailDomain, PERSONAL_EMAIL_DOMAINS } from "./email-domain.ts";
 export { capitalizeFirst, formatCompactUsd, formatFileSize, formatNumber, formatSalaryAmount, formatSalaryRange, formatYoeCompact, getCurrencySymbol, humanizeKey, normalizeYoe, SALARY_SENTINEL_VALUE, YOE_UNKNOWN_SENTINEL } from "./format.ts";
 export { codePointToString } from "./html-entities.ts";

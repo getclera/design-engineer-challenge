@@ -5,8 +5,8 @@ import { StatusPill } from "@v2/components/ui/status-pill";
 import { TalentBoardCard } from "@v2/features/org-shared-cards";
 import type { EntityChipsState } from "@v2/hooks/use-deferred-entity-chips";
 import { ReviewCardActions } from "./review-card-actions";
-import { StreamBadge } from "./stream-badge";
-import { type ReviewItem, reviewItemKey, streamOf } from "./types";
+import { ReviewWaiting } from "./review-waiting";
+import { type ReviewItem, reviewItemKey } from "./types";
 
 interface ReviewCardProps {
 	item: ReviewItem;
@@ -84,7 +84,7 @@ export function ReviewCard({
 			onSelect={onSelect}
 			onOpen={onOpen}
 			onPrefetch={onPrefetch}
-			badge={item.source !== "passed" ? <StreamBadge stream={streamOf(item.bucket)} /> : undefined}
+			badge={item.source !== "passed" ? <ReviewWaiting item={item} /> : undefined}
 			onVisible={() => onVisible(item.talentId)}
 			onSeen={onSeen && (() => onSeen(item.talentId))}
 			footer={hasTags ? <div className="flex flex-wrap gap-1.5">{tags}</div> : undefined}

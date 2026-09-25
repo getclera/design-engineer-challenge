@@ -6,7 +6,7 @@ import { Card } from "@v2/components/ui/card";
 import { Kbd } from "@v2/components/ui/kbd";
 import { TalentBoardDetailPane, TalentDecisionActionBar } from "@v2/features/org-shared-cards";
 import { cn } from "@v2/lib/utils";
-import { PercentBar, TalentEntityChips } from "@v2/components/data-display";
+import { TalentEntityChips } from "@v2/components/data-display";
 import { AnimatePresence, animate, motion, useMotionValue, useReducedMotion, useTransform } from "framer-motion";
 import { useEffect } from "react";
 import { AdminPassButton } from "./admin-pass-button";
@@ -16,6 +16,7 @@ import { ReviewDecisionPopover } from "./review-decision-popover";
 import { ReviewFitReason } from "./review-fit-reason";
 import { ReviewHeaderMeta } from "./review-header-meta";
 import { ReviewMaybeButton } from "./review-maybe-button";
+import { ReviewNextUp } from "./review-next-up";
 import { ReviewProfileShell } from "./review-profile-shell";
 import { ReviewViewOnlyNote } from "./review-view-only-note";
 import { reviewItemKey, streamOf } from "./types";
@@ -73,8 +74,8 @@ export function ReviewDeckStage({
 	const similar = item ? board.similarTo.get(key) : undefined;
 	const index = board.items.findIndex((i) => reviewItemKey(i) === key);
 	const behind = expanded ? 0 : Math.min(2, board.items.length - 1 - index);
-	const left = board.items.length;
-	const total = left + board.reviewedCount;
+	// Who comes after a decision: the same pick as the board's advance().
+	const next = board.items[index + 1] ?? (index > 0 ? board.items[index - 1] : undefined);
 	const chips = item ? board.chipsFor(item.talentId) : null;
 	const { onCardVisible } = board;
 	// The list may be hidden, so the card asks for its own company chips.
@@ -92,25 +93,6 @@ export function ReviewDeckStage({
 
 	return (
 		<div className={cn("flex flex-col gap-3", expanded && "h-full")}>
-			{left > 0 && (
-				<div className="flex items-center gap-3 font-v2-body text-v2-text-tertiary text-xs tabular-nums">
-					<span>
-						<b className="font-semibold text-v2-text-primary">
-							{left}
-							{board.truncated && "+"}
-						</b>{" "}
-						left
-					</span>
-					<PercentBar
-						value={total > 0 ? (board.reviewedCount / total) * 100 : 0}
-						className="h-1 flex-1 bg-v2-border-divider"
-						barClassName="bg-v2-brand-green"
-					/>
-					<span>
-						<b className="font-semibold text-v2-text-primary">{board.reviewedCount}</b> done
-					</span>
-				</div>
-			)}
 			<div className={cn("relative", expanded && "min-h-0 flex-1")}>
 				{REVIEW_DECK_GHOST_CLASSES.slice(2 - behind).map((ghost) => (
 					<div key={ghost} aria-hidden="true" className={ghost} />
@@ -189,6 +171,7 @@ export function ReviewDeckStage({
 										source: item?.source,
 									}}
 									profileMeta={item ? <ReviewHeaderMeta item={item} orgId={orgId} showRole={!selectedRoleId} /> : null}
+									profileAboveCard={item ? <ReviewFitReason reason={item.fitReason} /> : null}
 									profileBelowHeader={
 										chips && (
 											<TalentEntityChips companies={chips.companies} isLoading={chips.isLoading} className="mt-2" />
@@ -207,7 +190,6 @@ export function ReviewDeckStage({
 														</p>
 													</div>
 												)}
-												<ReviewFitReason reason={item.fitReason} />
 												<div className="flex justify-end border-t border-v2-border-warm/50 px-4 py-1.5 sm:px-5">
 													<Button
 														variant="unstyled"
@@ -250,6 +232,7 @@ export function ReviewDeckStage({
 															) : undefined
 														}
 													/>
+													{next && !swipe && <ReviewNextUp item={next} />}
 												</div>
 											</ReviewDecisionPopover>
 										))

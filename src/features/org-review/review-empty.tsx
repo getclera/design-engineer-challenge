@@ -8,6 +8,7 @@ import { Skeleton } from "@v2/components/ui/skeleton";
 import { ReviewCountBadge } from "@v2/features/org-roles";
 import type { ReviewListData } from "@v2/lib/review-feed";
 import Link from "next/link";
+import type { ReactNode } from "react";
 import { useReviewEmptyScenario } from "./hooks/use-review-empty-scenario";
 import { ReviewEmptyRow } from "./review-empty-row";
 
@@ -21,6 +22,8 @@ interface ReviewEmptyProps {
 	pausedPending: ReviewListData["pausedPending"];
 	onClearSendout: () => void;
 	onRoleChange: (roleId: string) => void;
+	/** This visit's recap; replaces the heading once the reviewer has emptied the queue. */
+	recap?: (roleName: string | null) => ReactNode;
 }
 
 export function ReviewEmpty({
@@ -33,6 +36,7 @@ export function ReviewEmpty({
 	pausedPending,
 	onClearSendout,
 	onRoleChange,
+	recap,
 }: ReviewEmptyProps) {
 	const { scenario, otherRoles, roleName, rolePending, isResolved } = useReviewEmptyScenario(
 		orgId,
@@ -73,11 +77,17 @@ export function ReviewEmpty({
 	if (scenario === "all-done") {
 		return (
 			<div className="flex flex-col items-center px-6 py-14 text-center">
-				<CleraLogo className="mb-7 h-auto w-40 text-v2-brand-teal opacity-15" />
-				<h3 className="font-v2-heading text-v2-text-primary text-xl">Nice, you're all done</h3>
-				<p className="mt-2 max-w-md font-v2-body text-sm text-v2-text-secondary">
-					Every candidate has a decision. New drops and intro requests land here.
-				</p>
+				{recap ? (
+					recap(roleName)
+				) : (
+					<>
+						<CleraLogo className="mb-7 h-auto w-40 text-v2-brand-teal opacity-15" />
+						<h3 className="font-v2-heading text-v2-text-primary text-xl">Nice, you're all done</h3>
+						<p className="mt-2 max-w-md font-v2-body text-sm text-v2-text-secondary">
+							Every candidate has a decision. New drops and intro requests land here.
+						</p>
+					</>
+				)}
 				<div className="mt-7 w-full max-w-md divide-y divide-v2-border-divider overflow-hidden rounded-v2-md border border-v2-border-warm">
 					<ReviewEmptyRow label="See candidates you requested" href={orgRoutes.pipeline(orgId)} />
 					{canUseTalentSearch && <ReviewEmptyRow label="Search talent yourself" href={orgRoutes.talentSearch(orgId)} />}
@@ -90,13 +100,22 @@ export function ReviewEmpty({
 
 	return (
 		<div className="flex flex-col items-center px-6 py-12 text-center">
-			<CheckCircleIcon size={28} weight="light" className="mb-4 text-v2-brand-green" />
-			<h3 className="font-v2-heading text-v2-text-primary text-lg">
-				{isListDone ? "That list is done" : `Nothing left in ${roleName ?? "this role"}`}
-			</h3>
-			<p className="mt-2 max-w-md font-v2-body text-sm text-v2-text-secondary">
-				{isListDone ? "Keep going with the rest of this role." : "Other roles still have candidates waiting."}
-			</p>
+			{recap && !isListDone ? (
+				<>
+					{recap(roleName)}
+					<p className="mt-8 font-v2-body text-v2-text-tertiary text-xs">Other roles still have candidates waiting</p>
+				</>
+			) : (
+				<>
+					<CheckCircleIcon size={28} weight="light" className="mb-4 text-v2-brand-green" />
+					<h3 className="font-v2-heading text-v2-text-primary text-lg">
+						{isListDone ? "That list is done" : `Nothing left in ${roleName ?? "this role"}`}
+					</h3>
+					<p className="mt-2 max-w-md font-v2-body text-sm text-v2-text-secondary">
+						{isListDone ? "Keep going with the rest of this role." : "Other roles still have candidates waiting."}
+					</p>
+				</>
+			)}
 			<div className="mt-6 w-full max-w-md divide-y divide-v2-border-divider overflow-hidden rounded-v2-md border border-v2-border-warm">
 				{isListDone ? (
 					<ReviewEmptyRow

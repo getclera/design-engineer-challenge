@@ -16,7 +16,7 @@ interface ReverseReviewPassInput {
 }
 
 interface ReverseReviewPassCallbacks {
-	onFailed?: () => void;
+	onFailed?: (input: ReverseReviewPassInput) => void;
 }
 
 export function useReverseReviewPass(orgId: string, callbacks?: ReverseReviewPassCallbacks) {
@@ -37,9 +37,9 @@ export function useReverseReviewPass(orgId: string, callbacks?: ReverseReviewPas
 					: insertIntoReviewFeed(queryClient, queryKey, item);
 			return { previous };
 		},
-		onError: (error, _variables, context) => {
+		onError: (error, variables, context) => {
 			if (context?.previous) queryClient.setQueryData(queryKey, context.previous);
-			callbacks?.onFailed?.();
+			callbacks?.onFailed?.(variables);
 			toast.error(
 				error.message === "Opportunity is not a reversible pass"
 					? "This pass can no longer be undone"
