@@ -57,8 +57,7 @@ const OCCUPATION_BUTTON =
 	"h-auto w-auto max-w-[min(24rem,70cqw)] truncate px-1 py-0 text-xs font-v2-body font-light text-v2-text-secondary";
 const INLINE_INPUT = "h-auto py-0.5";
 const TALENT_TAG_PILL = "h-5 px-2 py-0 text-2xs";
-const NAME_TEXT =
-	"max-w-[min(24rem,70cqw)] line-clamp-2 break-words font-v2-heading text-lg font-semibold text-v2-text-primary";
+const NAME_TEXT = "max-w-[min(24rem,70cqw)] truncate font-v2-heading text-lg font-semibold text-v2-text-primary";
 
 function IdentityPublicZone({
 	data,

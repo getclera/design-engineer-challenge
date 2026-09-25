@@ -3,7 +3,8 @@
 import { Button } from "@v2/components/ui/button";
 
 const SEGMENT_BASE = "h-6 rounded-v2-full border-transparent px-3.5 text-xs transition-colors";
-const ACTIVE_CLASSES = "bg-v2-brand-teal font-medium text-v2-text-inverse hover:bg-v2-brand-teal";
+// White in both themes: text-inverse turns dark in dark mode and disappears into the teal.
+const ACTIVE_CLASSES = "bg-v2-brand-teal font-medium text-white hover:bg-v2-brand-teal";
 const INACTIVE_CLASSES = "bg-transparent text-v2-text-tertiary hover:text-v2-text-secondary";
 
 export const REVIEW_VIEWS = [

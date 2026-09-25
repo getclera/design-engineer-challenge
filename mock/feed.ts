@@ -45,7 +45,8 @@ export function buildReviewFeed({ roleId }: { roleId: string | null }): ReviewLi
 
   const byRole = Object.fromEntries(
     ROLES.filter((role) => role.status === "active").map((role) => {
-      const visible = pending.filter((item) => item.roleId === role.id).length;
+      // Maybes have their own tab: "waiting" counts only people nobody has decided on yet.
+      const visible = pending.filter((item) => item.roleId === role.id && !item.maybe).length;
       const hidden = HIDDEN_BEYOND_PAGE_BY_ROLE[role.id] ?? 0;
       return [role.id, { pending: visible + hidden, truncated: hidden > 0 }];
     }),
