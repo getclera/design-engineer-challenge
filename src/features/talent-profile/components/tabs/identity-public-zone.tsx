@@ -162,7 +162,7 @@ function IdentityPublicZone({
 				) : (
 					occupation &&
 					name && (
-						<p className="max-w-[min(24rem,70cqw)] truncate font-v2-body text-xs font-light leading-snug text-v2-text-secondary">
+						<p className="line-clamp-2 max-w-[min(24rem,70cqw)] font-v2-body text-xs font-light leading-snug text-v2-text-secondary">
 							{occupation}
 						</p>
 					)

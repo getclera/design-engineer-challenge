@@ -31,9 +31,9 @@ export function ReviewMaybeButton({
 			<TalentDecisionTooltip label="Not sure yet. Moves to Maybe, decide anytime.">
 				<PopoverTrigger asChild>
 					<Button variant="ghost" className="shrink-0 gap-1.5" disabled={isPending} aria-label="Maybe">
-						<Question size={16} weight="bold" />
-						{/* Phone: icon only, so Pass and Request intro keep their room. */}
-						<span className="hidden sm:inline">Maybe</span>
+						{/* Phone: the word only, so Pass and Request intro keep their room. */}
+						<Question size={16} weight="bold" className="hidden sm:block" />
+						Maybe
 						{showHint && <Kbd className="ml-1 bg-black/15 px-1 py-0 text-current">M</Kbd>}
 					</Button>
 				</PopoverTrigger>

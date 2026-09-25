@@ -120,6 +120,8 @@ interface TalentProfileContentProps {
 	identiconSeed?: string | null;
 	tracking?: OrgTalentTracking;
 	aboveHeader?: ReactNode;
+	/** Under name, headline and location (Review: past companies). */
+	belowHeader?: ReactNode;
 	belowFacts?: ReactNode;
 	/** Only the identity card (header, facts, belowFacts); the review deck's card front. */
 	compact?: boolean;
@@ -132,6 +134,7 @@ function TalentProfileContent({
 	identiconSeed,
 	tracking,
 	aboveHeader,
+	belowHeader,
 	belowFacts,
 	compact = false,
 }: TalentProfileContentProps) {
@@ -177,6 +180,7 @@ function TalentProfileContent({
 						}
 						linkedinTracking={tracking}
 					/>
+					{belowHeader}
 				</div>
 				{hasFacts(factsProps) && (
 					<div className="border-t border-v2-border-warm/50 px-4 py-1.5 sm:px-5">

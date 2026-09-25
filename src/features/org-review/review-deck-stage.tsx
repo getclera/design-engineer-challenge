@@ -6,8 +6,9 @@ import { Card } from "@v2/components/ui/card";
 import { Kbd } from "@v2/components/ui/kbd";
 import { TalentBoardDetailPane, TalentDecisionActionBar } from "@v2/features/org-shared-cards";
 import { cn } from "@v2/lib/utils";
-import { PercentBar } from "@v2/components/data-display";
+import { PercentBar, TalentEntityChips } from "@v2/components/data-display";
 import { AnimatePresence, animate, motion, useMotionValue, useReducedMotion, useTransform } from "framer-motion";
+import { useEffect } from "react";
 import { AdminPassButton } from "./admin-pass-button";
 import { REVIEW_DECK_GHOST_CLASSES } from "./constants";
 import { useReviewBoardContext } from "./review-board-context";
@@ -74,6 +75,12 @@ export function ReviewDeckStage({
 	const behind = expanded ? 0 : Math.min(2, board.items.length - 1 - index);
 	const left = board.items.length;
 	const total = left + board.reviewedCount;
+	const chips = item ? board.chipsFor(item.talentId) : null;
+	const { onCardVisible } = board;
+	// The list may be hidden, so the card asks for its own company chips.
+	useEffect(() => {
+		if (item) onCardVisible(item.talentId);
+	}, [item, onCardVisible]);
 
 	// Phone swipe: the card tilts with the drag and a stamp shows where it'll go.
 	const dragX = useMotionValue(0);
@@ -108,6 +115,17 @@ export function ReviewDeckStage({
 				<AnimatePresence initial={false} mode="popLayout" custom={board.lastMove}>
 					<motion.div
 						key={key}
+						// A decision removes the focused button with the old card; land focus on this card, not the page.
+						// ponytail: waits out the 220ms exit animation; tie it to onExitComplete if that timing changes.
+						ref={(el) => {
+							if (!el || !item) return;
+							setTimeout(() => {
+								if (el.isConnected && (!document.activeElement || document.activeElement === document.body))
+									el.focus({ preventScroll: true });
+							}, 300);
+						}}
+						tabIndex={-1}
+						aria-label={item?.talentName}
 						custom={board.lastMove}
 						variants={reduceMotion ? fadeMotion : cardMotion}
 						initial="initial"
@@ -129,7 +147,7 @@ export function ReviewDeckStage({
 							else if (offset.x < -distance) board.openPass(item);
 							else if (offset.y > 100 && Math.abs(offset.x) < 60) board.openMaybe(item);
 						}}
-						className={cn("relative", expanded && "h-full")}
+						className={cn("relative outline-none", expanded && "h-full")}
 					>
 						<motion.div style={{ rotate: tilt }} className={cn(expanded && "h-full")}>
 							{swipe && (
@@ -168,6 +186,11 @@ export function ReviewDeckStage({
 										source: item?.source,
 									}}
 									profileMeta={item ? <ReviewHeaderMeta item={item} orgId={orgId} showRole={!selectedRoleId} /> : null}
+									profileBelowHeader={
+										chips && (
+											<TalentEntityChips companies={chips.companies} isLoading={chips.isLoading} className="mt-2" />
+										)
+									}
 									profileBelowFacts={
 										item ? (
 											<>

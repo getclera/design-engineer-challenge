@@ -48,7 +48,8 @@ export function TalentDecisionActionBar({
 				}
 			>
 				<Button variant="primary" className="flex-3 gap-1.5" disabled={isPending} onClick={onInterview}>
-					<PaperPlaneTilt size={16} weight="fill" />
+					{/* Phone: text only, so it fits beside Pass and Maybe. */}
+					<PaperPlaneTilt size={16} weight="fill" className="hidden sm:block" />
 					{alreadyInterested ? "Make an intro" : "Request intro"}
 					{showHints && <span className={KBD}>→</span>}
 				</Button>
