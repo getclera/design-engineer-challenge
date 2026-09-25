@@ -7,7 +7,6 @@ import { cn } from "@v2/lib/utils";
 interface ReviewCardActionsProps {
 	talentName: string;
 	isPending: boolean;
-	isPinned: boolean;
 	onIntro: () => void;
 	onPass: () => void;
 }
@@ -15,15 +14,11 @@ interface ReviewCardActionsProps {
 const ACTION_CLASSES =
 	"flex size-7 items-center justify-center rounded-full border border-v2-border-default bg-v2-bg-page text-v2-text-secondary shadow-xs transition-colors";
 
-export function ReviewCardActions({ talentName, isPending, isPinned, onIntro, onPass }: ReviewCardActionsProps) {
+export function ReviewCardActions({ talentName, isPending, onIntro, onPass }: ReviewCardActionsProps) {
 	return (
 		<div
-			className={cn(
-				"absolute top-2.5 right-3 flex items-center gap-1.5 rounded-full bg-v2-bg-warm pl-3 transition-opacity",
-				isPinned
-					? "opacity-100"
-					: "pointer-events-none opacity-0 group-focus-within:pointer-events-auto group-focus-within:opacity-100 group-hover:pointer-events-auto group-hover:opacity-100",
-			)}
+			// Shown on hover or keyboard focus only, so the waiting time stays readable on every row, the current one too.
+			className="pointer-events-none absolute top-2.5 right-3 flex items-center gap-1.5 rounded-full bg-v2-bg-warm pl-3 opacity-0 transition-opacity group-focus-within:pointer-events-auto group-focus-within:opacity-100 group-hover:pointer-events-auto group-hover:opacity-100"
 		>
 			<Button
 				type="button"

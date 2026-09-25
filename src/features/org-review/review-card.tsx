@@ -110,13 +110,7 @@ export function ReviewCard({
 	return (
 		<div className="group relative">
 			{card}
-			<ReviewCardActions
-				talentName={item.talentName}
-				isPending={isPending}
-				isPinned={isSelected}
-				onIntro={onIntro}
-				onPass={onPass}
-			/>
+			<ReviewCardActions talentName={item.talentName} isPending={isPending} onIntro={onIntro} onPass={onPass} />
 			{retry}
 		</div>
 	);

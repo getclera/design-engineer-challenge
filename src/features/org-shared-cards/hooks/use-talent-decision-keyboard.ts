@@ -29,6 +29,8 @@ export function useTalentDecisionKeyboard<TItem>({
 	useEffect(() => {
 		if (!enabled || panelOpen) return;
 		const handleKey = (e: KeyboardEvent) => {
+			// A menu or button already used this key (Enter opening the role menu): don't also decide.
+			if (e.defaultPrevented) return;
 			const el = e.target;
 			if (el instanceof HTMLElement && (el.tagName === "INPUT" || el.tagName === "TEXTAREA" || el.isContentEditable)) {
 				return;
