@@ -12,7 +12,6 @@ export function ReviewBoardGridSkeleton() {
 						<Skeleton className="h-6 w-32 rounded-full" />
 						<Skeleton className="h-4 w-80 max-w-full rounded-full" />
 					</div>
-					<Skeleton className="h-4 w-24 shrink-0 rounded-full" />
 				</div>
 				<div className="divide-y divide-v2-border-divider">
 					{Array.from({ length: 7 }).map((_, i) => (

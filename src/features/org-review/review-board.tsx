@@ -190,17 +190,20 @@ export function ReviewBoard({
 		setProfileKey(board.selectedKey);
 		setFullProfile(false);
 	}
-	const handleScreenKey = useCallback((key: string) => {
-		if (key === " ") setFullProfile((open) => !open);
-		else if (key === "l" || key === "L") setListHidden((hidden) => !hidden);
-		else if (key === "?") setHelpOpen((open) => !open);
-		else if (canDecide && (key === "z" || key === "Z")) board.undoLast();
-		// Viewers can't decide, so ←/→ just move between people.
-		else if (!canDecide && key === "ArrowRight") board.selectNext();
-		else if (!canDecide && key === "ArrowLeft") board.selectPrev();
-		else return false;
-		return true;
-	}, [canDecide, board.selectNext, board.selectPrev, board.undoLast]);
+	const handleScreenKey = useCallback(
+		(key: string) => {
+			if (key === " ") setFullProfile((open) => !open);
+			else if (key === "l" || key === "L") setListHidden((hidden) => !hidden);
+			else if (key === "?") setHelpOpen((open) => !open);
+			else if (canDecide && (key === "z" || key === "Z")) board.undoLast();
+			// Viewers can't decide, so ←/→ just move between people.
+			else if (!canDecide && key === "ArrowRight") board.selectNext();
+			else if (!canDecide && key === "ArrowLeft") board.selectPrev();
+			else return false;
+			return true;
+		},
+		[canDecide, board.selectNext, board.selectPrev, board.undoLast],
+	);
 
 	const anyModalOpen = !!board.rolePickerItem || board.hmWarningOpen;
 	useTalentDecisionKeyboard({
@@ -301,12 +304,7 @@ export function ReviewBoard({
 							/>
 						</div>
 					) : (
-						<div
-							className={cn(
-								REVIEW_BOARD_GRID_CLASSES,
-								listHidden && !isMobile && "lg:grid-cols-1",
-							)}
-						>
+						<div className={cn(REVIEW_BOARD_GRID_CLASSES, listHidden && !isMobile && "lg:grid-cols-1")}>
 							{(isMobile && !mobileList) || (listHidden && !isMobile) ? null : (
 								<Card className={REVIEW_LEFT_CARD_CLASSES}>
 									{showScopeBar && (
@@ -320,13 +318,13 @@ export function ReviewBoard({
 										/>
 									)}
 									<ReviewHeader
-										remaining={board.items.length}
-										reviewed={board.reviewedCount}
-										truncated={reviewView !== "maybe" && board.truncated}
 										maybe={reviewView === "maybe"}
 										onHide={isMobile ? undefined : () => setListHidden(true)}
 									/>
-									<div ref={listRef} className="max-h-[calc(100dvh-16rem)] min-h-0 flex-1 overflow-y-auto lg:max-h-none">
+									<div
+										ref={listRef}
+										className="max-h-[calc(100dvh-16rem)] min-h-0 flex-1 overflow-y-auto lg:max-h-none"
+									>
 										{board.items.length === 0 ? (
 											<EmptyState
 												heading={

@@ -106,6 +106,9 @@ export function ReviewDeckStage({
 						className="h-1 flex-1 bg-v2-border-divider"
 						barClassName="bg-v2-brand-green"
 					/>
+					<span>
+						<b className="font-semibold text-v2-text-primary">{board.reviewedCount}</b> done
+					</span>
 				</div>
 			)}
 			<div className={cn("relative", expanded && "min-h-0 flex-1")}>
