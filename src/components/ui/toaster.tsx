@@ -10,7 +10,7 @@ type V2ToasterProps = {
 export function V2Toaster({ duration = 4000 }: V2ToasterProps) {
 	return (
 		<Sonner
-			position="bottom-right"
+			position="top-right"
 			expand={false}
 			icons={{
 				success: <Check size={16} className="text-v2-status-active" />,
