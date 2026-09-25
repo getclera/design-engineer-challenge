@@ -41,7 +41,7 @@ export function ReviewDecisionPopover({
 	children: ReactNode;
 }) {
 	const board = useReviewBoardContext();
-	const { panel, rolePickerItem } = board;
+	const { panel, rolePickerItem, decisionOrigin } = board;
 	const item = rolePickerItem ?? panel?.item ?? null;
 	const isPass = (rolePickerItem ? board.rolePickerAction : panel?.mode) === "pass";
 	const isRoleStep = !!rolePickerItem;
@@ -49,6 +49,16 @@ export function ReviewDecisionPopover({
 	const { data: roles = [] } = useRolesList(orgId, false);
 	const { readinessFor } = useRoleIntroReadiness(orgId);
 	const isPhone = useMediaQuery("(max-width: 1023px)");
+	// Anchored to the list row's × / ➤ when that's what opened it, otherwise to the decision bar.
+	const barRef = useRef<HTMLDivElement>(null);
+	const originRef = useRef(decisionOrigin);
+	originRef.current = decisionOrigin;
+	const anchor = useRef({
+		getBoundingClientRect: () => (originRef.current ?? barRef.current)?.getBoundingClientRect() ?? new DOMRect(),
+		get contextElement() {
+			return originRef.current ?? barRef.current ?? undefined;
+		},
+	});
 
 	let options: Option[] = [];
 	let initial = 0;
@@ -63,7 +73,10 @@ export function ReviewDecisionPopover({
 			}
 			return { id: r.id, label: r.position, note: r.id === guess ? "Best fit" : undefined };
 		});
-		initial = Math.max(0, options.findIndex((o) => o.id === guess));
+		initial = Math.max(
+			0,
+			options.findIndex((o) => o.id === guess),
+		);
 	} else if (item) {
 		options = isPass ? PASS_DECISION_CATEGORIES : INTRO_DECISION_CATEGORIES;
 	}
@@ -142,13 +155,14 @@ export function ReviewDecisionPopover({
 				if (!open) close();
 			}}
 		>
-			<PopoverAnchor asChild>{children}</PopoverAnchor>
+			<div ref={barRef}>{children}</div>
+			<PopoverAnchor virtualRef={anchor} />
 			<PopoverContent
-				side="top"
-				align={isPass ? "start" : "end"}
-				// The anchor is the whole action bar (border-t + py-3), so land 8px from the button itself.
-				sideOffset={8 - 13}
-				alignOffset={16}
+				{...(decisionOrigin
+					? // Under the row's buttons, right-aligned with them, inside the list.
+						{ side: "bottom", align: "end", sideOffset: 8, alignOffset: 0 }
+					: // The anchor is the whole action bar (border-t + py-3), so land 8px from the button itself.
+						{ side: "top", align: isPass ? "start" : "end", sideOffset: 8 - 13, alignOffset: 16 })}
 				className="w-96 p-2"
 				onOpenAutoFocus={(e) => e.preventDefault()}
 				onEscapeKeyDown={onEscapeKeyDown}

@@ -94,6 +94,11 @@ export function useReviewBoard(
 	// Which way the deck card leaves: the last decision taken.
 	const [lastMove, setLastMove] = useState<"pass" | "intro" | "maybe" | null>(null);
 	const [maybeItem, setMaybeItem] = useState<ReviewItem | null>(null);
+	// The list row button that opened the reason popup, so it opens next to it; null means the card's bar.
+	const [decisionOrigin, setDecisionOrigin] = useState<HTMLElement | null>(null);
+	useEffect(() => {
+		if (!panel && !rolePicker) setDecisionOrigin(null);
+	}, [panel, rolePicker]);
 	const rolePickerItem = rolePicker?.item ?? null;
 
 	const countDecision = useCallback((item: ReviewItem, kind: ReviewDecisionKind) => {
@@ -503,6 +508,8 @@ export function useReviewBoard(
 		maybeItem,
 		openMaybe,
 		confirmMaybe,
+		decisionOrigin,
+		setDecisionOrigin,
 		closeMaybe: () => setMaybeItem(null),
 		selectPrev,
 		selectNext,

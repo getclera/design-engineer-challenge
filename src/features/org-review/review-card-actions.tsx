@@ -3,6 +3,7 @@
 import { PaperPlaneTilt, X } from "@phosphor-icons/react";
 import { Button } from "@v2/components/ui/button";
 import { cn } from "@v2/lib/utils";
+import { useReviewBoardContext } from "./review-board-context";
 
 interface ReviewCardActionsProps {
 	talentName: string;
@@ -15,6 +16,8 @@ const ACTION_CLASSES =
 	"flex size-7 items-center justify-center rounded-full border border-v2-border-default bg-v2-bg-page text-v2-text-secondary shadow-xs transition-colors";
 
 export function ReviewCardActions({ talentName, isPending, onIntro, onPass }: ReviewCardActionsProps) {
+	// The reason popup opens next to the button that was clicked, not over by the card.
+	const { setDecisionOrigin } = useReviewBoardContext();
 	return (
 		<div
 			// Shown on hover or keyboard focus only, so the waiting time stays readable on every row, the current one too.
@@ -26,7 +29,10 @@ export function ReviewCardActions({ talentName, isPending, onIntro, onPass }: Re
 				size="unstyled"
 				aria-label={`Pass on ${talentName}`}
 				disabled={isPending}
-				onClick={onPass}
+				onClick={(e) => {
+					setDecisionOrigin(e.currentTarget);
+					onPass();
+				}}
 				className={cn(ACTION_CLASSES, "hover:border-v2-status-error hover:text-v2-status-error")}
 			>
 				<X size={14} weight="bold" />
@@ -37,7 +43,10 @@ export function ReviewCardActions({ talentName, isPending, onIntro, onPass }: Re
 				size="unstyled"
 				aria-label={`Request an intro to ${talentName}`}
 				disabled={isPending}
-				onClick={onIntro}
+				onClick={(e) => {
+					setDecisionOrigin(e.currentTarget);
+					onIntro();
+				}}
 				className={cn(ACTION_CLASSES, "hover:border-v2-brand-green hover:text-v2-brand-green")}
 			>
 				<PaperPlaneTilt size={14} weight="fill" />
