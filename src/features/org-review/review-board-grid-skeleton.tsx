@@ -1,17 +1,11 @@
 import { Card } from "@v2/components/ui/card";
 import { Skeleton } from "@v2/components/ui/skeleton";
-import { cn } from "@v2/lib/utils";
-import {
-	REVIEW_BOARD_COLUMNS,
-	REVIEW_BOARD_GRID_CLASSES,
-	REVIEW_DECK_GHOST_CLASSES,
-	REVIEW_LEFT_CARD_CLASSES,
-} from "./constants";
+import { REVIEW_BOARD_GRID_CLASSES, REVIEW_DECK_GHOST_CLASSES, REVIEW_LEFT_CARD_CLASSES } from "./constants";
 import { ReviewRowSkeleton } from "./review-row-skeleton";
 
 export function ReviewBoardGridSkeleton() {
 	return (
-		<div className={cn(REVIEW_BOARD_GRID_CLASSES, REVIEW_BOARD_COLUMNS)}>
+		<div className={REVIEW_BOARD_GRID_CLASSES}>
 			<Card className={REVIEW_LEFT_CARD_CLASSES}>
 				<div className="relative flex flex-col gap-3 border-b border-v2-border-divider px-4 py-3 sm:flex-row sm:items-start sm:justify-between">
 					<div className="flex min-w-0 flex-col gap-1.5">
