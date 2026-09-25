@@ -4,10 +4,11 @@ import { OrgDashboardEvents } from "@clera/posthog-events";
 import { useQueryClient } from "@tanstack/react-query";
 import { useMediaQuery } from "@v2/hooks/use-media-query";
 import { usePostHog } from "posthog-js/react/slim";
-import { useCallback, useState } from "react";
+import { useCallback, useRef, useState } from "react";
+import { toast } from "sonner";
 import { orgTalents } from "@/services/api/org-talents";
 import { type ReviewItem, reviewItemKey, type SimilarPick } from "../types";
-import { similarPicksKey } from "./use-similar-picks";
+import { similarPicksKey, similarPicksQuery } from "./use-similar-picks";
 
 /** Why a card was pulled forward: it's similar to someone the hiring manager just asked to meet. */
 export interface SimilarTo {
@@ -24,16 +25,11 @@ export function useSimilarFollowThrough(orgId: string) {
 	const posthog = usePostHog();
 	const isDesktop = useMediaQuery("(min-width: 1024px)");
 	const [similarTo, setSimilarTo] = useState<ReadonlyMap<string, SimilarTo>>(new Map());
+	// Intros still standing: picks that arrive after an undo are dropped.
+	const liveAnchors = useRef(new Set<string>());
 
-	/** Pulls the anchor's similar profiles forward; returns their keys (empty when there are none). */
-	const start = useCallback(
-		(anchor: ReviewItem, roleIdOverride?: string): string[] => {
-			const roleId = roleIdOverride ?? anchor.roleId;
-			if (!isDesktop || !roleId) return [];
-			const cached = queryClient.getQueryData<{ picks: SimilarPick[] }>(
-				similarPicksKey(orgId, roleId, anchor.talentId),
-			);
-			const picks = cached?.picks ?? [];
+	const pull = useCallback(
+		(anchor: ReviewItem, roleId: string, picks: SimilarPick[]): string[] => {
 			if (picks.length === 0) return [];
 			const keys = picks.map((pick) => reviewItemKey({ talentId: pick.talentId, roleId }));
 			setSimilarTo((prev) => {
@@ -52,11 +48,40 @@ export function useSimilarFollowThrough(orgId: string) {
 				.catch(() => {});
 			return keys;
 		},
-		[isDesktop, queryClient, orgId, posthog],
+		[orgId, posthog],
+	);
+
+	/**
+	 * Pulls the anchor's similar profiles forward; returns their keys (empty when there are none).
+	 * On a slow network the picks may still be loading: they're pulled forward when they land.
+	 */
+	const start = useCallback(
+		(anchor: ReviewItem, roleIdOverride?: string): string[] => {
+			const roleId = roleIdOverride ?? anchor.roleId;
+			if (!isDesktop || !roleId) return [];
+			const anchorKey = reviewItemKey(anchor);
+			liveAnchors.current.add(anchorKey);
+			const cached = queryClient.getQueryData<{ picks: SimilarPick[] }>(
+				similarPicksKey(orgId, roleId, anchor.talentId),
+			);
+			if (cached) return pull(anchor, roleId, cached.picks);
+			queryClient
+				.fetchQuery(similarPicksQuery(orgId, roleId, anchor.talentId))
+				.then(({ picks }) => {
+					if (!liveAnchors.current.has(anchorKey)) return;
+					const keys = pull(anchor, roleId, picks);
+					const name = anchor.talentName.split(" ")[0] || anchor.talentName;
+					if (keys.length > 0) toast.success(`${keys.length} similar to ${name} added to the top`);
+				})
+				.catch(() => {});
+			return [];
+		},
+		[isDesktop, queryClient, orgId, pull],
 	);
 
 	/** Forget pulled-forward cards for an undone intro. */
 	const drop = useCallback((anchorKey: string) => {
+		liveAnchors.current.delete(anchorKey);
 		setSimilarTo((prev) => new Map([...prev].filter(([, s]) => reviewItemKey(s.anchor) !== anchorKey)));
 	}, []);
 
