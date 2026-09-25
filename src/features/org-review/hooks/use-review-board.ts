@@ -197,9 +197,10 @@ export function useReviewBoard(
 		);
 		// Similar profiles pulled forward after an intro go first.
 		// ponytail: they jump to the top, not to where the anchor sat; fine while reviewing top-down.
-		const isPulled = (i: ReviewItem) => similarTo.has(reviewItemKey(i));
+		// In the order they were pulled (Clera's ranking), the order the deck selects them in, so none gets skipped.
+		const pulled = [...similarTo.keys()].flatMap((key) => visible.filter((i) => reviewItemKey(i) === key));
 		const ordered =
-			similarTo.size === 0 ? visible : [...visible.filter(isPulled), ...visible.filter((i) => !isPulled(i))];
+			similarTo.size === 0 ? visible : [...pulled, ...visible.filter((i) => !similarTo.has(reviewItemKey(i)))];
 		// A decision that didn't save comes back as the next card, not at its old spot behind the reviewer.
 		const anchored = ordered.filter((i) => failed.has(reviewItemKey(i)));
 		if (anchored.length === 0) return ordered;
