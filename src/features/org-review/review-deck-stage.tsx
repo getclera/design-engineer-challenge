@@ -171,7 +171,6 @@ export function ReviewDeckStage({
 										source: item?.source,
 									}}
 									profileMeta={item ? <ReviewHeaderMeta item={item} orgId={orgId} showRole={!selectedRoleId} /> : null}
-									profileAboveCard={item ? <ReviewFitReason reason={item.fitReason} /> : null}
 									profileBelowHeader={
 										chips && (
 											<TalentEntityChips companies={chips.companies} isLoading={chips.isLoading} className="mt-2" />
@@ -190,6 +189,7 @@ export function ReviewDeckStage({
 														</p>
 													</div>
 												)}
+												<ReviewFitReason reason={item.fitReason} />
 												<div className="flex justify-end border-t border-v2-border-warm/50 px-4 py-1.5 sm:px-5">
 													<Button
 														variant="unstyled"

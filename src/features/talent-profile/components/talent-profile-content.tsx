@@ -121,8 +121,6 @@ interface TalentProfileContentProps {
 	identiconSeed?: string | null;
 	tracking?: OrgTalentTracking;
 	aboveHeader?: ReactNode;
-	/** Between the meta row and the profile box (Review: the highlighted fit reason). */
-	aboveCard?: ReactNode;
 	/** Under name, headline and location (Review: past companies). */
 	belowHeader?: ReactNode;
 	belowFacts?: ReactNode;
@@ -139,7 +137,6 @@ function TalentProfileContent({
 	identiconSeed,
 	tracking,
 	aboveHeader,
-	aboveCard,
 	belowHeader,
 	belowFacts,
 	compact = false,
@@ -167,7 +164,6 @@ function TalentProfileContent({
 		<div className={cn("mx-auto flex w-full max-w-230 flex-col gap-1.75 px-4 py-3 sm:px-6 sm:py-4", className)}>
 			{tracking && <TrackOrgTalentView tracking={tracking} />}
 			{aboveHeader && <div className="flex items-center px-1">{aboveHeader}</div>}
-			{aboveCard}
 			<Card variant="flat" className="overflow-hidden">
 				<div className="px-4 py-2 sm:px-5 sm:py-2.5">
 					<IdentityPublicZone
