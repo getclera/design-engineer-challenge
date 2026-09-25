@@ -1,12 +1,15 @@
 "use client";
 
 import dynamic from "next/dynamic";
+import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 
 const V2Toaster = dynamic(() => import("./toaster").then((m) => m.V2Toaster), { ssr: false });
 
 export function DeferredToaster() {
 	const [ready, setReady] = useState(false);
+	// Org pages mount their own toaster right away; a second one would show every toast twice.
+	const ownToaster = usePathname()?.startsWith("/organization/");
 
 	useEffect(() => {
 		if (ready) return;
@@ -20,6 +23,6 @@ export function DeferredToaster() {
 		};
 	}, [ready]);
 
-	return ready ? <V2Toaster /> : null;
+	return ready && !ownToaster ? <V2Toaster /> : null;
 }
 DeferredToaster.displayName = "DeferredToaster";

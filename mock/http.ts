@@ -23,3 +23,9 @@ export async function requireUser(): Promise<MockUser | NextResponse> {
   if (!user) return error("Not signed in", 401);
   return user;
 }
+
+/** Demo switch: open Review with ?fail=list to see the "couldn't load" screens. Read from the page address. */
+export function listFailRequested(request: Request): boolean {
+  const page = request.headers.get("referer");
+  return !!page && new URL(page).searchParams.get("fail") === "list";
+}

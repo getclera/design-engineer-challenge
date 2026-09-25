@@ -9,7 +9,7 @@ import { toast } from "sonner";
 import { orgDashboardKeys } from "@/lib/query-keys";
 import { organizations } from "@/services/api";
 import { type ReviewItem, reviewItemKey } from "../types";
-import { removeFromReviewFeed, setMaybeInReviewFeed } from "./feed-cache";
+import { insertIntoReviewFeed, removeFromReviewFeed, setMaybeInReviewFeed } from "./feed-cache";
 import { invalidateOrgDashboard } from "./invalidate-org-dashboard";
 
 interface ReviewActionPayload {
@@ -27,8 +27,15 @@ interface ReviewActionPayload {
 }
 
 interface ReviewActionCallbacks {
-	onFailed?: () => void;
+	onFailed?: (payload: ReviewActionPayload) => void;
 }
+
+const firstNameOf = (item: ReviewItem) => item.talentName.split(" ")[0] || item.talentName;
+const FAILED_MESSAGE: Record<ReviewActionPayload["action"], (name: string) => string> = {
+	pass: (name) => `Couldn't save Pass for ${name}`,
+	request_intro: (name) => `Couldn't request intro for ${name}`,
+	maybe: (name) => `Couldn't move ${name} to Maybe`,
+};
 
 export function useReviewAction(orgId: string, roleId?: string, callbacks?: ReviewActionCallbacks) {
 	const queryClient = useQueryClient();
@@ -78,12 +85,9 @@ export function useReviewAction(orgId: string, roleId?: string, callbacks?: Revi
 				return next;
 			});
 			await queryClient.cancelQueries({ queryKey });
-			const previous =
-				action === "maybe"
-					? setMaybeInReviewFeed(queryClient, queryKey, item, { note: maybeNote ?? "" })
-					: removeFromReviewFeed(queryClient, queryKey, item);
-			const toastId = `review-action:${reviewItemKey(item)}`;
-			return { previous, toastId };
+			if (action === "maybe") setMaybeInReviewFeed(queryClient, queryKey, item, { note: maybeNote ?? "" });
+			else removeFromReviewFeed(queryClient, queryKey, item);
+			return { toastId: `review-action:${reviewItemKey(item)}` };
 		},
 		onSuccess: (_data, { item, action, similarAnchorTalentId }) => {
 			if (action === "maybe") return;
@@ -106,11 +110,15 @@ export function useReviewAction(orgId: string, roleId?: string, callbacks?: Revi
 			);
 		},
 		onError: (error, variables, context) => {
-			if (context?.previous) queryClient.setQueryData(queryKey, context.previous);
-			if (variables.action !== "maybe") callbacks?.onFailed?.();
+			if (variables.action === "maybe") setMaybeInReviewFeed(queryClient, queryKey, variables.item, null);
+			else insertIntoReviewFeed(queryClient, queryKey, variables.item);
+			callbacks?.onFailed?.(variables);
 			setFailed((prev) => new Map(prev).set(reviewItemKey(variables.item), variables));
 			const notOpen = error instanceof Error && error.message.includes(TALENT_NOT_OPEN_ERROR);
-			toast.error(notOpen ? "This candidate is not currently open to opportunities." : "Something went wrong", {
+			const message = notOpen
+				? "This candidate is not currently open to opportunities."
+				: FAILED_MESSAGE[variables.action](firstNameOf(variables.item));
+			toast.error(message, {
 				id: context?.toastId,
 				action: notOpen ? undefined : { label: "Retry", onClick: () => mutation.mutate(variables) },
 			});
@@ -131,5 +139,5 @@ export function useReviewAction(orgId: string, roleId?: string, callbacks?: Revi
 		const payload = failed.get(reviewItemKey(item));
 		if (payload) mutation.mutate(payload);
 	};
-	return { mutation, isPending, isFailed, retry };
+	return { mutation, isPending, isFailed, retry, failed };
 }

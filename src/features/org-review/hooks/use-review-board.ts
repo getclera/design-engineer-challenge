@@ -4,7 +4,7 @@ import { HELD_ACTION_WINDOW_MS, useHeldAction, useTalentImpressions } from "@v2/
 import { useDeferredEntityChips } from "@v2/hooks/use-deferred-entity-chips";
 import { useRolesList } from "@v2/features/org-roles";
 import { INTRO_DECISION_CATEGORIES, PASS_DECISION_CATEGORIES } from "@v2/features/org-shared-modals";
-import { type CSSProperties, useCallback, useMemo, useRef, useState } from "react";
+import { type CSSProperties, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { orgTalents } from "@/services/api/org-talents";
 import { isHmLinkWarningSuppressed } from "../hm-warning-cookie";
@@ -50,7 +50,9 @@ export function useReviewBoard(
 	sendoutTalentIds?: readonly string[],
 	showMaybe = false,
 ) {
-	const { data, isLoading, isPlaceholderData, isError, refetch } = useReviewItems(orgId, roleId);
+	const { data, isLoading, isPlaceholderData, isError, errorUpdatedAt, refetch } = useReviewItems(orgId, roleId);
+	// A background retry resets a never-loaded list to "pending"; once it has failed, keep showing the error.
+	const everFailed = errorUpdatedAt > 0;
 
 	const initialSelectedKey = initialTalentId
 		? reviewItemKey({ talentId: initialTalentId, roleId: roleId ?? null })
@@ -78,16 +80,17 @@ export function useReviewBoard(
 
 	const reversePass = useReverseReviewPass(orgId, { onFailed: countReviewed });
 	// Decision toasts: 5s with a countdown bar; Undo (or Z) reverses the latest one.
-	const undoRef = useRef<(() => void) | null>(null);
+	const undoRef = useRef<{ id: string; run: () => void } | null>(null);
 	const undoToast = useCallback((id: string, message: string, undo: () => void) => {
 		const run = () => {
 			undoRef.current = null;
 			toast.dismiss(id);
 			undo();
 		};
-		undoRef.current = run;
+		const entry = { id, run };
+		undoRef.current = entry;
 		const forget = () => {
-			if (undoRef.current === run) undoRef.current = null;
+			if (undoRef.current === entry) undoRef.current = null;
 		};
 		toast.success(message, {
 			id,
@@ -99,10 +102,20 @@ export function useReviewBoard(
 			onDismiss: forget,
 		});
 	}, []);
-	const undoLast = useCallback(() => undoRef.current?.(), []);
+	const undoLast = useCallback(() => undoRef.current?.run(), []);
 	const { data: roles } = useRolesList(orgId, false);
 
-	const { mutation, isPending, isFailed, retry } = useReviewAction(orgId, roleId, { onFailed: uncountReviewed });
+	// Who the reviewer was on when a save failed: the failed person comes back right after them.
+	const selectedKeyRef = useRef<string | null>(null);
+	const retryAnchors = useRef(new Map<string, string | null>());
+	const { mutation, isPending, isFailed, retry, failed } = useReviewAction(orgId, roleId, {
+		onFailed: ({ item, action }) => {
+			retryAnchors.current.set(reviewItemKey(item), selectedKeyRef.current);
+			// Nothing left to undo for a decision that didn't save; its toast became the error.
+			if (undoRef.current?.id === `review-action:${reviewItemKey(item)}`) undoRef.current = null;
+			if (action !== "maybe") uncountReviewed();
+		},
+	});
 	const { mutate } = mutation;
 
 	const {
@@ -148,10 +161,19 @@ export function useReviewBoard(
 		);
 		// Similar profiles pulled forward after an intro go first.
 		// ponytail: they jump to the top, not to where the anchor sat; fine while reviewing top-down.
-		if (similarTo.size === 0) return visible;
 		const isPulled = (i: ReviewItem) => similarTo.has(reviewItemKey(i));
-		return [...visible.filter(isPulled), ...visible.filter((i) => !isPulled(i))];
-	}, [feed, streams, heldKey, showMaybe, similarTo]);
+		const ordered =
+			similarTo.size === 0 ? visible : [...visible.filter(isPulled), ...visible.filter((i) => !isPulled(i))];
+		// A decision that didn't save comes back as the next card, not at its old spot behind the reviewer.
+		const anchored = ordered.filter((i) => failed.has(reviewItemKey(i)));
+		if (anchored.length === 0) return ordered;
+		const result = ordered.filter((i) => !failed.has(reviewItemKey(i)));
+		for (const i of anchored.reverse()) {
+			const anchor = retryAnchors.current.get(reviewItemKey(i));
+			result.splice(result.findIndex((r) => reviewItemKey(r) === anchor) + 1, 0, i);
+		}
+		return result;
+	}, [feed, streams, heldKey, showMaybe, similarTo, failed]);
 	const roleFeedCount = data?.items?.length ?? 0;
 	const streamCounts = useMemo(() => {
 		const acc: Record<ReviewStream, number> = { curated: 0, drop: 0, interest: 0 };
@@ -171,6 +193,9 @@ export function useReviewBoard(
 		() => items.find((i) => reviewItemKey(i) === selectedKey) ?? items[0] ?? null,
 		[items, selectedKey],
 	);
+	useEffect(() => {
+		selectedKeyRef.current = selected ? reviewItemKey(selected) : null;
+	}, [selected]);
 	useSimilarPicks(orgId, isDesktop ? (selected?.roleId ?? null) : null, selected?.talentId ?? null);
 
 	const advance = useCallback(
@@ -394,8 +419,8 @@ export function useReviewBoard(
 		undoLast,
 		items,
 		truncated: data?.truncated ?? false,
-		isLoading,
-		loadFailed: isError && (!data || isPlaceholderData),
+		isLoading: isLoading && !everFailed,
+		loadFailed: (isError || everFailed) && (!data || isPlaceholderData),
 		retryLoad: refetch,
 		isSwitching: isPlaceholderData,
 		chipsFor,

@@ -19,10 +19,17 @@ export default async function OrgReviewPage({
 	searchParams,
 }: {
 	params: Promise<{ orgId: string }>;
-	searchParams: Promise<{ role?: string; talent?: string; view?: string; streams?: string; sendout?: string }>;
+	searchParams: Promise<{
+		role?: string;
+		talent?: string;
+		view?: string;
+		streams?: string;
+		sendout?: string;
+		fail?: string;
+	}>;
 }) {
 	const { orgId } = await params;
-	const { role, talent: talentId, view, streams, sendout } = await searchParams;
+	const { role, talent: talentId, view, streams, sendout, fail } = await searchParams;
 	const access = await requireOrgAccess(orgId);
 	const viewerIsPlatformAdmin = access.success === true && access.isAdmin === true;
 
@@ -35,6 +42,7 @@ export default async function OrgReviewPage({
 				view={view}
 				streams={streams}
 				sendout={sendout}
+				failList={fail === "list"}
 				viewerIsPlatformAdmin={viewerIsPlatformAdmin}
 			/>
 		</Suspense>
@@ -48,6 +56,7 @@ async function OrgReviewContent({
 	view,
 	streams,
 	sendout,
+	failList,
 	viewerIsPlatformAdmin,
 }: {
 	orgId: string;
@@ -56,6 +65,8 @@ async function OrgReviewContent({
 	view?: string;
 	streams?: string;
 	sendout?: string;
+	/** Demo: ?fail=list skips the server copy so the client load fails (see mock/http.ts). */
+	failList: boolean;
 	viewerIsPlatformAdmin: boolean;
 }) {
 	const roleId = role === "all" ? undefined : role;
@@ -67,7 +78,7 @@ async function OrgReviewContent({
 	]);
 
 	const effectiveRoleId = sendoutScope?.jobId ?? roleId;
-	const data = await loadReviewItems({ orgId, roleId: effectiveRoleId });
+	const data = failList ? null : await loadReviewItems({ orgId, roleId: effectiveRoleId });
 	if (data) {
 		queryClient.setQueryData(orgDashboardKeys.review(orgId, effectiveRoleId), data);
 	}
