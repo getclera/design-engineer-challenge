@@ -36,7 +36,7 @@ function DetailSheet({ open, onOpenChange, title, a11yTitle, children, footer, c
 						<DialogPrimitive.Title>{a11yTitle}</DialogPrimitive.Title>
 					</VisuallyHidden.Root>
 
-					<div className="flex shrink-0 items-center justify-between border-b border-v2-border-warm bg-v2-bg-card px-4 py-2 sm:px-5">
+					<div className="flex shrink-0 items-center justify-between border-b max-lg:gap-2 border-v2-border-warm bg-v2-bg-card px-4 py-2 sm:px-5">
 						<span className="truncate font-v2-heading text-sm font-semibold text-v2-text-primary">{title}</span>
 						<Button
 							variant="ghost"
