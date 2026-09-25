@@ -6,6 +6,8 @@ import type { ReviewDecision, ReviewTally } from "./hooks/use-review-board";
 
 interface ReviewRecapProps {
 	roleName: string | null;
+	/** The server holds more beyond this batch, so the role isn't truly caught up. */
+	moreComing: boolean;
 	tally: ReviewTally;
 	decisions: ReviewDecision[];
 	onReviewMaybes: () => void;
@@ -19,7 +21,7 @@ function namesLine(names: string[]) {
 }
 
 /** What this visit added up to, shown once the queue is empty. */
-export function ReviewRecap({ roleName, tally, decisions, onReviewMaybes }: ReviewRecapProps) {
+export function ReviewRecap({ roleName, moreComing, tally, decisions, onReviewMaybes }: ReviewRecapProps) {
 	const intros = decisions.filter((d) => d.kind === "intro").map((d) => d.name);
 	const stats = [
 		{ label: "intros requested", value: tally.intro, className: "text-v2-brand-green" },
@@ -30,8 +32,11 @@ export function ReviewRecap({ roleName, tally, decisions, onReviewMaybes }: Revi
 	return (
 		<div className="flex flex-col items-center">
 			<h3 className="text-balance font-v2-heading text-v2-text-primary text-xl">
-				All caught up{roleName ? ` for ${roleName}` : ""}
+				{moreComing ? "This batch is done" : `All caught up${roleName ? ` for ${roleName}` : ""}`}
 			</h3>
+			{moreComing && (
+				<p className="mt-1 font-v2-body text-sm text-v2-text-secondary">More candidates are on the way.</p>
+			)}
 			<p className="mt-2 font-v2-body text-sm text-v2-text-secondary tabular-nums">
 				{tally.total} {tally.total === 1 ? "person" : "people"} in {duration(tally.seconds)}
 				{tally.avgSeconds !== null && `, ~${tally.avgSeconds}s each`}.

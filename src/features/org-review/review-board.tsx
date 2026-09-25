@@ -208,9 +208,12 @@ export function ReviewBoard({
 	);
 
 	const anyModalOpen = !!board.rolePickerItem || board.hmWarningOpen;
+	// A role switch keeps the old list up, faded, for a moment; the grey skeleton only if it's slow.
+	const slowSwitch = useDelayedFlag(board.isSwitching, 300);
+	const switching = board.isSwitching || slowSwitch;
 	useTalentDecisionKeyboard({
 		selected: board.selected,
-		enabled: !isMobile && !anyModalOpen,
+		enabled: !isMobile && !anyModalOpen && !switching,
 		panelOpen: !!board.panel || !!board.maybeItem,
 		onIntro: canDecide ? board.openIntro : ignore,
 		onOpenPass: canDecide ? board.openPass : ignore,
@@ -271,148 +274,151 @@ export function ReviewBoard({
 						)}
 					</div>
 
-					{board.loadFailed ? (
-						<EmptyState
-							live
-							icon={<Coffee />}
-							heading="Our server is on a coffee break"
-							description="Your candidates are safe and nothing you decided is lost. We'll try again on our own."
-							actions={
-								<Button variant="ghost" onClick={() => board.retryLoad()}>
-									Try now
-								</Button>
-							}
-						/>
-					) : reviewView === "passed" ? (
-						<PassedView orgId={orgId} selectedRoleId={selectedRoleId} viewerIsPlatformAdmin={viewerIsPlatformAdmin} />
-					) : board.isSwitching ? (
-						<ReviewBoardGridSkeleton />
-					) : showEmptyState ? (
-						<div>
-							{showScopeBar && (
-								<ReviewScopeBar
-									drops={sendoutDrops}
-									activeNanoId={activeSendout?.nanoId}
-									feedTalentIds={board.feedTalentIds}
-									onSelect={selectSendout}
-									onClear={clearSendoutScope}
-									className="border-b border-v2-border-divider"
-								/>
-							)}
-							<ReviewEmpty
-								orgId={orgId}
-								roleId={selectedRoleId}
-								roleFeedCount={board.roleFeedCount}
-								hasActiveSendout={!!activeSendout}
-								canUseTalentSearch={canUseTalentSearch}
-								byRole={board.byRole}
-								pausedPending={board.pausedPending}
-								onClearSendout={clearSendoutScope}
-								onRoleChange={handleRoleChange}
-								recap={
-									board.tally.total > 0
-										? (roleName) => (
-												<ReviewRecap
-													roleName={roleName}
-													tally={board.tally}
-													decisions={board.decisions}
-													onReviewMaybes={() => handleViewChange("maybe")}
-												/>
-											)
-										: undefined
+					<div inert={switching} className={cn("flex flex-col gap-3 transition-opacity", switching && !slowSwitch && "opacity-50")}>
+						{board.loadFailed ? (
+							<EmptyState
+								live
+								icon={<Coffee />}
+								heading="Our server is on a coffee break"
+								description="Your candidates are safe and nothing you decided is lost. We'll try again on our own."
+								actions={
+									<Button variant="ghost" onClick={() => board.retryLoad()}>
+										Try now
+									</Button>
 								}
 							/>
-						</div>
-					) : (
-						<>
-							{reviewView === "unreviewed" && (
-								<ReviewScoreboard left={board.items.length} truncated={board.truncated} tally={board.tally} />
-							)}
-							<div className={cn(REVIEW_BOARD_GRID_CLASSES, listHidden && !isMobile && "lg:grid-cols-1")}>
-								{(isMobile && !mobileList) || (listHidden && !isMobile) ? null : (
-									<Card className={REVIEW_LEFT_CARD_CLASSES}>
-										{showScopeBar && (
-											<ReviewScopeBar
-												drops={sendoutDrops}
-												activeNanoId={activeSendout?.nanoId}
-												feedTalentIds={board.feedTalentIds}
-												onSelect={selectSendout}
-												onClear={clearSendoutScope}
-												className="border-b border-v2-border-divider"
-											/>
-										)}
-										<ReviewHeader
-											maybe={reviewView === "maybe"}
-											onHide={isMobile ? undefined : () => setListHidden(true)}
-										/>
-										<div
-											ref={listRef}
-											className="max-h-[calc(100dvh-16rem)] min-h-0 flex-1 overflow-y-auto lg:max-h-none"
-										>
-											{board.items.length === 0 ? (
-												<EmptyState
-													heading={
-														reviewView === "maybe" ? "No maybes yet" : incomingEmpty ? "All reviewed" : "Nothing here"
-													}
-													description={
-														reviewView === "maybe"
-															? "Press M when you're unsure about someone. They wait here until you decide."
-															: incomingEmpty
-																? "Nothing waiting on you for this role."
-																: "No candidates match this filter right now."
-													}
-												/>
-											) : (
-												<ReviewLeftList
-													items={board.items}
-													selectedKey={board.selectedKey}
-													onSelect={handleSelect}
-													onOpen={isMobile ? undefined : handleOpen}
-													onPrefetch={handlePrefetch}
-													onIntro={isMobile || !canDecide ? undefined : handleListIntro}
-													onPass={isMobile || !canDecide ? undefined : handleListPass}
-													isPending={board.isPending}
-													isFailed={board.isFailed}
-													onRetry={board.retry}
-													similarTo={board.similarTo}
-													chipsFor={board.chipsFor}
-													onCardVisible={board.onCardVisible}
-													onCardSeen={board.onCardSeen}
-												/>
-											)}
-											{reviewView === "unreviewed" && board.truncated && board.items.length > 0 && (
-												<p className="px-4 py-3 text-center font-v2-body text-v2-text-tertiary text-xs">
-													More arrive when you clear these
-												</p>
-											)}
-										</div>
-									</Card>
+						) : reviewView === "passed" ? (
+							<PassedView orgId={orgId} selectedRoleId={selectedRoleId} viewerIsPlatformAdmin={viewerIsPlatformAdmin} />
+						) : slowSwitch ? (
+							<ReviewBoardGridSkeleton />
+						) : showEmptyState ? (
+							<div>
+								{showScopeBar && (
+									<ReviewScopeBar
+										drops={sendoutDrops}
+										activeNanoId={activeSendout?.nanoId}
+										feedTalentIds={board.feedTalentIds}
+										onSelect={selectSendout}
+										onClear={clearSendoutScope}
+										className="border-b border-v2-border-divider"
+									/>
 								)}
-								{!(isMobile && mobileList) && (
-									<div className="flex min-h-0 flex-col gap-2">
-										<div className="min-h-0 flex-1">
-											<ReviewDeckStage
-												orgId={orgId}
-												selectedRoleId={selectedRoleId}
-												viewerIsPlatformAdmin={viewerIsPlatformAdmin}
-												canDecide={canDecide}
-												expanded={fullProfile}
-												// Phone: the full profile is the live bottom sheet instead of growing the card.
-												onExpandedChange={isMobile ? () => setMobileTalent(board.selected) : setFullProfile}
-												swipe={isMobile}
-												decisionsInSheet={!!mobileTalent}
-											/>
-										</div>
-										{!isMobile && (
-											<div className="flex justify-end">
-												<ReviewShortcutsHelp open={helpOpen} onOpenChange={setHelpOpen} canDecide={canDecide} />
-											</div>
-										)}
-									</div>
-								)}
+								<ReviewEmpty
+									orgId={orgId}
+									roleId={selectedRoleId}
+									roleFeedCount={board.roleFeedCount}
+									hasActiveSendout={!!activeSendout}
+									canUseTalentSearch={canUseTalentSearch}
+									byRole={board.byRole}
+									pausedPending={board.pausedPending}
+									onClearSendout={clearSendoutScope}
+									onRoleChange={handleRoleChange}
+									recap={
+										board.tally.total > 0
+											? (roleName) => (
+													<ReviewRecap
+														roleName={roleName}
+														moreComing={board.truncated}
+														tally={board.tally}
+														decisions={board.decisions}
+														onReviewMaybes={() => handleViewChange("maybe")}
+													/>
+												)
+											: undefined
+									}
+								/>
 							</div>
-						</>
-					)}
+						) : (
+							<>
+								{reviewView === "unreviewed" && (
+									<ReviewScoreboard left={board.items.length} truncated={board.truncated} tally={board.tally} />
+								)}
+								<div className={cn(REVIEW_BOARD_GRID_CLASSES, listHidden && !isMobile && "lg:grid-cols-1")}>
+									{(isMobile && !mobileList) || (listHidden && !isMobile) ? null : (
+										<Card className={REVIEW_LEFT_CARD_CLASSES}>
+											{showScopeBar && (
+												<ReviewScopeBar
+													drops={sendoutDrops}
+													activeNanoId={activeSendout?.nanoId}
+													feedTalentIds={board.feedTalentIds}
+													onSelect={selectSendout}
+													onClear={clearSendoutScope}
+													className="border-b border-v2-border-divider"
+												/>
+											)}
+											<ReviewHeader
+												maybe={reviewView === "maybe"}
+												onHide={isMobile ? undefined : () => setListHidden(true)}
+											/>
+											<div
+												ref={listRef}
+												className="max-h-[calc(100dvh-16rem)] min-h-0 flex-1 overflow-y-auto lg:max-h-none"
+											>
+												{board.items.length === 0 ? (
+													<EmptyState
+														heading={
+															reviewView === "maybe" ? "No maybes yet" : incomingEmpty ? "All reviewed" : "Nothing here"
+														}
+														description={
+															reviewView === "maybe"
+																? "Press M when you're unsure about someone. They wait here until you decide."
+																: incomingEmpty
+																	? "Nothing waiting on you for this role."
+																	: "No candidates match this filter right now."
+														}
+													/>
+												) : (
+													<ReviewLeftList
+														items={board.items}
+														selectedKey={board.selectedKey}
+														onSelect={handleSelect}
+														onOpen={isMobile ? undefined : handleOpen}
+														onPrefetch={handlePrefetch}
+														onIntro={isMobile || !canDecide ? undefined : handleListIntro}
+														onPass={isMobile || !canDecide ? undefined : handleListPass}
+														isPending={board.isPending}
+														isFailed={board.isFailed}
+														onRetry={board.retry}
+														similarTo={board.similarTo}
+														chipsFor={board.chipsFor}
+														onCardVisible={board.onCardVisible}
+														onCardSeen={board.onCardSeen}
+													/>
+												)}
+												{reviewView === "unreviewed" && board.truncated && board.items.length > 0 && (
+													<p className="px-4 py-3 text-center font-v2-body text-v2-text-tertiary text-xs">
+														More arrive when you clear these
+													</p>
+												)}
+											</div>
+										</Card>
+									)}
+									{!(isMobile && mobileList) && (
+										<div className="flex min-h-0 flex-col gap-2">
+											<div className="min-h-0 flex-1">
+												<ReviewDeckStage
+													orgId={orgId}
+													selectedRoleId={selectedRoleId}
+													viewerIsPlatformAdmin={viewerIsPlatformAdmin}
+													canDecide={canDecide}
+													expanded={fullProfile}
+													// Phone: the full profile is the live bottom sheet instead of growing the card.
+													onExpandedChange={isMobile ? () => setMobileTalent(board.selected) : setFullProfile}
+													swipe={isMobile}
+													decisionsInSheet={!!mobileTalent}
+												/>
+											</div>
+											{!isMobile && (
+												<div className="flex justify-end">
+													<ReviewShortcutsHelp open={helpOpen} onOpenChange={setHelpOpen} canDecide={canDecide} />
+												</div>
+											)}
+										</div>
+									)}
+								</div>
+							</>
+						)}
+					</div>
 				</div>
 
 				<ReviewMobileSheet
@@ -450,3 +456,19 @@ export function ReviewBoard({
 }
 
 ReviewBoard.displayName = "ReviewBoard";
+
+/** True once `flag` has stayed true for `ms`; once shown, it stays for at least `ms` more so it never flickers. */
+function useDelayedFlag(flag: boolean, ms: number) {
+	const [delayed, setDelayed] = useState(false);
+	const shownAt = useRef(0);
+	useEffect(() => {
+		const timer = flag
+			? setTimeout(() => {
+					shownAt.current = Date.now();
+					setDelayed(true);
+				}, ms)
+			: setTimeout(() => setDelayed(false), Math.max(0, shownAt.current + ms - Date.now()));
+		return () => clearTimeout(timer);
+	}, [flag, ms]);
+	return delayed;
+}
