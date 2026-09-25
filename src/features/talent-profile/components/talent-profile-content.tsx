@@ -2,6 +2,7 @@
 
 import { type OrgTalentTracking, TrackOrgTalentView } from "@v2/components/tracking";
 import { Card } from "@v2/components/ui/card";
+import { cn } from "@v2/lib/utils";
 import type { ReactNode } from "react";
 import type { OrgTalentProfileBundle } from "@/services/api/org-talents";
 import type { MergedProfile } from "@/services/api/talents";
@@ -125,6 +126,8 @@ interface TalentProfileContentProps {
 	belowFacts?: ReactNode;
 	/** Only the identity card (header, facts, belowFacts); the review deck's card front. */
 	compact?: boolean;
+	/** Narrows the column (the review deck keeps the profile at 700px). */
+	className?: string;
 }
 
 function TalentProfileContent({
@@ -137,6 +140,7 @@ function TalentProfileContent({
 	belowHeader,
 	belowFacts,
 	compact = false,
+	className,
 }: TalentProfileContentProps) {
 	const { header, mergedProfile, preferences } = bundle;
 
@@ -157,7 +161,7 @@ function TalentProfileContent({
 	const factsProps = { preferences };
 
 	return (
-		<div className="mx-auto flex w-full max-w-230 flex-col gap-1.75 px-4 py-3 sm:px-6 sm:py-4">
+		<div className={cn("mx-auto flex w-full max-w-230 flex-col gap-1.75 px-4 py-3 sm:px-6 sm:py-4", className)}>
 			{tracking && <TrackOrgTalentView tracking={tracking} />}
 			{aboveHeader && <div className="flex items-center px-1">{aboveHeader}</div>}
 			<Card variant="flat" className="overflow-hidden">

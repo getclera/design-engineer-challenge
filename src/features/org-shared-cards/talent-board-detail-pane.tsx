@@ -58,6 +58,8 @@ function TalentBoardDetailPane({
 						belowHeader={profileBelowHeader}
 						belowFacts={profileBelowFacts}
 						compact={compact}
+						// 700px profile box (+ 24px side padding each way) inside the full-width card.
+						className="max-w-187"
 					/>
 				) : isError ? (
 					<EmptyState
