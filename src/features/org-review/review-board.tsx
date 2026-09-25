@@ -17,7 +17,10 @@ import {
 	ALL_ROLES_PARAM,
 	ORG_REVIEW_FILTER_PARAMS,
 	orgReviewFiltersKey,
+	REVIEW_BOARD_COLUMNS,
 	REVIEW_BOARD_GRID_CLASSES,
+	REVIEW_BOARD_MAX_W,
+	REVIEW_BOARD_MAX_W_NO_LIST,
 	REVIEW_CONTROL_BAR_CLASSES,
 	REVIEW_LEFT_CARD_CLASSES,
 } from "./constants";
@@ -229,7 +232,12 @@ export function ReviewBoard({
 	return (
 		<ReviewBoardProvider value={board}>
 			<TooltipProvider delayDuration={150}>
-				<div className="flex flex-col gap-3">
+				<div
+					className={cn(
+						"flex flex-col gap-3",
+						listHidden && !isMobile ? REVIEW_BOARD_MAX_W_NO_LIST : REVIEW_BOARD_MAX_W,
+					)}
+				>
 					{/* No positioned parent up to <main>, so the tab hangs on the app sidebar's edge, mid-screen. */}
 					{listHidden && !isMobile && (
 						<Button
@@ -304,7 +312,12 @@ export function ReviewBoard({
 							/>
 						</div>
 					) : (
-						<div className={cn(REVIEW_BOARD_GRID_CLASSES, listHidden && !isMobile && "lg:grid-cols-1")}>
+						<div
+							className={cn(
+								REVIEW_BOARD_GRID_CLASSES,
+								listHidden && !isMobile ? "lg:grid-cols-1" : REVIEW_BOARD_COLUMNS,
+							)}
+						>
 							{(isMobile && !mobileList) || (listHidden && !isMobile) ? null : (
 								<Card className={REVIEW_LEFT_CARD_CLASSES}>
 									{showScopeBar && (
