@@ -3,5 +3,5 @@ import { redirect } from "next/navigation";
 import { ORG_ID } from "@mock/ids";
 
 export default function Home() {
-  redirect(orgRoutes.review(ORG_ID));
+  redirect(orgRoutes.overview(ORG_ID));
 }

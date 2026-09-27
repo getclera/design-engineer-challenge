@@ -20,7 +20,10 @@ export const MY_ORGANIZATIONS = (role: Organization["role"]): Organization[] => 
   },
 ];
 
-export const ACTIVE_CONTACTS: ContactOption[] = [
+// On globalThis so a calendar link saved from Home stays saved across dev hot reloads.
+const globalContacts = globalThis as unknown as { __activeContacts?: ContactOption[] };
+
+export const ACTIVE_CONTACTS: ContactOption[] = (globalContacts.__activeContacts ??= [
   {
     id: "c0ffee00-0000-4000-8000-000000000001",
     firstName: "Robin",
@@ -41,4 +44,10 @@ export const ACTIVE_CONTACTS: ContactOption[] = [
     isPrimary: false,
     createdAt: "2026-05-11T13:40:00.000Z",
   },
-];
+]);
+
+/** Account setup Home nudges about until it's done. */
+export const COMPANY_SETUP = {
+  profileMissing: ["about", "company size", "LinkedIn"],
+  atsConnected: false,
+};

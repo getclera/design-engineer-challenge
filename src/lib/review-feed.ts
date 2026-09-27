@@ -33,6 +33,13 @@ export interface ReviewBucketCounts {
 	public_drop: number;
 }
 
+/** Decisions from the last 7 days, whoever made them. */
+export interface DecidedThisWeek {
+	intro: number;
+	maybe: number;
+	pass: number;
+}
+
 export interface ReviewListData {
 	items: ReviewItem[];
 	totalCount: number;
@@ -40,6 +47,7 @@ export interface ReviewListData {
 	counts: ReviewBucketCounts;
 	byRole: Record<string, RoleReviewCounts>;
 	pausedPending: Record<string, number>;
+	decidedThisWeek: DecidedThisWeek;
 }
 
 const EMPTY_BUCKET_COUNTS: ReviewBucketCounts = {
@@ -63,6 +71,7 @@ export function reviewFeedQueryOptions(orgId: string, roleId?: string) {
 				counts: result.data.counts ?? EMPTY_BUCKET_COUNTS,
 				byRole: result.data.byRole ?? {},
 				pausedPending: result.data.pausedPending ?? {},
+				decidedThisWeek: result.data.decidedThisWeek ?? { intro: 0, maybe: 0, pass: 0 },
 			};
 		},
 	};

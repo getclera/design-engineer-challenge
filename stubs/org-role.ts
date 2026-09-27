@@ -15,6 +15,8 @@ export interface OrgRoleRecord {
   companyContactId: string | null;
   hiringManagerName: string | null;
   candidatesInPipeline: number;
+  /** Where the people in the pipeline stand; stages with nobody are left out. */
+  pipelineStages?: Partial<Record<"requested" | "introduced" | "interviewing" | "offer" | "hired", number>>;
   countries: string[];
   missingFields: {
     key: "hiring_manager" | "description" | "location" | "salary" | "experience" | "requirements" | "interview_stages";

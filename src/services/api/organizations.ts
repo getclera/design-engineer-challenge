@@ -67,6 +67,7 @@ interface DashboardListResponse<T> {
 	};
 	byRole?: Record<string, RoleReviewCounts>;
 	pausedPending?: Record<string, number>;
+	decidedThisWeek?: { intro: number; maybe: number; pass: number };
 }
 
 interface DashboardActionRequest {

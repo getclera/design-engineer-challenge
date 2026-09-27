@@ -32,12 +32,19 @@ function role(
   };
 }
 
-export const ROLES: OrgRoleRecord[] = [
-  role(ROLE_IDS.backend, "Founding Backend Engineer", "founding-backend-engineer", { candidatesInPipeline: 4 }),
+// On globalThis so a role resumed from Home stays resumed across dev hot reloads.
+const globalRoles = globalThis as unknown as { __orgRoles?: OrgRoleRecord[] };
+
+export const ROLES: OrgRoleRecord[] = (globalRoles.__orgRoles ??= [
+  role(ROLE_IDS.backend, "Founding Backend Engineer", "founding-backend-engineer", {
+    candidatesInPipeline: 4,
+    pipelineStages: { requested: 2, introduced: 1, interviewing: 1 },
+  }),
   role(ROLE_IDS.design, "Senior Product Designer", "senior-product-designer", {
     workplaceType: "remote",
     countries: [],
     candidatesInPipeline: 2,
+    pipelineStages: { introduced: 1, offer: 1 },
   }),
   role(ROLE_IDS.ml, "Staff Machine Learning Engineer", "staff-machine-learning-engineer", {
     countries: ["GB"],
@@ -48,4 +55,4 @@ export const ROLES: OrgRoleRecord[] = [
   role(ROLE_IDS.productEng, "Founding Product Engineer", "founding-product-engineer", {
     workplaceType: "onsite",
   }),
-];
+]);

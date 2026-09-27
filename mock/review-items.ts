@@ -12,6 +12,8 @@ const DAY = 24 * HOUR;
 const backend = { roleId: ROLE_IDS.backend, roleName: "Founding Backend Engineer" };
 const design = { roleId: ROLE_IDS.design, roleName: "Senior Product Designer" };
 const ml = { roleId: ROLE_IDS.ml, roleName: "Staff Machine Learning Engineer" };
+// Waiting behind the paused Head of Growth role; they reach Review once it's resumed.
+const growth = { roleId: ROLE_IDS.growth, roleName: "Head of Growth" };
 const general = { roleId: null, roleName: null };
 
 const interest = { source: "intro_request", bucket: "intro_request" } as const;
@@ -456,5 +458,45 @@ export const REVIEW_ITEM_SEEDS: ReviewItemSeed[] = [
     receivedMinutesAgo: 6 * HOUR,
     companies: [C.kestrelPay],
     school: S.tum,
+  },
+  {
+    talentId: talentUuid("t31"),
+    talentName: "Nadia Petrov",
+    talentOneliner: "Growth lead who took a PLG funnel from 2% to 7% trial conversion",
+    talentAvatarUrl: null,
+    ...growth,
+    ...curated,
+    headline: "Head of Growth at Orbitly",
+    fitReason:
+      "Why this fit: Ran growth at Orbitly from seed to Series B, the stage you're entering.\n\n• Owns experiments end to end, SQL included\n• Hired a team of 4",
+    receivedMinutesAgo: 9 * DAY,
+    companies: [C.orbitly, C.lumenfold],
+    school: S.ucl,
+  },
+  {
+    talentId: talentUuid("t32"),
+    talentName: "Tomás Ferreira",
+    talentOneliner: "Lifecycle marketer turned growth engineer, ships his own experiments",
+    talentAvatarUrl: null,
+    ...growth,
+    ...weekly,
+    headline: "Growth Engineer at Sundial Energy",
+    fitReason: "Strong on onboarding and activation experiments.\n\n• Writes production React for his own tests",
+    receivedMinutesAgo: 12 * DAY,
+    companies: [C.sundial],
+    school: S.delft,
+  },
+  {
+    talentId: talentUuid("t33"),
+    talentName: "Hana Kobayashi",
+    talentOneliner: "B2B growth marketer, built outbound and content engines at two dev-tool startups",
+    talentAvatarUrl: null,
+    ...growth,
+    ...publicDrop,
+    headline: "Growth Marketing Lead at Quillstack",
+    fitReason: "Dev-tool audience, which is your buyer.\n\n• Built the Quillstack newsletter to 40k readers",
+    receivedMinutesAgo: 15 * DAY,
+    companies: [C.quillstack, C.vantle],
+    school: S.kth,
   },
 ];

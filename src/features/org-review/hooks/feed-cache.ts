@@ -22,6 +22,7 @@ export function removeFromReviewFeed(queryClient: QueryClient, queryKey: QueryKe
 		counts,
 		byRole: adjustByRole(previous.byRole, item.roleId, -removed),
 		pausedPending: previous.pausedPending,
+		decidedThisWeek: previous.decidedThisWeek,
 	});
 	return previous;
 }
@@ -39,6 +40,7 @@ export function insertIntoReviewFeed(queryClient: QueryClient, queryKey: QueryKe
 		counts,
 		byRole: adjustByRole(previous.byRole, item.roleId, 1),
 		pausedPending: previous.pausedPending,
+		decidedThisWeek: previous.decidedThisWeek,
 	});
 	return previous;
 }
