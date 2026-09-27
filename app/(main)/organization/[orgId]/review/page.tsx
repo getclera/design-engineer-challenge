@@ -86,7 +86,7 @@ async function OrgReviewContent({
 	return (
 		<HydrationBoundary state={dehydrate(queryClient)}>
 			<TrackOrgPageView event={OrgDashboardEvents.REVIEW_VIEWED} />
-			<AdminPageShell title="Review" subtitle="Everyone waiting on your decision" hideHeaderOnMobile>
+			<AdminPageShell title="Review" subtitle="Decide who you want to meet" hideHeaderOnMobile>
 				<ReviewBoard
 					orgId={orgId}
 					roleParam={effectiveRoleId ?? role}
