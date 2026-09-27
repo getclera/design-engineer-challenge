@@ -8,7 +8,7 @@ import { Button } from "@v2/components/ui/button";
 import { Card } from "@v2/components/ui/card";
 import { Skeleton } from "@v2/components/ui/skeleton";
 import { StatusPill } from "@v2/components/ui/status-pill";
-import { ReviewWaiting, useRoleIntroReadiness } from "@v2/features/org-review";
+import { ReviewWaiting, STREAM_CONFIG, useRoleIntroReadiness } from "@v2/features/org-review";
 import { useRolesList } from "@v2/features/org-roles";
 import { TalentBoardCard } from "@v2/features/org-shared-cards";
 import Link from "next/link";
@@ -28,7 +28,6 @@ import {
 
 const STAGES = ["requested", "introduced", "interviewing", "offer", "hired"] as const;
 const TILE_CLASSES = "flex flex-col gap-0.5 px-4 py-3.5 text-left max-lg:px-3 max-lg:py-2.5";
-const firstName = (name: string) => name.split(" ")[0] || name;
 const withView = (href: string, view: string) => `${href}${href.includes("?") ? "&" : "?"}view=${view}`;
 
 function useHome(orgId: string, setup: CompanySetup) {
@@ -53,7 +52,7 @@ function useHome(orgId: string, setup: CompanySetup) {
 	};
 }
 
-/** The page's answer line: how much needs you, and what Clera sent this week. */
+/** The page's answer line: how much needs you, and what we sent this week. */
 export function HomeAnswerLine({ orgId, setup }: { orgId: string; setup: CompanySetup }) {
 	const { home } = useHome(orgId, setup);
 	if (!home) return <Skeleton className="mt-0.5 h-4 w-64" />;
@@ -64,12 +63,12 @@ export function HomeAnswerLine({ orgId, setup }: { orgId: string; setup: Company
 			<span className="font-medium text-v2-text-primary">
 				{n} {n === 1 ? "thing needs" : "things need"} you
 			</span>{" "}
-			this week · Clera sent you {home.arrived.length} people
+			· We sent you {home.arrived.length} {home.arrived.length === 1 ? "candidate" : "candidates"} this week
 		</>
 	);
 }
 
-/** Home: what needs you this week. Fixes first, then the people waiting longest, with every role at a glance. */
+/** Home: what needs you this week. Fixes first, then the candidates waiting longest, with every role at a glance. */
 export function HomeDashboard({ orgId, setup, canEdit }: { orgId: string; setup: CompanySetup; canEdit: boolean }) {
 	const { home, isError, refetch } = useHome(orgId, setup);
 	if (!home)
@@ -88,12 +87,6 @@ export function HomeDashboard({ orgId, setup, canEdit }: { orgId: string; setup:
 	const reviewHref = orgRoutes.review(orgId);
 	const asked = askedToMeet(feed.items);
 	const deadline = deadlineElsewhere(feed.items);
-	const blockedWhy = (item: ReviewItem) => {
-		if (!item.roleId) return null;
-		const r = readinessFor(item.roleId);
-		if (r.ready) return null;
-		return r.hmName ? `Intro waits on ${firstName(r.hmName)}'s calendar link` : "Intro waits on a hiring manager";
-	};
 
 	return (
 		<div className="flex flex-col gap-4 max-lg:gap-3">
@@ -105,9 +98,9 @@ export function HomeDashboard({ orgId, setup, canEdit }: { orgId: string; setup:
 						<CaughtUp week={feed.decidedThisWeek} />
 					) : (
 						asked.length + deadline.length > 0 && (
-							<HomeCard title="Asked to meet you" note="Longest wait first">
+							<HomeCard title="Asked to meet you" hint={STREAM_CONFIG.interest.tooltip} note="Longest wait first">
 								{asked.slice(0, 3).map((item) => (
-									<TalentRow key={`${item.talentId}:${item.roleId}`} orgId={orgId} item={item} why={blockedWhy(item)} />
+									<TalentRow key={`${item.talentId}:${item.roleId}`} orgId={orgId} item={item} />
 								))}
 								{asked.length === 0 && (
 									<p className="px-4 py-3 font-v2-body text-sm text-v2-text-tertiary">
@@ -125,7 +118,7 @@ export function HomeDashboard({ orgId, setup, canEdit }: { orgId: string; setup:
 										href={orgRoutes.review(orgId, item.roleId ?? undefined, item.talentId)}
 										action="Open"
 									>
-										<span className="font-medium text-v2-text-secondary">{item.talentName}</span> · deadline elsewhere:{" "}
+										<span className="font-medium text-v2-text-secondary">{item.talentName}</span> · Why now:{" "}
 										{extractFitReasonHook(item.fitReason)}
 									</CardFooter>
 								))}
@@ -161,7 +154,7 @@ function WeekTiles({
 			<Link href={reviewHref} className={`${TILE_CLASSES} transition-colors hover:bg-v2-bg-warm`}>
 				<TileValue label="Waiting on you" short="Waiting" value={waiting} />
 				<span className="font-v2-body text-v2-text-tertiary text-xs tabular-nums max-sm:hidden">
-					{arrived} arrived this week
+					{arrived} new this week
 				</span>
 			</Link>
 			<div className={TILE_CLASSES}>
@@ -178,9 +171,9 @@ function WeekTiles({
 				</span>
 			</div>
 			<Link href={withView(reviewHref, "maybe")} className={`${TILE_CLASSES} transition-colors hover:bg-v2-bg-warm`}>
-				<TileValue label="On your Maybe list" short="Maybe" value={maybes} />
+				<TileValue label="Maybe" short="Maybe" value={maybes} />
 				<span className="font-v2-body text-v2-text-tertiary text-xs max-sm:hidden">
-					{maybes > 0 ? "Decide when you're ready" : "Nobody parked"}
+					{maybes > 0 ? "Parked. Decide whenever." : "No maybes yet"}
 				</span>
 			</Link>
 		</Card>
@@ -202,10 +195,10 @@ function TileValue({ label, short, value }: { label: string; short: string; valu
 }
 
 /** Same row as Review's list: opens that person in Review. */
-function TalentRow({ orgId, item, why }: { orgId: string; item: ReviewItem; why: string | null }) {
+function TalentRow({ orgId, item }: { orgId: string; item: ReviewItem }) {
 	const router = useRouter();
 	const href = orgRoutes.review(orgId, item.roleId ?? undefined, item.talentId);
-	const hook = why ?? extractFitReasonHook(item.fitReason);
+	const hook = extractFitReasonHook(item.fitReason);
 	return (
 		<div className="border-v2-border-divider border-t first:border-t-0">
 			<TalentBoardCard
@@ -222,9 +215,7 @@ function TalentRow({ orgId, item, why }: { orgId: string; item: ReviewItem; why:
 				badge={<ReviewWaiting item={item} />}
 				footer={
 					hook && (
-						<p
-							className={`flex min-w-0 items-center gap-1.5 font-v2-body text-xs ${why ? "text-v2-status-warning" : "text-v2-text-brand"}`}
-						>
+						<p className="flex min-w-0 items-center gap-1.5 font-v2-body text-v2-text-brand text-xs">
 							<Lightning size={12} className="shrink-0" />
 							<span className="truncate">{hook}</span>
 						</p>
@@ -245,7 +236,7 @@ function RolesCard({
 	orgId: string;
 	feed: ReviewListData;
 	roles: { id: string; position: string; status: string; pipelineStages?: Partial<Record<string, number>> }[];
-	readinessFor: (roleId: string) => { ready: boolean };
+	readinessFor: (roleId: string) => { ready: boolean; reason?: "no_hm" | "hm_no_link" };
 	arrived: ReviewItem[];
 }) {
 	const unassigned = feed.items.filter((i) => !i.maybe && !i.roleId).length;
@@ -253,13 +244,21 @@ function RolesCard({
 		.map((role) => {
 			const paused = role.status === "paused";
 			const count = paused ? (feed.pausedPending[role.id] ?? 0) : (feed.byRole[role.id]?.pending ?? 0);
-			const blocked = paused ? "Paused" : count > 0 && !readinessFor(role.id).ready ? "Intros blocked" : null;
-			return { role, paused, count, blocked, truncated: !!feed.byRole[role.id]?.truncated };
+			const readiness = readinessFor(role.id);
+			// Review's own role notes. The intro still goes out; candidates just can't book directly.
+			const flag = paused
+				? "Paused"
+				: count > 0 && !readiness.ready
+					? readiness.reason === "no_hm"
+						? "No hiring manager"
+						: "No scheduling link"
+					: null;
+			return { role, paused, count, flag, truncated: !!feed.byRole[role.id]?.truncated };
 		})
-		.sort((a, b) => Number(!!b.blocked) - Number(!!a.blocked) || b.count - a.count);
+		.sort((a, b) => Number(!!b.flag) - Number(!!a.flag) || b.count - a.count);
 	return (
 		<HomeCard title="Roles" note={`${roles.filter((r) => r.status === "active").length} open`}>
-			{rows.map(({ role, paused, count, blocked, truncated }) => {
+			{rows.map(({ role, paused, count, flag, truncated }) => {
 				const fresh = arrived.filter((i) => i.roleId === role.id).length;
 				const stages = STAGES.flatMap((s) => (role.pipelineStages?.[s] ? [`${role.pipelineStages[s]} ${s}`] : []));
 				return (
@@ -271,14 +270,14 @@ function RolesCard({
 						plus={truncated}
 						quiet={count === 0}
 					>
-						{blocked && (
+						{flag && (
 							<StatusPill tone={paused ? "info" : "warning"} size="xs">
-								{blocked}
+								{flag}
 							</StatusPill>
 						)}
 						{fresh > 0 && <span className="text-v2-text-brand-green">+{fresh} new</span>}
 						{stages.length > 0 && <span>{stages.join(" · ")}</span>}
-						{count === 0 && !blocked && <span>Nobody new yet</span>}
+						{count === 0 && !flag && <span>Nobody new yet</span>}
 					</RoleRow>
 				);
 			})}
@@ -350,16 +349,16 @@ function CaughtUp({ week }: { week: ReviewListData["decidedThisWeek"] }) {
 			<span className="mb-3 grid size-10 place-items-center rounded-full bg-v2-status-success-bg text-v2-text-brand-green">
 				<CheckCircle size={20} />
 			</span>
-			<h2 className="font-v2-heading text-lg text-v2-text-primary">Every candidate has a decision</h2>
+			<h2 className="font-v2-heading text-lg text-v2-text-primary">Nice, you're all done</h2>
 			<p className="mt-1 max-w-sm font-v2-body text-sm text-v2-text-secondary">
-				Nothing is blocked. New drops and intro requests land here first.
+				Every candidate has a decision. New drops and intro requests land here.
 			</p>
 			<div className="mt-4 flex flex-wrap justify-center gap-2 font-v2-body text-v2-text-secondary text-xs tabular-nums">
 				{(
 					[
-						[week.intro, "intros"],
-						[week.maybe, "maybe"],
-						[week.pass, "passes"],
+						[week.intro, "intros requested"],
+						[week.maybe, "to revisit"],
+						[week.pass, "passed"],
 					] as const
 				).map(([n, label]) => (
 					<span key={label} className="flex items-baseline gap-1 rounded-full bg-v2-bg-warm px-2.5 py-1">

@@ -57,7 +57,7 @@ export function waitingTotal(feed: Pick<ReviewListData, "items" | "byRole">): nu
 	return inRoles + feed.items.filter((i) => waitingOn(i) && !i.roleId).length;
 }
 
-/** What needs you, biggest unblock first: role fixes by people they free, then reviewing, then account setup. */
+/** What needs you, most helpful first: role fixes by candidates they help, then reviewing, then account setup. */
 export function nextSteps({
 	feed,
 	roles,

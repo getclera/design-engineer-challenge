@@ -39,9 +39,9 @@ const TONE_CLASSES: Record<Tone, string> = {
 };
 
 const firstName = (name: string) => name.split(" ")[0] || name;
-const people = (n: number) => `${n} ${n === 1 ? "person" : "people"}`;
+const candidates = (n: number) => `${n} ${n === 1 ? "candidate" : "candidates"}`;
 
-/** Ranked by how many people each one frees. Keys 1–9 open a step, ↵ starts reviewing. */
+/** Ranked by how many candidates each one helps. Keys 1–9 open a step, ↵ starts reviewing. */
 export function HomeNextSteps({ orgId, steps, canEdit }: { orgId: string; steps: NextStep[]; canEdit: boolean }) {
 	const router = useRouter();
 	const [open, setOpen] = useState<string | null>(null);
@@ -70,7 +70,7 @@ export function HomeNextSteps({ orgId, steps, canEdit }: { orgId: string; steps:
 	}, [numbered, steps, open, orgId, reviewHref, router]);
 
 	return (
-		<HomeCard title="Next steps" note="Biggest unblock first">
+		<HomeCard title="Next steps" note="Most helpful first">
 			{steps.map((step) => {
 				const n = numbered.indexOf(step) + 1;
 				return (
@@ -97,7 +97,7 @@ export function HomeNextSteps({ orgId, steps, canEdit }: { orgId: string; steps:
 								<Kbd className="max-lg:hidden">{n}</Kbd>
 								<Button asChild variant="ghost" size="compact">
 									<Link href={linkFor(orgId, step) ?? reviewHref}>
-										{step.kind === "hiring-manager" ? "Add" : step.kind === "ats" ? "Connect" : "Finish"}
+										{step.kind === "hiring-manager" ? "Set up" : step.kind === "ats" ? "Connect" : "Finish"}
 										<ArrowUpRight size={12} />
 									</Link>
 								</Button>
@@ -127,12 +127,17 @@ const STEP_VIEW: { [K in NextStep["kind"]]: (s: Extract<NextStep, { kind: K }>) 
 	calendar: (s) => [
 		CalendarPlus,
 		"warning",
-		`Add ${firstName(s.hmName)}'s calendar link`,
-		`${s.roleName} · frees ${s.freed} intros`,
+		`Add ${firstName(s.hmName)}'s scheduling link`,
+		`${s.roleName} · ${candidates(s.freed)} can't book directly`,
 	],
-	"hiring-manager": (s) => [UserPlus, "warning", "Add a hiring manager", `${s.roleName} · frees ${s.freed} intros`],
-	resume: (s) => [PauseCircle, "info", `Resume ${s.roleName}`, `${people(s.freed)} waiting`],
-	review: (s) => [Tray, "ok", `Review ${people(s.people)}`, `About ${s.minutes} min`],
+	"hiring-manager": (s) => [
+		UserPlus,
+		"warning",
+		"Set up hiring manager",
+		`${s.roleName} · ${candidates(s.freed)} can't book directly`,
+	],
+	resume: (s) => [PauseCircle, "info", `Activate ${s.roleName}`, `Paused · ${candidates(s.freed)} waiting on it`],
+	review: (s) => [Tray, "ok", `Review ${candidates(s.people)}`, `~${s.minutes} min`],
 	profile: (s) => [Buildings, "neutral", "Finish your company profile", `Missing ${s.missing.join(", ")}`],
 	ats: () => [
 		PlugsConnected,
@@ -160,7 +165,7 @@ function StepRow({ step, children }: { step: NextStep; children: ReactNode }) {
 	);
 }
 
-/** Fix and Resume happen right here: a popover by the button, a bottom sheet on phones. */
+/** Adding a link and activating a role happen right here: a popover by the button, a bottom sheet on phones. */
 function FixAction({
 	orgId,
 	step,
@@ -175,7 +180,7 @@ function FixAction({
 	onOpenChange: (open: boolean) => void;
 }) {
 	const isPhone = useMediaQuery("(max-width: 1023px)");
-	const title = step.kind === "calendar" ? `${step.hmName}'s calendar link` : `Resume ${step.roleName}?`;
+	const title = step.kind === "calendar" ? `${step.hmName}'s scheduling link` : `Activate ${step.roleName}?`;
 	const body =
 		step.kind === "calendar" ? (
 			<CalendarForm orgId={orgId} step={step} touch={isPhone} onDone={() => onOpenChange(false)} />
@@ -184,7 +189,7 @@ function FixAction({
 		);
 	const trigger = (
 		<Button variant="ghost" size="compact" onClick={() => onOpenChange(!open)} aria-expanded={open}>
-			{step.kind === "calendar" ? "Fix" : "Resume"}
+			{step.kind === "calendar" ? "Add link" : "Activate"}
 		</Button>
 	);
 
@@ -243,7 +248,7 @@ function CalendarForm({
 			if (!result.ok) throw new Error("Couldn't save the link. Try again.");
 		},
 		onSuccess: () => {
-			toast.success(`Saved. ${step.roleName} intros can go out now`);
+			toast.success(`Saved. Candidates can book ${firstName(step.hmName)} directly now.`);
 			onDone();
 		},
 		onError: (error) => toast.error(error.message),
@@ -272,7 +277,7 @@ function CalendarForm({
 					setInvalid(false);
 				}}
 				placeholder="https://cal.com/imogen"
-				aria-label="Calendar link"
+				aria-label="Scheduling link"
 				aria-invalid={invalid || undefined}
 				// 16px on phones, or iOS zooms the page when the field gets focus.
 				className={cn("border-v2-border-default bg-v2-bg-page", touch ? "h-11 text-base" : "h-9 text-sm")}
@@ -302,7 +307,7 @@ function ResumeConfirm({
 	const resume = useMutation({
 		mutationFn: async () => {
 			const result = await organizations.updateRole(orgId, step.roleId, { status: "active" });
-			if (!result.ok) throw new Error(`Couldn't resume ${step.roleName}. Try again.`);
+			if (!result.ok) throw new Error(`Couldn't activate ${step.roleName}. Try again.`);
 		},
 		onSuccess: () => {
 			toast.success(`${step.roleName} is active again`);
@@ -322,9 +327,9 @@ function ResumeConfirm({
 			}}
 		>
 			<p className="mt-0.5 font-v2-body text-v2-text-tertiary text-xs">
-				{people(step.freed)} move into Review, and new candidates start arriving again.
+				Activate it to review {step.freed === 1 ? "the candidate" : `${step.freed} candidates`} waiting on it.
 			</p>
-			<FormButtons touch={touch} pending={resume.isPending} label="Resume role" onCancel={onDone} />
+			<FormButtons touch={touch} pending={resume.isPending} label="Activate role" onCancel={onDone} />
 		</form>
 	);
 }
