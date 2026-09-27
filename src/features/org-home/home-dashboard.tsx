@@ -52,22 +52,6 @@ function useHome(orgId: string, setup: CompanySetup) {
 	};
 }
 
-/** The page's answer line: how much needs you, and what we sent this week. */
-export function HomeAnswerLine({ orgId, setup }: { orgId: string; setup: CompanySetup }) {
-	const { home } = useHome(orgId, setup);
-	if (!home) return <Skeleton className="mt-0.5 h-4 w-64" />;
-	if (home.caughtUp) return <span className="font-medium text-v2-text-primary">You're all caught up.</span>;
-	const n = home.steps.length;
-	return (
-		<>
-			<span className="font-medium text-v2-text-primary">
-				{n} {n === 1 ? "thing needs" : "things need"} you
-			</span>{" "}
-			· We sent you {home.arrived.length} {home.arrived.length === 1 ? "candidate" : "candidates"} this week
-		</>
-	);
-}
-
 /** Home: what needs you this week. Fixes first, then the candidates waiting longest, with every role at a glance. */
 export function HomeDashboard({ orgId, setup, canEdit }: { orgId: string; setup: CompanySetup; canEdit: boolean }) {
 	const { home, isError, refetch } = useHome(orgId, setup);

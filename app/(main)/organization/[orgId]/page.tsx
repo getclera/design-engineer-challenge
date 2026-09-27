@@ -1,6 +1,6 @@
 import { dehydrate, HydrationBoundary, QueryClient } from "@tanstack/react-query";
 import { AdminPageShell } from "@v2/components/layout";
-import { HomeAnswerLine, HomeDashboard, HomeDashboardSkeleton } from "@v2/features/org-home";
+import { HomeDashboard, HomeDashboardSkeleton } from "@v2/features/org-home";
 import type { Metadata } from "next";
 import { Suspense } from "react";
 import { orgDashboardKeys, roleKeys } from "@/lib/query-keys";
@@ -37,7 +37,7 @@ async function OrgHomeContent({ orgId }: { orgId: string }) {
 
 	return (
 		<HydrationBoundary state={dehydrate(queryClient)}>
-			<AdminPageShell title="Home" subtitle={<HomeAnswerLine orgId={orgId} setup={COMPANY_SETUP} />}>
+			<AdminPageShell title="Home" subtitle="What needs you this week">
 				<HomeDashboard orgId={orgId} setup={COMPANY_SETUP} canEdit={viewerOrgRole !== "viewer"} />
 			</AdminPageShell>
 		</HydrationBoundary>
