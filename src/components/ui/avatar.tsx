@@ -76,13 +76,16 @@ interface UserAvatarProps extends VariantProps<typeof avatarVariants> {
 	generated?: boolean;
 }
 
+const FILL = { width: "100%", height: "100%" };
+
 const UserAvatar = React.forwardRef<HTMLSpanElement, UserAvatarProps>(
 	({ src, name, size, className, fallbackClassName, fallback, alt = "", generated = false }, ref) => {
 		// No photo (or it failed): a generated dither avatar, stable per person, instead of grey initials.
 		const fallbackContent =
 			fallback ??
 			(name ? (
-				<GradientAvatar seed={name} size={40} pattern="dither" className="size-full" />
+				// The library sets an inline 40px size, which beats any class: fill the avatar at every size.
+				<GradientAvatar seed={name} size={40} pattern="dither" style={FILL} />
 			) : (
 				<User weight="fill" className="size-1/2 opacity-60" aria-hidden="true" />
 			));

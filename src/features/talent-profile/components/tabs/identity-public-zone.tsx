@@ -58,7 +58,8 @@ const OCCUPATION_BUTTON =
 const INLINE_INPUT = "h-auto py-0.5";
 const TALENT_TAG_PILL = "h-5 px-2 py-0 text-2xs";
 // Phone: up to two lines instead of cutting the name; one line from 640px up.
-const NAME_TEXT = "max-w-[min(24rem,70cqw)] break-words max-sm:line-clamp-2 sm:truncate font-v2-heading text-lg font-semibold text-v2-text-primary";
+const NAME_TEXT =
+	"max-w-[min(24rem,70cqw)] break-words max-sm:line-clamp-2 sm:truncate font-v2-heading text-lg font-semibold text-v2-text-primary";
 
 function IdentityPublicZone({
 	data,
@@ -81,7 +82,7 @@ function IdentityPublicZone({
 
 	return (
 		<div className={cn("@container flex items-center gap-3.5", className)}>
-			<div className="relative shrink-0">
+			<div className="relative flex shrink-0">
 				<UserAvatar
 					src={data.avatarUrl}
 					name={name}
@@ -95,7 +96,8 @@ function IdentityPublicZone({
 					<TooltipProvider>
 						<Tooltip>
 							<TooltipTrigger asChild>
-								<span className="absolute -bottom-0.5 -right-0.5 size-3 rounded-full border-2 border-v2-bg-page bg-v2-brand-green" />
+								{/* On the circle's edge at 45°, not the square's corner: 14.6% in from each side (1 − cos 45°) / 2, minus half the dot. */}
+								<span className="absolute right-[calc(14.6%-6px)] bottom-[calc(14.6%-6px)] size-3 rounded-full border-2 border-v2-bg-page bg-v2-brand-green" />
 							</TooltipTrigger>
 							<TooltipContent side="bottom" className="text-xs">
 								Open to opportunities
