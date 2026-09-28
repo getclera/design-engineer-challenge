@@ -1,16 +1,16 @@
 import { type ReviewItem, type ReviewStream, streamOf } from "./types.ts";
 
-/** Who waits on the reviewer most comes first: people who asked to meet, then our picks, then drops. */
+/** Who waits on the reviewer most comes first. Titles are the live stream badges' words. */
 export const QUEUE_GROUP_TITLES: Record<ReviewStream, string> = {
-	interest: "Asked to meet you",
+	interest: "Expressed interest",
 	curated: "We think it's a match",
-	drop: "From the drops",
+	drop: "Outstanding this week",
 };
 const RANK: Record<ReviewStream, number> = { interest: 0, curated: 1, drop: 2 };
 
 const receivedMs = (item: ReviewItem) => (item.receivedAt ? Date.parse(item.receivedAt) : Number.MAX_SAFE_INTEGER);
 
-/** Group order; inside "Asked to meet you" the longest wait goes first, other groups keep the feed order. */
+/** Group order; inside "Expressed interest" the longest wait goes first, other groups keep the feed order. */
 export function sortByQueue(items: ReviewItem[]): ReviewItem[] {
 	return [...items].sort((a, b) => {
 		const rank = RANK[streamOf(a.bucket)] - RANK[streamOf(b.bucket)];

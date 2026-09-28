@@ -185,7 +185,7 @@ export function HomeDashboard({
 							<HomeNextMoves orgId={orgId} steps={steps} canEdit={canEdit} caughtUp={caughtUp} />
 							{asked.length > 0 ? (
 								<HomeCard
-									title="Asked to meet you"
+									title="Expressed interest"
 									hint={STREAM_CONFIG.interest.tooltip}
 									note={`${asked.length} waiting`}
 								>
@@ -200,7 +200,7 @@ export function HomeDashboard({
 								</HomeCard>
 							) : (
 								caughtUp?.quiet && (
-									<HomeCard title="Asked to meet you" note="Nobody yet">
+									<HomeCard title="Expressed interest" note="Nobody yet">
 										<Lede>When someone sees your role and asks to meet you, they show up here first.</Lede>
 										<CardFooter href={orgRoutes.roles.list(orgId)} action="Open your roles" />
 									</HomeCard>
