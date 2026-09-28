@@ -394,7 +394,6 @@
 	--color-v2-status-success-bg: var(--v2-status-success-bg);
 	--color-v2-status-success-text: var(--v2-status-success-text);
 	--color-v2-status-link: var(--v2-status-link);
-	--color-v2-status-inactive: var(--v2-status-inactive);
 	--color-v2-status-error: var(--v2-status-error);
 	--color-v2-status-error-bg: var(--v2-status-error-bg);
 	--color-v2-status-active-on-dark: var(--v2-status-active-on-dark);
@@ -661,7 +660,6 @@
 	--v2-status-success-bg: #ebf1ee;
 	--v2-status-success-text: #039365;
 	--v2-status-link: #0500f3;
-	--v2-status-inactive: #d9d9d9;
 	--v2-status-error: #ef4444;
 	--v2-status-error-bg: #fef2f2;
 	/* Fixed bright variants for status text on the always-dark teal tooltip/toast surface (both themes) */
