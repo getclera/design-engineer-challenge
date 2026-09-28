@@ -3,6 +3,7 @@
 import { PaperPlaneTilt } from "@phosphor-icons/react";
 import { Button } from "@v2/components/ui/button";
 import { useMediaQuery } from "@v2/hooks/use-media-query";
+import { cn } from "@v2/lib/utils";
 import type { ReactNode } from "react";
 import { TalentDecisionTooltip } from "./talent-decision-tooltip";
 
@@ -15,6 +16,7 @@ interface TalentDecisionActionBarProps {
 	leadingAction?: ReactNode;
 	/** Rendered between Pass and Request intro (Review's Maybe). */
 	middleAction?: ReactNode;
+	className?: string;
 }
 
 const KBD = "rounded bg-black/15 px-1 text-2xs leading-4";
@@ -27,11 +29,12 @@ export function TalentDecisionActionBar({
 	showShortcuts = true,
 	leadingAction,
 	middleAction,
+	className,
 }: TalentDecisionActionBarProps) {
 	const isDesktop = useMediaQuery("(min-width: 1024px)");
 	const showHints = showShortcuts && isDesktop;
 	return (
-		<div className="flex items-center gap-2 border-t border-v2-border-divider px-4 py-3">
+		<div className={cn("flex items-center gap-2 border-t border-v2-border-divider px-4 py-3", className)}>
 			{leadingAction}
 			<TalentDecisionTooltip label="Not a fit for this role. Moves to Passed, undo anytime.">
 				<Button variant="ghost" className="flex-2 gap-1.5" disabled={isPending} onClick={onPass}>

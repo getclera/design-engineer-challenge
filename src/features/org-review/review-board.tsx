@@ -459,6 +459,7 @@ export function ReviewBoard({
 													onExpandedChange={isMobile ? () => setMobileTalent(board.selected) : setFullProfile}
 													swipe={isMobile}
 													decisionsInSheet={!!mobileTalent}
+													focus={listHidden && !isMobile}
 												/>
 											</div>
 											{!isMobile && (

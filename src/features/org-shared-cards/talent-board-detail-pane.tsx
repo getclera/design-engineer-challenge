@@ -21,6 +21,8 @@ interface TalentBoardDetailPaneProps {
 	emptyHeading?: string;
 	emptyDescription?: string;
 	compact?: boolean;
+	/** The card around the pane is the profile's only box (Review with the list hidden). */
+	unboxed?: boolean;
 }
 
 function TalentBoardDetailPane({
@@ -37,6 +39,7 @@ function TalentBoardDetailPane({
 	emptyHeading = "Select a candidate",
 	emptyDescription = "Pick someone on the left to see their full profile here.",
 	compact,
+	unboxed,
 }: TalentBoardDetailPaneProps) {
 	const { data: bundle, isError, refetch, isRefetching } = useOrgTalentProfile(orgId, talentId ?? "");
 
@@ -58,6 +61,7 @@ function TalentBoardDetailPane({
 						belowHeader={profileBelowHeader}
 						belowFacts={profileBelowFacts}
 						compact={compact}
+						unboxed={unboxed}
 						// 700px profile box (+ 24px side padding each way) inside the full-width card.
 						className="max-w-187"
 					/>

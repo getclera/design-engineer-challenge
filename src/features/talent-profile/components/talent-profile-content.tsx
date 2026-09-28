@@ -128,6 +128,8 @@ interface TalentProfileContentProps {
 	compact?: boolean;
 	/** Narrows the column (the review deck keeps the profile at 700px). */
 	className?: string;
+	/** No box around the identity block: its parent is already the card (Review with the list hidden). */
+	unboxed?: boolean;
 }
 
 function TalentProfileContent({
@@ -141,6 +143,7 @@ function TalentProfileContent({
 	belowFacts,
 	compact = false,
 	className,
+	unboxed = false,
 }: TalentProfileContentProps) {
 	const { header, mergedProfile, preferences } = bundle;
 
@@ -159,64 +162,84 @@ function TalentProfileContent({
 	};
 
 	const factsProps = { preferences };
+	const identity = (
+		<>
+			<div className="px-4 py-2 sm:px-5 sm:py-2.5">
+				<IdentityPublicZone
+					data={headerData}
+					displayNameOverride={displayNameOverride}
+					occupationOverride={occupationOverride}
+					identiconSeed={identiconSeed}
+					talentTags={header.talentTags}
+					headerActions={
+						<div className="flex flex-col items-end gap-1.5">
+							<HeaderResumeButton talentId={header.id} scope={header.resumeScope} />
+							<HeaderProfileLinks githubUrl={header.githubUrl} xUrl={header.xUrl} portfolioUrl={header.portfolioUrl} />
+						</div>
+					}
+					linkedinTracking={tracking}
+				/>
+				{belowHeader}
+			</div>
+			{hasFacts(factsProps) && (
+				<div className="border-t border-v2-border-warm/50 px-4 py-1.5 sm:px-5">
+					<IdentityFactsRow {...factsProps} />
+				</div>
+			)}
+			{belowFacts}
+		</>
+	);
+
+	const sections = (
+		<>
+			<ExperienceCard
+				talentId={header.id}
+				experiences={mergedProfile.experiences.map(toProfileExperience)}
+				yearsExperience={header.yearsExperience}
+				showYoeInternals={false}
+				showRecalculate={false}
+			/>
+
+			<EducationCard education={mergedProfile.education.map(toProfileEducation)} />
+
+			<PreferencesOverviewCard data={preferences} visaDetails={preferences.visaDetails} />
+
+			<ResumeCard talentId={header.id} scope={header.resumeScope} />
+
+			<SkillsCard skills={mergedProfile.skills.map(toProfileSkill)} />
+
+			<LanguagesCard languages={mergedProfile.languages.map(toProfileLanguage)} />
+
+			<SecondarySectionsCard certifications={mergedProfile.certifications} />
+		</>
+	);
 
 	return (
-		<div className={cn("mx-auto flex w-full max-w-230 flex-col gap-1.75 px-4 py-3 sm:px-6 sm:py-4", className)}>
-			{tracking && <TrackOrgTalentView tracking={tracking} />}
-			{aboveHeader && <div className="flex items-center px-1">{aboveHeader}</div>}
-			<Card variant="flat" className="overflow-hidden">
-				<div className="px-4 py-2 sm:px-5 sm:py-2.5">
-					<IdentityPublicZone
-						data={headerData}
-						displayNameOverride={displayNameOverride}
-						occupationOverride={occupationOverride}
-						identiconSeed={identiconSeed}
-						talentTags={header.talentTags}
-						headerActions={
-							<div className="flex flex-col items-end gap-1.5">
-								<HeaderResumeButton talentId={header.id} scope={header.resumeScope} />
-								<HeaderProfileLinks
-									githubUrl={header.githubUrl}
-									xUrl={header.xUrl}
-									portfolioUrl={header.portfolioUrl}
-								/>
-							</div>
-						}
-						linkedinTracking={tracking}
-					/>
-					{belowHeader}
-				</div>
-				{hasFacts(factsProps) && (
-					<div className="border-t border-v2-border-warm/50 px-4 py-1.5 sm:px-5">
-						<IdentityFactsRow {...factsProps} />
-					</div>
-				)}
-				{belowFacts}
-			</Card>
-
-			{!compact && (
-				<>
-					<ExperienceCard
-						talentId={header.id}
-						experiences={mergedProfile.experiences.map(toProfileExperience)}
-						yearsExperience={header.yearsExperience}
-						showYoeInternals={false}
-						showRecalculate={false}
-					/>
-
-					<EducationCard education={mergedProfile.education.map(toProfileEducation)} />
-
-					<PreferencesOverviewCard data={preferences} visaDetails={preferences.visaDetails} />
-
-					<ResumeCard talentId={header.id} scope={header.resumeScope} />
-
-					<SkillsCard skills={mergedProfile.skills.map(toProfileSkill)} />
-
-					<LanguagesCard languages={mergedProfile.languages.map(toProfileLanguage)} />
-
-					<SecondarySectionsCard certifications={mergedProfile.certifications} />
-				</>
+		<div
+			className={cn(
+				"mx-auto flex w-full max-w-230 flex-col gap-1.75 px-4 py-3 sm:px-6 sm:py-4",
+				className,
+				unboxed && "gap-0 p-0 sm:p-0",
 			)}
+		>
+			{tracking && <TrackOrgTalentView tracking={tracking} />}
+			{aboveHeader && (
+				<div className={cn("flex items-center px-1", unboxed && "px-4 pt-3 sm:px-5 sm:pt-3.5")}>{aboveHeader}</div>
+			)}
+			{unboxed ? (
+				<div>{identity}</div>
+			) : (
+				<Card variant="flat" className="overflow-hidden">
+					{identity}
+				</Card>
+			)}
+
+			{!compact &&
+				(unboxed ? (
+					<div className="flex flex-col gap-1.75 border-t border-v2-border-warm/50 p-4 sm:p-5">{sections}</div>
+				) : (
+					sections
+				))}
 		</div>
 	);
 }
