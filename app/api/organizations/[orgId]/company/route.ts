@@ -4,6 +4,7 @@ import {
   COMPANY_SIZES,
   COMPANY_STAGES,
   type CompanyProfile,
+  IMAGE_FIELDS,
   looksLikeUrl,
   PITCH_MAX,
   TAG_FIELDS,
@@ -17,7 +18,14 @@ export async function GET() {
   return json(COMPANY_PROFILE);
 }
 
-const TEXT_FIELDS = ["name", "pitch", "building", "funding", "founded", ...URL_FIELDS] as const;
+const TEXT_FIELDS = ["name", "pitch", "building", "team", "industry", "funding", "founded", ...URL_FIELDS] as const;
+const MAX_IMAGES = 8;
+// Uploads are kept in memory as data URLs (no storage in this mock), scaled down by the browser first.
+const MAX_IMAGE_CHARS = 1_500_000;
+const isImage = (value: unknown): value is string =>
+  typeof value === "string" &&
+  value.length <= MAX_IMAGE_CHARS &&
+  (/^data:image\/(png|jpeg|webp|gif|svg\+xml);base64,/.test(value) || /^\/(logos|images)\//.test(value));
 const CHOICES = { size: COMPANY_SIZES, stage: COMPANY_STAGES, mode: WORK_MODES } as const;
 
 /** Settings autosaves one field at a time; anything else in the body is refused. */
@@ -46,6 +54,13 @@ export async function PATCH(request: Request) {
       if (!Array.isArray(value) || value.length !== 3 || value.some((r) => typeof r !== "string"))
         return error("Send exactly 3 reasons", 400);
       next.reasons = value.map((r: string) => r.trim()) as CompanyProfile["reasons"];
+    } else if (key === "logo") {
+      if (!isImage(value)) return error("Use a PNG, JPG or WebP under 1 MB", 400);
+      next.logo = value;
+    } else if ((IMAGE_FIELDS as readonly string[]).includes(key)) {
+      if (!Array.isArray(value) || !value.every(isImage)) return error("Use PNG, JPG or WebP images under 1 MB", 400);
+      if (value.length > MAX_IMAGES) return error(`Up to ${MAX_IMAGES} images`, 400);
+      Object.assign(next, { [key]: value });
     } else if ((TAG_FIELDS as readonly string[]).includes(key)) {
       if (!Array.isArray(value) || value.some((t) => typeof t !== "string")) return error(`${key} must be a list`, 400);
       Object.assign(next, { [key]: [...new Set(value.map((t: string) => t.trim()).filter(Boolean))].slice(0, 20) });

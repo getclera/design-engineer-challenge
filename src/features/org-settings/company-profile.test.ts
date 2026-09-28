@@ -1,39 +1,66 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { type CompanyProfile, companyGaps, looksLikeUrl } from "./company-profile.ts";
+import { type CompanyProfile, companyGaps, fillEmpty, looksLikeUrl, sectionState } from "./company-profile.ts";
 
 const complete: CompanyProfile = {
 	name: "Tidewater Labs",
-	logo: null,
+	logo: "/logo.svg",
 	pitch: "Live tide data",
-	building: "",
+	building: "One live feed",
+	team: "",
 	reasons: ["a", "b", "c"],
 	size: "11–50",
-	stage: null,
+	industry: "Maritime",
+	stage: "Series A",
 	funding: "",
-	founded: "",
+	founded: "2021",
 	mode: null,
-	locations: [],
-	benefits: [],
-	culture: [],
-	stack: [],
-	website: "",
+	locations: ["Berlin"],
+	benefits: ["Equity"],
+	culture: ["Low ego"],
+	stack: ["Go"],
+	teamImages: ["t.jpg"],
+	productImages: ["p.jpg"],
+	website: "tidewater.example",
 	linkedin: "linkedin.com/company/tidewater",
 	jobs: "",
+	rounds: [{ id: "r1", round: "Seed", amount: "$3M", date: "", investors: "", auto: false }],
 };
 
-test("companyGaps: nothing missing when size, 3 reasons and LinkedIn are there", () => {
+test("companyGaps: optional fields (about the team, funding amount, job board) never count", () => {
 	assert.deepEqual(companyGaps(complete), []);
 });
 
-test("companyGaps: lists size, reasons, LinkedIn in that order; blank reasons don't count", () => {
-	const gaps = companyGaps({ ...complete, size: null, reasons: ["a", "  ", ""], linkedin: " " });
+test("companyGaps: one gap per section, in page order", () => {
+	const gaps = companyGaps({ ...complete, size: null, reasons: ["a", "  ", ""], linkedin: "linkedin", teamImages: [] });
 	assert.deepEqual(
 		gaps.map((g) => g.key),
-		["size", "reasons", "linkedin"],
+		["details", "selling", "images", "links"],
 	);
-	assert.equal(gaps[1].title, "2 more reasons to join");
-	assert.equal(companyGaps({ ...complete, reasons: ["a", "b", ""] })[0].title, "1 more reason to join");
+	assert.equal(gaps[0].label, "company details");
+});
+
+test("sectionState: names what's missing; a half-typed link is missing; one of three bullets is partial", () => {
+	assert.deepEqual(sectionState({ ...complete, linkedin: "linkedin" }, "links").missing, ["LinkedIn"]);
+	const selling = sectionState({ ...complete, reasons: ["a", "", ""] }, "selling");
+	assert.deepEqual(selling.missing, ["2 more pitch bullets"]);
+	assert.ok(selling.partial);
+	assert.ok(!sectionState({ ...complete, reasons: ["", "", ""] }, "selling").partial);
+	assert.ok(!sectionState({ ...complete, teamImages: [], productImages: [] }, "images").partial);
+	assert.ok(sectionState({ ...complete, teamImages: [] }, "images").partial);
+});
+
+test("fillEmpty: fills blanks only, never overwrites, reasons go into empty slots", () => {
+	const filled = fillEmpty(
+		{ ...complete, size: null, team: "", linkedin: "", reasons: ["Mine", "", ""], stack: ["Go"] },
+		{ size: "11–50", team: "22 people", linkedin: "linkedin.com/x", reasons: ["Theirs"], stack: ["Rust"] },
+	);
+	assert.deepEqual(filled, {
+		size: "11–50",
+		team: "22 people",
+		linkedin: "linkedin.com/x",
+		reasons: ["Mine", "Theirs", ""],
+	});
 });
 
 test("looksLikeUrl: accepts bare domains and paths, rejects words", () => {
