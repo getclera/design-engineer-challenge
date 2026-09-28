@@ -13,7 +13,8 @@ export function ReviewWaiting({ item }: { item: ReviewItem }) {
 		() => true,
 		() => false,
 	);
-	if (!item.receivedAt || !inBrowser) return null;
+	// A date in the future is a clock mistake: show no time rather than a wrong one, as with no date.
+	if (!item.receivedAt || !inBrowser || Date.parse(item.receivedAt) > Date.now()) return null;
 	const overdue = streamOf(item.bucket) === "interest" && Date.now() - Date.parse(item.receivedAt) >= MS_PER_DAY;
 	return (
 		<span
