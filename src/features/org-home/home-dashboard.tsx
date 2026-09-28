@@ -41,9 +41,19 @@ const firstName = (name: string) => name.split(" ")[0] || name;
 
 function useHome(orgId: string) {
 	const feedQuery = useQuery(reviewFeedQueryOptions(orgId));
-	const { data: roles } = useRolesList(orgId, false);
+	const rolesQuery = useRolesList(orgId, false);
 	const { readinessFor } = useRoleIntroReadiness(orgId);
-	return { ...feedQuery, feed: feedQuery.data, roles, readinessFor };
+	return {
+		feed: feedQuery.data,
+		roles: rolesQuery.data,
+		readinessFor,
+		// Either one failing leaves Home with nothing to show: say so, and try both again.
+		isError: feedQuery.isError || rolesQuery.isError,
+		refetch: () => {
+			if (feedQuery.isError) feedQuery.refetch();
+			if (rolesQuery.isError) rolesQuery.refetch();
+		},
+	};
 }
 
 /**
