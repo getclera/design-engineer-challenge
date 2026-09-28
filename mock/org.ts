@@ -46,6 +46,12 @@ export const ACTIVE_CONTACTS: ContactOption[] = (globalContacts.__activeContacts
   },
 ]);
 
+/**
+ * When the next drop lands, and (assumed data) how the search for it is going.
+ * Home shows the search numbers only before the first drop, in the day-1 demo.
+ */
+export const NEXT_DROP = { day: "Monday", size: 20, looked: 1240, shortlisted: 38 };
+
 /** Account setup Home nudges about until it's done. */
 export const COMPANY_SETUP = {
   profileMissing: ["about", "company size", "LinkedIn"],

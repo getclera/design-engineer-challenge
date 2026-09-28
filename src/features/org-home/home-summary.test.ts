@@ -1,7 +1,14 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import type { ReviewItem } from "@/lib/review-feed";
-import { arrivedThisWeek, askedToMeet, deadlineElsewhere, nextSteps } from "./home-summary.ts";
+import {
+	applyHomeDemo,
+	arrivedThisWeek,
+	askedToMeet,
+	deadlineElsewhere,
+	nextSteps,
+	stuckIntros,
+} from "./home-summary.ts";
 
 const DAY = 86_400_000;
 const NOW = Date.parse("2026-09-27T12:00:00Z");
@@ -51,7 +58,14 @@ test("arrived this week: skips old and undated, counts a future date as just arr
 	);
 });
 
-test("next steps: fixes ranked by people freed, then review, then setup", () => {
+test("next steps: fixes, then people waiting on you, then things for when you have a minute", () => {
+	const readinessFor = (id: string) =>
+		id === "ml"
+			? { ready: false, reason: "hm_no_link" as const, hmName: "Imogen Vale", hmContactId: "c2" }
+			: { ready: true };
+	const moving = [
+		{ key: "e", name: "Elif", roleId: "ml", roleName: "ML", stage: "intro" as const, at: null, next: null },
+	];
 	const steps = nextSteps({
 		feed: {
 			items: [],
@@ -59,17 +73,37 @@ test("next steps: fixes ranked by people freed, then review, then setup", () => 
 			pausedPending: { gr: 6 },
 		},
 		roles: [
-			{ id: "ml", position: "ML", status: "active" },
 			{ id: "gr", position: "Growth", status: "paused" },
+			{ id: "ml", position: "ML", status: "active" },
 			{ id: "be", position: "Backend", status: "active" },
 		],
-		readinessFor: (id) =>
-			id === "ml" ? { ready: false, reason: "hm_no_link", hmName: "Imogen Vale", hmContactId: "c2" } : { ready: true },
+		readinessFor,
 		setup: { profileMissing: ["about"], atsConnected: false },
+		stuck: stuckIntros(moving, readinessFor),
 	});
 	assert.deepEqual(
 		steps.map((s) => s.kind),
-		["calendar", "resume", "review", "profile", "ats"],
+		["calendar", "review", "resume", "profile", "ats"],
 	);
-	assert.deepEqual(steps[2], { kind: "review", people: 31, minutes: 11 });
+	// The stuck intro counts toward the fix: 11 waiting + Elif.
+	assert.equal(steps[0].kind === "calendar" && steps[0].freed, 12);
+	assert.deepEqual(steps[1], { kind: "review", people: 31, minutes: 11, asked: [], urgent: null });
+});
+
+test("demo day 1: nobody sent yet, one role, nothing moving", () => {
+	const feed = {
+		items: [person("a", "intro_request", ago(1))],
+		byRole: { be: { pending: 20, truncated: true } },
+		pausedPending: { gr: 6 },
+		decidedThisWeek: { intro: 2, maybe: 1, pass: 2 },
+	} as unknown as Parameters<typeof applyHomeDemo>[1]["feed"];
+	const roles = [
+		{ id: "be", position: "Backend", status: "active" },
+		{ id: "gr", position: "Growth", status: "paused" },
+	];
+	const day1 = applyHomeDemo("day1", { feed, roles, moving: [] });
+	assert.equal(day1.feed.items.length, 0);
+	assert.deepEqual(day1.feed.byRole, { be: { pending: 0, truncated: false } });
+	assert.equal(day1.roles.length, 1);
+	assert.equal(applyHomeDemo(null, { feed, roles, moving: [] }).feed, feed);
 });

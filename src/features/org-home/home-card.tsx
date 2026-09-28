@@ -17,7 +17,8 @@ export function HomeCard({
 }) {
 	return (
 		<Card className="min-w-0">
-			<section aria-label={title}>
+			{/* Rows draw their own top line; the one right under the header would double its line. */}
+			<section aria-label={title} className="[&>header+*]:border-t-0">
 				<header className="flex items-baseline justify-between gap-3 border-v2-border-divider border-b px-4 py-3 max-lg:px-3">
 					<h2 className="flex items-center gap-1.5 font-v2-heading text-lg text-v2-text-primary">
 						{title}

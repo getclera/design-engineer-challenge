@@ -2,7 +2,7 @@
 
 import { extractFitReasonHook } from "@clera/shared-utils";
 import { orgRoutes } from "@clera/route-factory";
-import { ArrowRight, CaretRight, CheckCircle, Lightning } from "@phosphor-icons/react";
+import { ArrowRight, CaretRight, Lightning } from "@phosphor-icons/react";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@v2/components/ui/button";
 import { Card } from "@v2/components/ui/card";
@@ -16,46 +16,57 @@ import { useRouter } from "next/navigation";
 import type { ReactNode } from "react";
 import { type ReviewItem, type ReviewListData, reviewFeedQueryOptions } from "@/lib/review-feed";
 import { HomeCard } from "./home-card";
-import { HomeNextSteps } from "./home-next-steps";
+import { HomeExampleCandidate, HomeFirstDrop, HomeGetReady, type NextDrop } from "./home-day-one";
+import { HomeMovingForward } from "./home-moving";
+import { type CaughtUpWeek, HomeNextMoves, Lede } from "./home-next-steps";
 import {
+	applyHomeDemo,
 	arrivedThisWeek,
 	askedToMeet,
 	type CompanySetup,
-	deadlineElsewhere,
+	type HomeDemo,
+	type MovingForwardPerson,
 	nextSteps,
+	STEP_GROUP,
+	stuckIntros,
 	waitingTotal,
 } from "./home-summary";
 
 const STAGES = ["requested", "introduced", "interviewing", "offer", "hired"] as const;
 const TILE_CLASSES = "flex flex-col gap-0.5 px-4 py-3.5 text-left max-lg:px-3 max-lg:py-2.5";
+const ASKED_SHOWN = 3;
+const ROLES_SHOWN = 5;
 const withView = (href: string, view: string) => `${href}${href.includes("?") ? "&" : "?"}view=${view}`;
+const firstName = (name: string) => name.split(" ")[0] || name;
 
-function useHome(orgId: string, setup: CompanySetup) {
+function useHome(orgId: string) {
 	const feedQuery = useQuery(reviewFeedQueryOptions(orgId));
 	const { data: roles } = useRolesList(orgId, false);
 	const { readinessFor } = useRoleIntroReadiness(orgId);
-	const feed = feedQuery.data;
-	if (!feed || !roles) return { ...feedQuery, home: null };
-	const waiting = feed.items.filter((i) => !i.maybe);
-	const steps = nextSteps({ feed, roles, readinessFor, setup });
-	return {
-		...feedQuery,
-		home: {
-			feed,
-			roles,
-			readinessFor,
-			steps,
-			waiting: waitingTotal(feed),
-			arrived: arrivedThisWeek(waiting),
-			caughtUp: !steps.some((s) => s.kind !== "profile" && s.kind !== "ats"),
-		},
-	};
+	return { ...feedQuery, feed: feedQuery.data, roles, readinessFor };
 }
 
-/** Home: what needs you this week. Fixes first, then the candidates waiting longest, with every role at a glance. */
-export function HomeDashboard({ orgId, setup, canEdit }: { orgId: string; setup: CompanySetup; canEdit: boolean }) {
-	const { home, isError, refetch } = useHome(orgId, setup);
-	if (!home)
+/**
+ * Home, a weekly briefing. Left: what to do (Next moves, who asked to meet you). Right: how hiring is going
+ * (Moving forward, Roles). Day 1, a quiet week and all done each get their own moment instead of an empty page.
+ */
+export function HomeDashboard({
+	orgId,
+	setup,
+	canEdit,
+	moving: realMoving,
+	nextDrop,
+	demo,
+}: {
+	orgId: string;
+	setup: CompanySetup;
+	canEdit: boolean;
+	moving: MovingForwardPerson[];
+	nextDrop: NextDrop;
+	demo: HomeDemo | null;
+}) {
+	const { feed: realFeed, roles: realRoles, readinessFor: realReadiness, isError, refetch } = useHome(orgId);
+	if (!realFeed || !realRoles)
 		return isError ? (
 			<Card className="flex flex-col items-center gap-3 px-6 py-10 text-center">
 				<p className="font-v2-body text-sm text-v2-text-secondary">Couldn't load what's waiting on you.</p>
@@ -67,50 +78,144 @@ export function HomeDashboard({ orgId, setup, canEdit }: { orgId: string; setup:
 			<HomeDashboardSkeleton />
 		);
 
-	const { feed, roles, readinessFor, steps } = home;
-	const reviewHref = orgRoutes.review(orgId);
+	const { feed, roles, moving, allReady } = applyHomeDemo(demo, {
+		feed: realFeed,
+		roles: realRoles,
+		moving: realMoving,
+	});
+	const readinessFor: typeof realReadiness = allReady ? () => ({ ready: true }) : realReadiness;
+	const steps = nextSteps({ feed, roles, readinessFor, setup, stuck: stuckIntros(moving, readinessFor) });
+	const waiting = waitingTotal(feed);
+	const arrived = arrivedThisWeek(feed.items.filter((i) => !i.maybe));
+	const { intro, maybe, pass } = feed.decidedThisWeek;
+	const decided = intro + maybe + pass;
+	const maybes = feed.items.filter((i) => i.maybe).length;
+	// Nobody sent yet: nothing waiting, nothing decided, nobody past the intro.
+	const dayOne = waiting === 0 && decided === 0 && moving.length === 0 && maybes === 0;
 	const asked = askedToMeet(feed.items);
-	const deadline = deadlineElsewhere(feed.items);
+	const firstActive = roles.find((r) => r.status === "active");
+	const caughtUp: CaughtUpWeek | null =
+		!dayOne && !steps.some((s) => STEP_GROUP[s.kind] < 3)
+			? {
+					// Nothing to decide this week at all, vs. everyone decided.
+					quiet: decided === 0,
+					decided,
+					intros: intro,
+					maybes,
+					nextDrop: nextDrop.day,
+					quietRole: firstActive ? { id: firstActive.id, name: firstActive.position } : null,
+				}
+			: null;
+	const stuckReason = (roleId: string) => {
+		const r = readinessFor(roleId);
+		if (r.ready) return null;
+		return r.hmName
+			? `Can't book a call yet: ${firstName(r.hmName)} has no scheduling link.`
+			: "Can't book a call yet: this role has no hiring manager.";
+	};
 
 	return (
 		<div className="flex flex-col gap-4 max-lg:gap-3">
-			<WeekTiles orgId={orgId} feed={feed} waiting={home.waiting} arrived={home.arrived.length} />
-			<div className="grid items-start gap-4 max-lg:gap-3 lg:grid-cols-[minmax(0,1fr)_20rem]">
+			<WeekTiles
+				orgId={orgId}
+				feed={feed}
+				waiting={waiting}
+				hint={
+					dayOne
+						? `Your first drop arrives ${nextDrop.day}`
+						: waiting === 0
+							? caughtUp?.quiet
+								? "Nobody new this week"
+								: `New drops arrive ${nextDrop.day}`
+							: `${arrived.length} new this week`
+				}
+			/>
+			<div className="grid items-start gap-4 max-lg:gap-3 lg:grid-cols-[minmax(0,1.5fr)_minmax(18rem,1fr)]">
 				<div className="flex min-w-0 flex-col gap-4 max-lg:gap-3">
-					{steps.length > 0 && <HomeNextSteps orgId={orgId} steps={steps} canEdit={canEdit} />}
-					{home.caughtUp ? (
-						<CaughtUp week={feed.decidedThisWeek} />
+					{dayOne ? (
+						<>
+							<HomeFirstDrop drop={nextDrop} roleName={roles[0]?.position ?? "your role"} />
+							<HomeGetReady
+								day={nextDrop.day}
+								steps={[
+									{
+										key: "role",
+										title: "Add your first role",
+										meta: "So we know who to look for",
+										action: "Add role",
+										done: roles.length > 0,
+									},
+									{
+										key: "link",
+										title: "Add your scheduling link",
+										meta: "So candidates can book a call directly",
+										action: "Add link",
+										done: roles.length > 0 && readinessFor(roles[0].id).ready,
+									},
+									{
+										key: "profile",
+										title: "Finish your company profile",
+										meta: "Candidates read it before they say yes",
+										action: "Finish",
+										done: setup.profileMissing.length === 0,
+									},
+									{
+										key: "ats",
+										title: "Connect your ATS",
+										meta: "Sync roles from Ashby, Greenhouse and more",
+										action: "Connect",
+										done: setup.atsConnected,
+									},
+								]}
+							/>
+							<HomeExampleCandidate day={nextDrop.day} />
+						</>
 					) : (
-						asked.length + deadline.length > 0 && (
-							<HomeCard title="Asked to meet you" hint={STREAM_CONFIG.interest.tooltip} note="Longest wait first">
-								{asked.slice(0, 3).map((item) => (
-									<TalentRow key={`${item.talentId}:${item.roleId}`} orgId={orgId} item={item} />
-								))}
-								{asked.length === 0 && (
-									<p className="px-4 py-3 font-v2-body text-sm text-v2-text-tertiary">
-										Nobody's waiting on an intro reply.
-									</p>
-								)}
-								{asked.length > 3 && (
-									<CardFooter href={reviewHref} action="See all">
-										+{asked.length - 3} more asked to meet you
-									</CardFooter>
-								)}
-								{deadline.map((item) => (
-									<CardFooter
-										key={`${item.talentId}:${item.roleId}`}
-										href={orgRoutes.review(orgId, item.roleId ?? undefined, item.talentId)}
-										action="Open"
-									>
-										<span className="font-medium text-v2-text-secondary">{item.talentName}</span> · Why now:{" "}
-										{extractFitReasonHook(item.fitReason)}
-									</CardFooter>
-								))}
-							</HomeCard>
-						)
+						<>
+							<HomeNextMoves orgId={orgId} steps={steps} canEdit={canEdit} caughtUp={caughtUp} />
+							{asked.length > 0 ? (
+								<HomeCard
+									title="Asked to meet you"
+									hint={STREAM_CONFIG.interest.tooltip}
+									note={`${asked.length} waiting`}
+								>
+									{asked.slice(0, ASKED_SHOWN).map((item) => (
+										<TalentRow key={`${item.talentId}:${item.roleId}`} orgId={orgId} item={item} />
+									))}
+									{asked.length > ASKED_SHOWN && (
+										<CardFooter href={orgRoutes.review(orgId)} action="See all">
+											+{asked.length - ASKED_SHOWN} more asked to meet you
+										</CardFooter>
+									)}
+								</HomeCard>
+							) : (
+								caughtUp?.quiet && (
+									<HomeCard title="Asked to meet you" note="Nobody yet">
+										<Lede>When someone sees your role and asks to meet you, they show up here first.</Lede>
+										<CardFooter href={orgRoutes.roles.list(orgId)} action="Open your roles" />
+									</HomeCard>
+								)
+							)}
+						</>
 					)}
 				</div>
-				<RolesCard orgId={orgId} feed={feed} roles={roles} readinessFor={readinessFor} arrived={home.arrived} />
+				<div className="flex min-w-0 flex-col gap-4 max-lg:gap-3">
+					<HomeMovingForward orgId={orgId} people={moving} stuckReason={stuckReason} nextDrop={nextDrop.day} />
+					<RolesCard
+						orgId={orgId}
+						feed={feed}
+						roles={roles}
+						readinessFor={readinessFor}
+						arrived={arrived}
+						emptyLabel={
+							dayOne
+								? `First candidates on the way · ${nextDrop.day}`
+								: caughtUp?.quiet
+									? "Still searching"
+									: "Nobody new yet"
+						}
+					/>
+				</div>
 			</div>
 		</div>
 	);
@@ -122,12 +227,12 @@ function WeekTiles({
 	orgId,
 	feed,
 	waiting,
-	arrived,
+	hint,
 }: {
 	orgId: string;
 	feed: ReviewListData;
 	waiting: number;
-	arrived: number;
+	hint: string;
 }) {
 	const reviewHref = orgRoutes.review(orgId);
 	const { intro, maybe, pass } = feed.decidedThisWeek;
@@ -137,21 +242,25 @@ function WeekTiles({
 		<Card className="grid grid-cols-3 divide-x divide-v2-border-divider">
 			<Link href={reviewHref} className={`${TILE_CLASSES} transition-colors hover:bg-v2-bg-warm`}>
 				<TileValue label="Waiting on you" short="Waiting" value={waiting} />
-				<span className="font-v2-body text-v2-text-tertiary text-xs tabular-nums max-sm:hidden">
-					{arrived} new this week
-				</span>
+				<span className="font-v2-body text-v2-text-tertiary text-xs tabular-nums max-sm:hidden">{hint}</span>
 			</Link>
 			<div className={TILE_CLASSES}>
 				<TileValue label="You decided this week" short="Decided" value={intro + maybe + pass} />
 				<span className="font-v2-body text-v2-text-tertiary text-xs tabular-nums max-sm:hidden">
-					{intro} intro ·{" "}
-					<Link href={withView(reviewHref, "maybe")} className={link}>
-						{maybe} maybe
-					</Link>{" "}
-					·{" "}
-					<Link href={withView(reviewHref, "passed")} className={link}>
-						{pass} pass
-					</Link>
+					{intro + maybe + pass === 0 ? (
+						"Nothing yet"
+					) : (
+						<>
+							{intro} intro ·{" "}
+							<Link href={withView(reviewHref, "maybe")} className={link}>
+								{maybe} maybe
+							</Link>{" "}
+							·{" "}
+							<Link href={withView(reviewHref, "passed")} className={link}>
+								{pass} pass
+							</Link>
+						</>
+					)}
 				</span>
 			</div>
 			<Link href={withView(reviewHref, "maybe")} className={`${TILE_CLASSES} transition-colors hover:bg-v2-bg-warm`}>
@@ -184,7 +293,7 @@ function TalentRow({ orgId, item }: { orgId: string; item: ReviewItem }) {
 	const href = orgRoutes.review(orgId, item.roleId ?? undefined, item.talentId);
 	const hook = extractFitReasonHook(item.fitReason);
 	return (
-		<div className="border-v2-border-divider border-t first:border-t-0">
+		<div className="border-v2-border-divider border-t">
 			<TalentBoardCard
 				item={{
 					name: item.talentName,
@@ -216,12 +325,14 @@ function RolesCard({
 	roles,
 	readinessFor,
 	arrived,
+	emptyLabel,
 }: {
 	orgId: string;
 	feed: ReviewListData;
 	roles: { id: string; position: string; status: string; pipelineStages?: Partial<Record<string, number>> }[];
 	readinessFor: (roleId: string) => { ready: boolean; reason?: "no_hm" | "hm_no_link" };
 	arrived: ReviewItem[];
+	emptyLabel: string;
 }) {
 	const unassigned = feed.items.filter((i) => !i.maybe && !i.roleId).length;
 	const rows = roles
@@ -242,7 +353,7 @@ function RolesCard({
 		.sort((a, b) => Number(!!b.flag) - Number(!!a.flag) || b.count - a.count);
 	return (
 		<HomeCard title="Roles" note={`${roles.filter((r) => r.status === "active").length} open`}>
-			{rows.map(({ role, paused, count, flag, truncated }) => {
+			{rows.slice(0, ROLES_SHOWN).map(({ role, paused, count, flag, truncated }) => {
 				const fresh = arrived.filter((i) => i.roleId === role.id).length;
 				const stages = STAGES.flatMap((s) => (role.pipelineStages?.[s] ? [`${role.pipelineStages[s]} ${s}`] : []));
 				return (
@@ -261,7 +372,7 @@ function RolesCard({
 						)}
 						{fresh > 0 && <span className="text-v2-text-brand-green">+{fresh} new</span>}
 						{stages.length > 0 && <span>{stages.join(" · ")}</span>}
-						{count === 0 && !flag && <span>Nobody new yet</span>}
+						{count === 0 && !flag && <span>{emptyLabel}</span>}
 					</RoleRow>
 				);
 			})}
@@ -269,6 +380,11 @@ function RolesCard({
 				<RoleRow href={orgRoutes.review(orgId)} name="No role yet" count={unassigned}>
 					<span>Pick a role in Review</span>
 				</RoleRow>
+			)}
+			{rows.length > ROLES_SHOWN && (
+				<CardFooter href={orgRoutes.roles.list(orgId)} action="See all">
+					+{rows.length - ROLES_SHOWN} more roles
+				</CardFooter>
 			)}
 		</HomeCard>
 	);
@@ -292,7 +408,7 @@ function RoleRow({
 	return (
 		<Link
 			href={href}
-			className="flex items-center gap-2.5 border-v2-border-divider border-t px-4 py-2.5 transition-colors first-of-type:border-t-0 hover:bg-v2-bg-warm max-lg:px-3"
+			className="flex items-center gap-2.5 border-v2-border-divider border-t px-4 py-2.5 transition-colors hover:bg-v2-bg-warm max-lg:px-3"
 		>
 			<div className="min-w-0 flex-1">
 				<p
@@ -316,7 +432,7 @@ function RoleRow({
 }
 
 /** One quiet line under a card: who else is waiting, and where to see them. */
-function CardFooter({ href, action, children }: { href: string; action: string; children: ReactNode }) {
+function CardFooter({ href, action, children }: { href: string; action: string; children?: ReactNode }) {
 	return (
 		<div className="flex items-center gap-3 border-v2-border-divider border-t px-4 py-2.5 font-v2-body text-v2-text-tertiary text-xs max-lg:px-3">
 			<p className="min-w-0 flex-1 truncate">{children}</p>
@@ -327,45 +443,19 @@ function CardFooter({ href, action, children }: { href: string; action: string; 
 	);
 }
 
-function CaughtUp({ week }: { week: ReviewListData["decidedThisWeek"] }) {
-	return (
-		<Card className="flex flex-col items-center px-6 py-8 text-center">
-			<span className="mb-3 grid size-10 place-items-center rounded-full bg-v2-status-success-bg text-v2-text-brand-green">
-				<CheckCircle size={20} />
-			</span>
-			<h2 className="font-v2-heading text-lg text-v2-text-primary">Nice, you're all done</h2>
-			<p className="mt-1 max-w-sm font-v2-body text-sm text-v2-text-secondary">
-				Every candidate has a decision. New drops and intro requests land here.
-			</p>
-			<div className="mt-4 flex flex-wrap justify-center gap-2 font-v2-body text-v2-text-secondary text-xs tabular-nums">
-				{(
-					[
-						[week.intro, "intros requested"],
-						[week.maybe, "to revisit"],
-						[week.pass, "passed"],
-					] as const
-				).map(([n, label]) => (
-					<span key={label} className="flex items-baseline gap-1 rounded-full bg-v2-bg-warm px-2.5 py-1">
-						<b className="font-semibold text-sm text-v2-text-primary">{n}</b>
-						{label}
-					</span>
-				))}
-				<span className="rounded-full bg-v2-bg-warm px-2.5 py-1">this week</span>
-			</div>
-		</Card>
-	);
-}
-
 export function HomeDashboardSkeleton() {
 	return (
 		<div className="flex flex-col gap-4 max-lg:gap-3" aria-busy="true">
 			<Skeleton className="h-20 w-full rounded-v2-lg" />
-			<div className="grid items-start gap-4 max-lg:gap-3 lg:grid-cols-[minmax(0,1fr)_20rem]">
+			<div className="grid items-start gap-4 max-lg:gap-3 lg:grid-cols-[minmax(0,1.5fr)_minmax(18rem,1fr)]">
 				<div className="flex flex-col gap-4 max-lg:gap-3">
 					<Skeleton className="h-64 w-full rounded-v2-lg" />
 					<Skeleton className="h-72 w-full rounded-v2-lg" />
 				</div>
-				<Skeleton className="h-80 w-full rounded-v2-lg" />
+				<div className="flex flex-col gap-4 max-lg:gap-3">
+					<Skeleton className="h-72 w-full rounded-v2-lg" />
+					<Skeleton className="h-64 w-full rounded-v2-lg" />
+				</div>
 			</div>
 		</div>
 	);
