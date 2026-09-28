@@ -34,6 +34,9 @@ const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
  * Settings › Communications: where new candidates land (company-wide, owners edit), how often, a preview of the
  * message, then your own reminders (everyone edits their own).
  */
+const CHANNELS_SHOWN = ["slack", "email"] as const;
+const CHANNEL_NAME = { slack: "Slack", email: "Email" } as const;
+
 export function CommunicationsSettings({
 	orgId,
 	canEdit,
@@ -88,6 +91,60 @@ export function CommunicationsSettings({
 		undoToast(`Removed ${email}`, () => change.mutate({ emails: before }));
 	};
 
+	const box = (kind: (typeof DELIVERY_KINDS)[number], channel: (typeof CHANNELS_SHOWN)[number], id?: string) => (
+		<Checkbox
+			id={id}
+			checked={delivery.grid[kind.key][channel]}
+			onCheckedChange={(on) => tick(kind.key, channel, on === true)}
+			disabled={!canEdit || (channel === "slack" && !delivery.slackChannel)}
+			aria-label={`${kind.title} by ${CHANNEL_NAME[channel]}`}
+			className="size-4.5"
+		/>
+	);
+	const atsBox = (id?: string) => <Checkbox id={id} disabled aria-label="ATS not connected" className="size-4.5" />;
+	const slackTarget = delivery.slackChannel ? (
+		<span className="inline-flex items-center gap-1 text-v2-text-primary">
+			<Hash size={13} />
+			{delivery.slackChannel.replace(/^#/, "")}
+		</span>
+	) : canEdit ? (
+		<Button
+			variant="ghost"
+			size="compact"
+			className="gap-1.5 bg-v2-bg-card"
+			onClick={() => connectSlack.mutate()}
+			disabled={connectSlack.isPending}
+		>
+			<SlackLogo size={13} /> {connectSlack.isPending ? "Connecting…" : "Connect Slack"}
+		</Button>
+	) : (
+		<span className="text-v2-text-tertiary">Not connected</span>
+	);
+	const emailTargets = (align: "items-center" | "items-start") => (
+		<ul className={cn("flex min-w-0 flex-col gap-1", align)}>
+			{delivery.emails.map((email) => (
+				<li key={email} className="max-w-full">
+					<Tag
+						className="h-6 max-w-44 bg-v2-bg-card px-2 text-xs max-sm:max-w-60"
+						onDismiss={canEdit ? () => removeEmail(email) : undefined}
+						dismissLabel={`Remove ${email}`}
+					>
+						<span className="truncate">{email}</span>
+					</Tag>
+				</li>
+			))}
+			{delivery.emails.length === 0 && <li className="text-v2-text-tertiary">No email yet</li>}
+		</ul>
+	);
+	const atsLink = (
+		<Link
+			href={atsHref}
+			className="font-medium text-v2-text-brand underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-v2-brand-teal"
+		>
+			Connect your ATS
+		</Link>
+	);
+
 	return (
 		<div className="flex flex-col gap-4">
 			{!canEdit && <ViewOnlyNote ownerName={ownerName} extra=" Your own Notifications are yours to change." />}
@@ -97,104 +154,105 @@ export function CommunicationsSettings({
 						title="Where new candidates land"
 						sub="Pick where each kind of update lands. We send to every box you tick."
 					>
-						<div className="mx-5 overflow-x-auto rounded-v2-lg border border-v2-border-divider max-lg:mx-4">
-							<table className="w-full min-w-120 border-collapse font-v2-body text-sm">
-								<thead>
-									<tr className="font-medium text-2xs text-v2-text-secondary uppercase tracking-wider">
-										<th scope="col" className="w-2/5 px-4 py-2.5 text-left">
-											<span className="sr-only">Update</span>
-										</th>
-										<th scope="col" className="px-2 py-2.5">
-											Slack
-										</th>
-										<th scope="col" className="px-2 py-2.5">
-											Email
-										</th>
-										<th scope="col" className="px-2 py-2.5">
-											<span className="inline-flex items-center gap-1" title="Connect your ATS in Integrations">
-												ATS <Info size={12} className="text-v2-text-tertiary" />
-											</span>
-										</th>
-									</tr>
-								</thead>
-								<tbody>
-									{DELIVERY_KINDS.map((kind) => (
-										<tr key={kind.key} className="border-v2-border-divider border-t">
-											<th scope="row" className="px-4 py-2.5 text-left font-normal text-v2-text-primary">
-												{kind.title}
-												{kind.sub && <span className="block text-v2-text-tertiary text-xs">{kind.sub}</span>}
+						{/* The table needs about 480px: narrower (a phone, or beside the preview), each update gets its own block. */}
+						<div className="@container">
+							<div className="mx-5 hidden overflow-x-auto rounded-v2-lg border border-v2-border-divider max-lg:mx-4 @xl:block">
+								<table className="w-full min-w-120 border-collapse font-v2-body text-sm">
+									<thead>
+										<tr className="font-medium text-2xs text-v2-text-secondary uppercase tracking-wider">
+											<th scope="col" className="w-2/5 px-4 py-2.5 text-left">
+												<span className="sr-only">Update</span>
 											</th>
-											{(["slack", "email"] as const).map((channel) => (
-												<td key={channel} className="px-2 py-2.5 text-center">
-													<Checkbox
-														checked={delivery.grid[kind.key][channel]}
-														onCheckedChange={(on) => tick(kind.key, channel, on === true)}
-														disabled={!canEdit || (channel === "slack" && !delivery.slackChannel)}
-														aria-label={`${kind.title} by ${channel === "slack" ? "Slack" : "email"}`}
-														className="size-4.5"
-													/>
-												</td>
-											))}
-											<td className="px-2 py-2.5 text-center text-v2-text-tertiary">
-												{kind.key === "submissions" ? (
-													<Checkbox disabled aria-label="ATS not connected" className="size-4.5" />
-												) : (
-													"–"
-												)}
-											</td>
-										</tr>
-									))}
-									<tr className="border-v2-border-divider border-t bg-v2-bg-warm align-top text-xs">
-										<th scope="row" className="px-4 py-2.5 text-left font-normal text-v2-text-secondary">
-											Sends to
-										</th>
-										<td className="px-2 py-2 text-center">
-											{delivery.slackChannel ? (
-												<span className="inline-flex items-center gap-1 text-v2-text-primary">
-													<Hash size={13} />
-													{delivery.slackChannel.replace(/^#/, "")}
+											<th scope="col" className="px-2 py-2.5">
+												Slack
+											</th>
+											<th scope="col" className="px-2 py-2.5">
+												Email
+											</th>
+											<th scope="col" className="px-2 py-2.5">
+												<span className="inline-flex items-center gap-1" title="Connect your ATS in Integrations">
+													ATS <Info size={12} className="text-v2-text-tertiary" />
 												</span>
-											) : canEdit ? (
-												<Button
-													variant="ghost"
-													size="compact"
-													className="gap-1.5 bg-v2-bg-card"
-													onClick={() => connectSlack.mutate()}
-													disabled={connectSlack.isPending}
-												>
-													<SlackLogo size={13} /> {connectSlack.isPending ? "Connecting…" : "Connect Slack"}
-												</Button>
-											) : (
-												<span className="text-v2-text-tertiary">Not connected</span>
-											)}
-										</td>
-										<td className="px-2 py-2 text-center">
-											<ul className="flex flex-col items-center gap-1">
-												{delivery.emails.map((email) => (
-													<li key={email}>
-														<Tag
-															className="h-6 max-w-44 bg-v2-bg-card px-2 text-xs"
-															onDismiss={canEdit ? () => removeEmail(email) : undefined}
-															dismissLabel={`Remove ${email}`}
-														>
-															<span className="truncate">{email}</span>
-														</Tag>
-													</li>
+											</th>
+										</tr>
+									</thead>
+									<tbody>
+										{DELIVERY_KINDS.map((kind) => (
+											<tr key={kind.key} className="border-v2-border-divider border-t">
+												<th scope="row" className="px-4 py-2.5 text-left font-normal text-v2-text-primary">
+													{kind.title}
+													{kind.sub && <span className="block text-v2-text-tertiary text-xs">{kind.sub}</span>}
+												</th>
+												{CHANNELS_SHOWN.map((channel) => (
+													<td key={channel} className="px-2 py-2.5 text-center">
+														{box(kind, channel)}
+													</td>
 												))}
-												{delivery.emails.length === 0 && <li className="text-v2-text-tertiary">No email yet</li>}
-											</ul>
-										</td>
-										<td className="px-2 py-2 text-center">
-											<Link
-												href={atsHref}
-												className="font-medium text-v2-text-brand underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-v2-brand-teal"
-											>
-												Connect your ATS
-											</Link>
-										</td>
-									</tr>
-								</tbody>
-							</table>
+												<td className="px-2 py-2.5 text-center text-v2-text-tertiary">
+													{kind.key === "submissions" ? atsBox() : "–"}
+												</td>
+											</tr>
+										))}
+										<tr className="border-v2-border-divider border-t bg-v2-bg-warm align-top text-xs">
+											<th scope="row" className="px-4 py-2.5 text-left font-normal text-v2-text-secondary">
+												Sends to
+											</th>
+											<td className="px-2 py-2 text-center">{slackTarget}</td>
+											<td className="px-2 py-2 text-center">{emailTargets("items-center")}</td>
+											<td className="px-2 py-2 text-center">{atsLink}</td>
+										</tr>
+									</tbody>
+								</table>
+							</div>
+							<ul className="mx-5 flex flex-col rounded-v2-lg border border-v2-border-divider font-v2-body max-lg:mx-4 @xl:hidden">
+								{DELIVERY_KINDS.map((kind) => (
+									<li
+										key={kind.key}
+										className="flex flex-col gap-2 border-v2-border-divider border-t px-4 py-3 first:border-t-0"
+									>
+										<p className="text-sm text-v2-text-primary">
+											{kind.title}
+											{kind.sub && <span className="block text-v2-text-tertiary text-xs">{kind.sub}</span>}
+										</p>
+										<div className="flex flex-wrap gap-x-5 gap-y-2 text-sm text-v2-text-secondary">
+											{CHANNELS_SHOWN.map((channel) => (
+												<label
+													key={channel}
+													htmlFor={`f-${kind.key}-${channel}`}
+													className="inline-flex items-center gap-2"
+												>
+													{box(kind, channel, `f-${kind.key}-${channel}`)}
+													{CHANNEL_NAME[channel]}
+												</label>
+											))}
+											{kind.key === "submissions" && (
+												<label
+													htmlFor="f-submissions-ats"
+													className="inline-flex items-center gap-2 text-v2-text-tertiary"
+												>
+													{atsBox("f-submissions-ats")}
+													ATS
+												</label>
+											)}
+										</div>
+									</li>
+								))}
+								<li className="flex flex-col gap-2.5 rounded-b-v2-lg border-v2-border-divider border-t bg-v2-bg-warm px-4 py-3 text-xs">
+									<span className="text-v2-text-secondary">Sends to</span>
+									<div className="flex items-center gap-3">
+										<span className="w-10 shrink-0 text-v2-text-tertiary">Slack</span>
+										{slackTarget}
+									</div>
+									<div className="flex items-start gap-3">
+										<span className="w-10 shrink-0 pt-1 text-v2-text-tertiary">Email</span>
+										{emailTargets("items-start")}
+									</div>
+									<div className="flex items-center gap-3">
+										<span className="w-10 shrink-0 text-v2-text-tertiary">ATS</span>
+										{atsLink}
+									</div>
+								</li>
+							</ul>
 						</div>
 						{nowhere && (
 							<p
