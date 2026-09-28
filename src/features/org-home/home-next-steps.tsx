@@ -201,7 +201,7 @@ const stepKey = (s: NextStep) => ("roleId" in s ? `${s.kind}:${s.roleId}` : s.ki
 
 function linkFor(orgId: string, step: NextStep): string | null {
 	if (step.kind === "hiring-manager") return orgRoutes.roles.edit(orgId, step.roleId, { highlightHm: true });
-	if (step.kind === "profile") return orgRoutes.settings.company(orgId);
+	if (step.kind === "profile") return `${orgRoutes.settings.company(orgId)}${step.focus ? `?focus=${step.focus}` : ""}`;
 	if (step.kind === "ats") return orgRoutes.integrations(orgId);
 	return null;
 }

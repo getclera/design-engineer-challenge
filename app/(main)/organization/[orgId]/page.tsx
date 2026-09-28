@@ -5,7 +5,8 @@ import type { Metadata } from "next";
 import { Suspense } from "react";
 import { orgDashboardKeys, roleKeys } from "@/lib/query-keys";
 import { formatPageTitle } from "@/utils/pageTitle";
-import { COMPANY_SETUP, NEXT_DROP } from "@mock/org";
+import { companyGaps } from "@v2/features/org-settings/company-profile";
+import { COMPANY_PROFILE, COMPANY_SETUP, NEXT_DROP } from "@mock/org";
 import { buildMovingForward } from "@mock/pipeline";
 import { ROLES } from "@mock/roles";
 import { loadOrgShell } from "./_loader";
@@ -43,13 +44,15 @@ async function OrgHomeContent({ orgId, demo }: { orgId: string; demo: HomeDemo |
 	queryClient.setQueryData(orgDashboardKeys.review(orgId, undefined), feed);
 	// Roles come with the page too, so Home shows at once instead of a skeleton while they load.
 	queryClient.setQueryData(roleKeys.organizationRoles(orgId, false), ROLES);
+	// The same gaps Settings lists, so filling one there clears it here.
+	const gaps = companyGaps(COMPANY_PROFILE);
 
 	return (
 		<HydrationBoundary state={dehydrate(queryClient)}>
 			<AdminPageShell title="Home" subtitle="What needs you this week">
 				<HomeDashboard
 					orgId={orgId}
-					setup={COMPANY_SETUP}
+					setup={{ ...COMPANY_SETUP, profileMissing: gaps.map((g) => g.label), profileFocus: gaps[0]?.key }}
 					canEdit={viewerOrgRole !== "viewer"}
 					moving={buildMovingForward()}
 					nextDrop={NEXT_DROP}

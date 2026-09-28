@@ -12,7 +12,10 @@ export interface MockUser {
 
 export const MOCK_OTP_CODE = "424242";
 
-export const USERS: MockUser[] = [
+// On globalThis so role changes and removals from Settings survive dev hot reloads.
+const globalUsers = globalThis as unknown as { __users?: MockUser[] };
+
+export const USERS: MockUser[] = (globalUsers.__users ??= [
   {
     id: "u_robin",
     profileId: "9a8b7c6d-0000-4000-8000-000000000001",
@@ -31,7 +34,7 @@ export const USERS: MockUser[] = [
     orgRole: "viewer",
     avatarUrl: null,
   },
-];
+]);
 
 export const DEFAULT_OAUTH_USER = USERS[0];
 

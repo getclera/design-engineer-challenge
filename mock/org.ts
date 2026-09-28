@@ -1,5 +1,6 @@
 import type { Organization } from "@/hooks/use-organizations";
 import type { ContactOption } from "@/services/api/company-contacts";
+import type { CompanyProfile } from "@/features/org-settings/company-profile";
 import { ORG_ID } from "./ids";
 
 export const ORGANIZATION = {
@@ -52,8 +53,38 @@ export const ACTIVE_CONTACTS: ContactOption[] = (globalContacts.__activeContacts
  */
 export const NEXT_DROP = { day: "Monday", size: 20, looked: 1240, shortlisted: 38 };
 
-/** Account setup Home nudges about until it's done. */
-export const COMPANY_SETUP = {
-  profileMissing: ["about", "company size", "LinkedIn"],
-  atsConnected: false,
-};
+/** Account setup Home nudges about until it's done. The profile part is worked out from COMPANY_PROFILE. */
+export const COMPANY_SETUP = { atsConnected: false };
+
+// On globalThis so Settings edits survive dev hot reloads. Seeded with three gaps: size, 2 reasons, LinkedIn.
+const globalCompany = globalThis as unknown as { __companyProfile?: CompanyProfile; __invitations?: Invitation[] };
+
+export const COMPANY_PROFILE: CompanyProfile = (globalCompany.__companyProfile ??= {
+  name: ORGANIZATION.name,
+  logo: ORGANIZATION.logo,
+  pitch: "Live tide and port data, so ships stop waiting at sea.",
+  building:
+    "Ships lose days waiting outside ports for the right tide and a free berth. We turn tide gauges, AIS signals and port schedules into one live feed that tells a captain when to leave, and a port when to expect them.",
+  reasons: ["Your code runs in 40 ports in your first month", "", ""],
+  size: null,
+  stage: "Series A",
+  funding: "$18M",
+  founded: "2021",
+  mode: "Hybrid",
+  locations: ["Berlin", "London"],
+  benefits: ["30 days off", "Equity for everyone", "€2k learning budget"],
+  culture: ["Low ego", "Write it down", "Ship weekly"],
+  stack: ["Go", "Postgres", "Kafka", "TypeScript", "Python"],
+  website: ORGANIZATION.website,
+  linkedin: "",
+  jobs: "https://jobs.ashbyhq.com/tidewater",
+});
+
+export interface Invitation {
+  id: string;
+  email: string;
+  role: "owner" | "viewer";
+  sentAt: string;
+}
+
+export const INVITATIONS: Invitation[] = (globalCompany.__invitations ??= []);

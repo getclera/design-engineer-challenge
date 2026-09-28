@@ -19,6 +19,8 @@ interface Readiness {
 
 export interface CompanySetup {
 	profileMissing: string[];
+	/** Which Settings field "Finish your company profile" opens on. */
+	profileFocus?: string;
 	atsConnected: boolean;
 }
 
@@ -42,7 +44,7 @@ export type NextStep =
 	| { kind: "hiring-manager"; roleId: string; roleName: string; freed: number }
 	| { kind: "review"; people: number; minutes: number; asked: ReviewItem[]; urgent: ReviewItem | null }
 	| { kind: "resume"; roleId: string; roleName: string; freed: number }
-	| { kind: "profile"; missing: string[] }
+	| { kind: "profile"; missing: string[]; focus?: string }
 	| { kind: "ats" };
 
 /** 1 needs a fix · 2 waiting on you · 3 when you have a minute. Simple rules a founder can guess, no weights. */
@@ -140,7 +142,8 @@ export function nextSteps({
 			asked: askedToMeet(feed.items),
 			urgent: deadlineElsewhere(feed.items)[0] ?? null,
 		});
-	if (setup.profileMissing.length > 0) steps.push({ kind: "profile", missing: setup.profileMissing });
+	if (setup.profileMissing.length > 0)
+		steps.push({ kind: "profile", missing: setup.profileMissing, focus: setup.profileFocus });
 	if (!setup.atsConnected) steps.push({ kind: "ats" });
 	// Stable sort: inside a group the bigger number goes first; setup keeps its order.
 	return steps.sort((a, b) => STEP_GROUP[a.kind] - STEP_GROUP[b.kind] || sizeOf(b) - sizeOf(a));
