@@ -1,14 +1,17 @@
 "use client";
 
+import { GroupBand } from "@v2/components/data-display";
 import type { EntityChipsState } from "@v2/hooks/use-deferred-entity-chips";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import type { SimilarTo } from "./hooks/use-similar-follow-through";
 import { ReviewCard } from "./review-card";
-import { queueSections } from "./review-queue";
+import type { QueueSection } from "./review-queue";
 import { type ReviewItem, reviewItemKey } from "./types";
 
 interface ReviewLeftListProps {
-	items: ReviewItem[];
+	sections: QueueSection[];
+	isOpen: (sectionKey: string) => boolean;
+	onToggle: (sectionKey: string) => void;
 	selectedKey: string | null;
 	onSelect: (item: ReviewItem) => void;
 	onOpen?: (item: ReviewItem) => void;
@@ -25,7 +28,9 @@ interface ReviewLeftListProps {
 }
 
 export function ReviewLeftList({
-	items,
+	sections,
+	isOpen,
+	onToggle,
 	selectedKey,
 	onSelect,
 	onOpen,
@@ -42,7 +47,6 @@ export function ReviewLeftList({
 }: ReviewLeftListProps) {
 	const prefersReducedMotion = useReducedMotion();
 	const exit = prefersReducedMotion ? { opacity: 0 } : { opacity: 0, height: 0 };
-	const sections = queueSections(items, (item) => similarTo.get(reviewItemKey(item))?.anchor.talentName.split(" ")[0]);
 
 	return (
 		<div className="divide-y divide-v2-border-divider">
@@ -52,12 +56,17 @@ export function ReviewLeftList({
 						key={section.key}
 						exit={{ opacity: 0 }}
 						transition={{ duration: 0.15 }}
-						className="sticky top-0 z-1 flex items-center justify-between bg-v2-bg-warm px-4 py-1.5 font-v2-body font-medium text-2xs text-v2-text-tertiary uppercase tracking-wider"
+						className="sticky top-0 z-1"
 					>
-						<span>{section.title}</span>
-						<span className="tabular-nums">{section.items.length}</span>
+						<GroupBand
+							title={section.title}
+							count={section.items.length}
+							open={isOpen(section.key)}
+							onToggle={() => onToggle(section.key)}
+						/>
 					</motion.div>,
-					...section.items.map((item) => (
+					// A closed group keeps its header and count; its people step out of the list.
+					...(isOpen(section.key) ? section.items : []).map((item) => (
 						<motion.div
 							key={reviewItemKey(item)}
 							exit={exit}

@@ -1,7 +1,7 @@
 "use client";
 
 import { useQueryClient } from "@tanstack/react-query";
-import { EmptyState } from "@v2/components/data-display";
+import { EmptyState, useCollapsedGroups } from "@v2/components/data-display";
 import { Card } from "@v2/components/ui/card";
 import { TooltipProvider } from "@v2/components/ui/tooltip";
 import { useTalentBoardOpen, useTalentDecisionKeyboard } from "@v2/features/org-shared-cards";
@@ -11,7 +11,7 @@ import { usePersistFilterParams } from "@v2/hooks/use-persisted-search";
 import { CaretRight, Cards, Coffee, SidebarSimple } from "@phosphor-icons/react";
 import { Button } from "@v2/components/ui/button";
 import { cn } from "@v2/lib/utils";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { SendoutListEntry } from "@/services/api/organizations";
 import {
 	ALL_ROLES_PARAM,
@@ -35,6 +35,7 @@ import { ReviewEmpty } from "./review-empty";
 import { ReviewHeader } from "./review-header";
 import { ReviewIncomingToggle, type ReviewView } from "./review-incoming-toggle";
 import { ReviewLeftList } from "./review-left-list";
+import { queueSections, stepNavigable } from "./review-queue";
 import { ReviewMobileSheet } from "./review-mobile-sheet";
 import { ReviewRecap } from "./review-recap";
 import { ReviewRoleFilter } from "./review-role-filter";
@@ -43,7 +44,7 @@ import { ReviewScoreboard } from "./review-scoreboard";
 import { ReviewShortcutsHelp } from "./review-shortcuts-help";
 import { ReviewStreamFilter } from "./review-stream-filter";
 import { parseReviewStreams, serializeReviewStreams, setReviewUrlParams } from "./review-url";
-import { REVIEW_STREAMS, type ReviewItem, type ReviewStream } from "./types";
+import { REVIEW_STREAMS, type ReviewItem, type ReviewStream, reviewItemKey } from "./types";
 
 interface ReviewBoardProps {
 	orgId: string;
@@ -103,6 +104,8 @@ export function ReviewBoard({
 	useDefaultReviewRole(orgId, roleParam === undefined && !talentId, applyDefaultRole);
 	const { data: sendoutDrops = [] } = useSendoutLists(orgId, selectedRoleId);
 	const [reviewView, setReviewView] = useState<ReviewView>(view === "passed" || view === "maybe" ? view : "unreviewed");
+	// Who's in a closed list group, for the board's ↑↓; set below once the groups are known.
+	const hiddenRef = useRef<(item: ReviewItem) => boolean>(() => false);
 	const board = useReviewBoard(
 		orgId,
 		selectedRoleId,
@@ -110,6 +113,7 @@ export function ReviewBoard({
 		parseReviewStreams(streams),
 		activeSendout?.talentIds,
 		reviewView === "maybe",
+		hiddenRef,
 	);
 	const isMobile = useMediaQuery("(max-width: 1023px)");
 	const queryClient = useQueryClient();
@@ -117,7 +121,6 @@ export function ReviewBoard({
 	// Phone: the deck comes first; the list is one tap away.
 	const [mobileList, setMobileList] = useState(false);
 	const listRef = useRef<HTMLDivElement>(null);
-	usePrefetchNextProfile(orgId, board.items, board.selectedKey);
 
 	const { selectedKey } = board;
 	useEffect(() => {
@@ -185,6 +188,49 @@ export function ReviewBoard({
 
 	// Screen-level view state the keyboard also drives: full profile (Space), list (L), shortcuts (?).
 	const [listHidden, setListHidden] = useState(false);
+
+	// List groups open and close, remembered per browser. Skipping only applies while the list is on screen:
+	// in card view nobody should become unreachable.
+	const groups = useCollapsedGroups("clera-review-groups");
+	const listVisible = isMobile ? mobileList : !listHidden;
+	const sections = useMemo(
+		() =>
+			queueSections(board.items, (item) => board.similarTo.get(reviewItemKey(item))?.anchor.talentName.split(" ")[0]),
+		[board.items, board.similarTo],
+	);
+	const sectionOf = useMemo(
+		() => new Map(sections.flatMap((section) => section.items.map((item) => [reviewItemKey(item), section.key]))),
+		[sections],
+	);
+	const isHidden = useCallback(
+		(item: ReviewItem) => listVisible && !groups.isOpen(sectionOf.get(reviewItemKey(item)) ?? ""),
+		[listVisible, groups, sectionOf],
+	);
+	useEffect(() => {
+		hiddenRef.current = isHidden;
+	}, [isHidden]);
+	usePrefetchNextProfile(
+		orgId,
+		useMemo(() => board.items.filter((item) => !isHidden(item)), [board.items, isHidden]),
+		board.selectedKey,
+	);
+	const toggleGroup = useCallback(
+		(key: string) => {
+			const closing = groups.isOpen(key);
+			groups.toggle(key);
+			const selected = board.selectedKey;
+			if (!closing || !selected || sectionOf.get(selected) !== key) return;
+			// Closing the group you're in: move to the next person still visible.
+			const hiddenNow = (item: ReviewItem) => {
+				const section = sectionOf.get(reviewItemKey(item)) ?? "";
+				return section === key || !groups.isOpen(section);
+			};
+			const idx = board.items.findIndex((item) => reviewItemKey(item) === selected);
+			const target = stepNavigable(board.items, idx, 1, hiddenNow) ?? stepNavigable(board.items, idx, -1, hiddenNow);
+			if (target) board.selectItem(target);
+		},
+		[groups, board, sectionOf],
+	);
 	const [helpOpen, setHelpOpen] = useState(false);
 	const [fullProfile, setFullProfile] = useState(false);
 	const [profileKey, setProfileKey] = useState(board.selectedKey);
@@ -276,7 +322,10 @@ export function ReviewBoard({
 						)}
 					</div>
 
-					<div inert={switching} className={cn("flex flex-col gap-3 transition-opacity", switching && !slowSwitch && "opacity-50")}>
+					<div
+						inert={switching}
+						className={cn("flex flex-col gap-3 transition-opacity", switching && !slowSwitch && "opacity-50")}
+					>
 						{board.loadFailed ? (
 							<EmptyState
 								live
@@ -371,7 +420,9 @@ export function ReviewBoard({
 													/>
 												) : (
 													<ReviewLeftList
-														items={board.items}
+														sections={sections}
+														isOpen={groups.isOpen}
+														onToggle={toggleGroup}
 														selectedKey={board.selectedKey}
 														onSelect={handleSelect}
 														onOpen={isMobile ? undefined : handleOpen}

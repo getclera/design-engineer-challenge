@@ -49,3 +49,9 @@ export function queueSections(items: ReviewItem[], similarToName: (item: ReviewI
 	}
 	return sections;
 }
+
+/** The next item in `dir` that isn't hidden (in a closed group), or null at the end of the list. */
+export function stepNavigable<T>(items: T[], from: number, dir: 1 | -1, isHidden: (item: T) => boolean): T | null {
+	for (let i = from + dir; i >= 0 && i < items.length; i += dir) if (!isHidden(items[i])) return items[i];
+	return null;
+}

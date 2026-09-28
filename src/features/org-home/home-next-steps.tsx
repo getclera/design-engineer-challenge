@@ -16,6 +16,7 @@ import {
 	UserPlus,
 } from "@phosphor-icons/react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { GroupBand, useCollapsedGroups } from "@v2/components/data-display";
 import { Button } from "@v2/components/ui/button";
 import { UserAvatar } from "@v2/components/ui/avatar";
 import { Input } from "@v2/components/ui/input";
@@ -45,6 +46,8 @@ export const TONE_CLASSES: Record<Tone, string> = {
 };
 
 const GROUP_LABEL = { 1: "Needs a fix", 2: "Waiting on you", 3: "When you have a minute" } as const;
+// Stable keys for the remembered open/closed state.
+const GROUP_KEY = { 1: "fix", 2: "waiting", 3: "minute" } as const;
 const SHOWN = 3;
 
 const firstName = (name: string) => name.split(" ")[0] || name;
@@ -79,7 +82,10 @@ export function HomeNextMoves({
 	const [open, setOpen] = useState<string | null>(null);
 	const [all, setAll] = useState(false);
 	const shown = all ? steps : steps.slice(0, SHOWN);
-	const numbered = shown.filter((s) => s.kind !== "review" && (canEdit || !isFix(s)));
+	const groups = useCollapsedGroups("clera-home-groups");
+	const isShown = (s: NextStep) => groups.isOpen(GROUP_KEY[STEP_GROUP[s.kind]]);
+	const numbered = shown.filter((s) => isShown(s) && s.kind !== "review" && (canEdit || !isFix(s)));
+	const reviewShown = shown.some((s) => s.kind === "review" && isShown(s));
 	const reviewHref = orgRoutes.review(orgId);
 	const primary = shown[0] && STEP_GROUP[shown[0].kind] < 3 ? shown[0] : null;
 
@@ -87,7 +93,7 @@ export function HomeNextMoves({
 		const onKey = (e: KeyboardEvent) => {
 			if (e.defaultPrevented || e.metaKey || e.ctrlKey || e.altKey || open) return;
 			if (e.target instanceof HTMLElement && e.target.closest("input, textarea, [contenteditable], button, a")) return;
-			if (e.key === "Enter" && steps.some((s) => s.kind === "review")) {
+			if (e.key === "Enter" && reviewShown) {
 				e.preventDefault();
 				router.push(reviewHref);
 				return;
@@ -101,7 +107,7 @@ export function HomeNextMoves({
 		};
 		window.addEventListener("keydown", onKey);
 		return () => window.removeEventListener("keydown", onKey);
-	}, [numbered, steps, open, orgId, reviewHref, router, canEdit]);
+	}, [numbered, reviewShown, open, orgId, reviewHref, router, canEdit]);
 
 	return (
 		<HomeCard title="Next moves" note={steps.length > SHOWN ? `${SHOWN} of ${steps.length}` : `${steps.length} to do`}>
@@ -113,43 +119,53 @@ export function HomeNextMoves({
 				const isPrimary = step === primary;
 				return (
 					<Fragment key={stepKey(step)}>
-						{group !== (i > 0 ? STEP_GROUP[shown[i - 1].kind] : 0) && <Band>{GROUP_LABEL[group]}</Band>}
-						<StepRow step={step} rank={i + 1} primary={isPrimary}>
-							{step.kind === "review" ? (
-								<Button
-									asChild
-									size={isPrimary ? "sm" : "compact"}
-									variant={isPrimary ? "primary" : "ghost"}
-									className="gap-2"
-								>
-									<Link href={reviewHref}>
-										{!canEdit ? "View" : isPrimary ? "Start reviewing" : "Start"}
-										{isPrimary && <Kbd className="bg-white/15 text-white/85 max-lg:hidden">↵</Kbd>}
-									</Link>
-								</Button>
-							) : !canEdit ? (
-								<span className="font-v2-body text-v2-text-tertiary text-xs">Ask an owner</span>
-							) : isFix(step) ? (
-								<FixAction
-									orgId={orgId}
-									step={step}
-									n={n}
-									primary={isPrimary}
-									open={open === stepKey(step)}
-									onOpenChange={(o) => setOpen(o ? stepKey(step) : null)}
-								/>
-							) : (
-								<>
-									<Kbd className="max-lg:hidden">{n}</Kbd>
-									<Button asChild variant={isPrimary ? "primary" : "ghost"} size="compact">
-										<Link href={linkFor(orgId, step) ?? reviewHref}>
-											{step.kind === "hiring-manager" ? "Set up" : step.kind === "ats" ? "Connect" : "Finish"}
-											<ArrowUpRight size={12} />
+						{group !== (i > 0 ? STEP_GROUP[shown[i - 1].kind] : 0) && (
+							<GroupBand
+								title={GROUP_LABEL[group]}
+								count={steps.filter((s) => STEP_GROUP[s.kind] === group).length}
+								open={groups.isOpen(GROUP_KEY[group])}
+								onToggle={() => groups.toggle(GROUP_KEY[group])}
+								className="border-v2-border-divider border-t"
+							/>
+						)}
+						{isShown(step) && (
+							<StepRow step={step} rank={i + 1} primary={isPrimary}>
+								{step.kind === "review" ? (
+									<Button
+										asChild
+										size={isPrimary ? "sm" : "compact"}
+										variant={isPrimary ? "primary" : "ghost"}
+										className="gap-2"
+									>
+										<Link href={reviewHref}>
+											{!canEdit ? "View" : isPrimary ? "Start reviewing" : "Start"}
+											{isPrimary && <Kbd className="bg-white/15 text-white/85 max-lg:hidden">↵</Kbd>}
 										</Link>
 									</Button>
-								</>
-							)}
-						</StepRow>
+								) : !canEdit ? (
+									<span className="font-v2-body text-v2-text-tertiary text-xs">Ask an owner</span>
+								) : isFix(step) ? (
+									<FixAction
+										orgId={orgId}
+										step={step}
+										n={n}
+										primary={isPrimary}
+										open={open === stepKey(step)}
+										onOpenChange={(o) => setOpen(o ? stepKey(step) : null)}
+									/>
+								) : (
+									<>
+										<Kbd className="max-lg:hidden">{n}</Kbd>
+										<Button asChild variant={isPrimary ? "primary" : "ghost"} size="compact">
+											<Link href={linkFor(orgId, step) ?? reviewHref}>
+												{step.kind === "hiring-manager" ? "Set up" : step.kind === "ats" ? "Connect" : "Finish"}
+												<ArrowUpRight size={12} />
+											</Link>
+										</Button>
+									</>
+								)}
+							</StepRow>
+						)}
 					</Fragment>
 				);
 			})}
@@ -170,14 +186,6 @@ export function HomeNextMoves({
 }
 
 HomeNextMoves.displayName = "HomeNextMoves";
-
-export function Band({ children }: { children: ReactNode }) {
-	return (
-		<p className="border-v2-border-divider border-t bg-v2-bg-warm px-4 py-1.5 font-medium font-v2-body text-2xs text-v2-text-tertiary uppercase tracking-wider max-lg:px-3">
-			{children}
-		</p>
-	);
-}
 
 export function Lede({ children }: { children: ReactNode }) {
 	return (

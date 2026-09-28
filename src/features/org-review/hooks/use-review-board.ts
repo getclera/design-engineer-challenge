@@ -4,11 +4,11 @@ import { HELD_ACTION_WINDOW_MS, useHeldAction, useTalentImpressions } from "@v2/
 import { useDeferredEntityChips } from "@v2/hooks/use-deferred-entity-chips";
 import { useRolesList } from "@v2/features/org-roles";
 import { INTRO_DECISION_CATEGORIES, PASS_DECISION_CATEGORIES } from "@v2/features/org-shared-modals";
-import { type CSSProperties, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { type CSSProperties, type RefObject, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { orgTalents } from "@/services/api/org-talents";
 import { isHmLinkWarningSuppressed } from "../hm-warning-cookie";
-import { sortByQueue } from "../review-queue";
+import { sortByQueue, stepNavigable } from "../review-queue";
 import {
 	REVIEW_STREAMS,
 	type ReviewItem,
@@ -61,6 +61,8 @@ interface HeldIntro {
 	similarAnchorTalentId?: string;
 }
 
+const NONE_HIDDEN = () => false;
+
 export function useReviewBoard(
 	orgId: string,
 	roleId?: string,
@@ -68,6 +70,8 @@ export function useReviewBoard(
 	initialStreams?: ReviewStream[],
 	sendoutTalentIds?: readonly string[],
 	showMaybe = false,
+	/** People in a closed list group: ↑↓ and "next after deciding" step over them. Read at call time. */
+	isHiddenRef?: RefObject<(item: ReviewItem) => boolean>,
 ) {
 	const { data, isLoading, isPlaceholderData, isError, errorUpdatedAt, refetch } = useReviewItems(orgId, roleId);
 	// A background retry resets a never-loaded list to "pending"; once it has failed, keep showing the error.
@@ -243,10 +247,11 @@ export function useReviewBoard(
 	const advance = useCallback(
 		(acted: Pick<ReviewItem, "talentId" | "roleId">) => {
 			const idx = items.findIndex((i) => reviewItemKey(i) === reviewItemKey(acted));
-			const next = items[idx + 1] ?? (idx > 0 ? items[idx - 1] : null);
+			const hidden = isHiddenRef?.current ?? NONE_HIDDEN;
+			const next = stepNavigable(items, idx, 1, hidden) ?? (idx > 0 ? stepNavigable(items, idx, -1, hidden) : null);
 			setSelectedKey(next ? reviewItemKey(next) : null);
 		},
-		[items],
+		[items, isHiddenRef],
 	);
 
 	const undoHeldIntro = useCallback(
@@ -458,15 +463,15 @@ export function useReviewBoard(
 
 	const selectPrev = useCallback(() => {
 		const idx = selected ? items.findIndex((i) => reviewItemKey(i) === reviewItemKey(selected)) : -1;
-		const prev = items[idx - 1];
+		const prev = stepNavigable(items, idx, -1, isHiddenRef?.current ?? NONE_HIDDEN);
 		if (prev) selectItem(prev);
-	}, [items, selected, selectItem]);
+	}, [items, selected, selectItem, isHiddenRef]);
 
 	const selectNext = useCallback(() => {
 		const idx = selected ? items.findIndex((i) => reviewItemKey(i) === reviewItemKey(selected)) : -1;
-		const next = items[idx + 1];
+		const next = stepNavigable(items, idx, 1, isHiddenRef?.current ?? NONE_HIDDEN);
 		if (next) selectItem(next);
-	}, [items, selected, selectItem]);
+	}, [items, selected, selectItem, isHiddenRef]);
 
 	return {
 		undoLast,

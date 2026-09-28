@@ -1,6 +1,7 @@
 export { EditableField } from "./editable-field";
 export { EmptyState } from "./empty-state";
 export { FieldLabel } from "./field-label";
+export { GroupBand, useCollapsedGroups } from "./group-band";
 export { InfoTooltip } from "./info-tooltip";
 export { PercentBar } from "./percent-bar";
 export { RichContent } from "./rich-content";

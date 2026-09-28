@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { queueSections, sortByQueue } from "./review-queue.ts";
+import { queueSections, sortByQueue, stepNavigable } from "./review-queue.ts";
 import type { ReviewItem } from "./types.ts";
 
 const person = (talentId: string, bucket: ReviewItem["bucket"], receivedAt: string | null = null) =>
@@ -42,5 +42,23 @@ test("sections follow runs, similar picks get their own", () => {
 			["Asked to meet you", 1],
 			["We think it's a match", 1],
 		],
+	);
+});
+
+test("stepNavigable: skips people in closed groups, both ways, null at the ends", () => {
+	const items = ["a", "b", "c", "d"];
+	const hidden = (x: string) => x === "b" || x === "c";
+	assert.equal(stepNavigable(items, 0, 1, hidden), "d");
+	assert.equal(stepNavigable(items, 3, -1, hidden), "a");
+	assert.equal(stepNavigable(items, 3, 1, hidden), null);
+	assert.equal(stepNavigable(items, -1, 1, hidden), "a");
+	// Nothing closed: plain next and previous, as before.
+	assert.equal(
+		stepNavigable(items, 1, 1, () => false),
+		"c",
+	);
+	assert.equal(
+		stepNavigable(items, 1, -1, () => false),
+		"a",
 	);
 });
