@@ -131,3 +131,19 @@ export function isCanonicalCompanyWebsite(url: string | null | undefined): boole
 	if (host && NON_CANONICAL_HOSTS.has(host)) return false;
 	return !NON_CANONICAL_HOSTS.has(domain);
 }
+
+/**
+ * A profile link worth showing: a real web address, not "not provided", "htp://name" or a bare "linkedin.com/in/".
+ * Returns the link with https:// when it had no scheme (so it never opens as a page on our own site), or null
+ * when opening it could only fail.
+ */
+export function usableProfileLink(url: string | null | undefined): string | null {
+	const value = url?.trim();
+	if (!value || /\s/.test(value)) return null;
+	// A scheme other than http(s): a typo like "htp:" or something a browser tab can't open.
+	if (/^[a-z][a-z\d+.-]*:/i.test(value) && !/^https?:\/\//i.test(value)) return null;
+	const host = extractUrlHostname(value)?.toLowerCase();
+	if (!host?.includes(".")) return null;
+	if (host === "linkedin.com" && !/linkedin\.com\/(in|company|pub)\/[^/?#]+/i.test(value)) return null;
+	return /^https?:\/\//i.test(value) ? value : `https://${value}`;
+}

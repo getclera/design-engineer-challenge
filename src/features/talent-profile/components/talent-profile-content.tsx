@@ -1,5 +1,6 @@
 "use client";
 
+import { usableProfileLink } from "@clera/shared-utils";
 import { type OrgTalentTracking, TrackOrgTalentView } from "@v2/components/tracking";
 import { Card } from "@v2/components/ui/card";
 import { cn } from "@v2/lib/utils";
@@ -146,6 +147,13 @@ function TalentProfileContent({
 	unboxed = false,
 }: TalentProfileContentProps) {
 	const { header, mergedProfile, preferences } = bundle;
+	// Profile data can hold "not provided" or "htp://…": such links would only open an error, so they're not shown.
+	const links = {
+		linkedinUrl: usableProfileLink(header.linkedinUrl),
+		portfolioUrl: usableProfileLink(header.portfolioUrl),
+		githubUrl: usableProfileLink(header.githubUrl),
+		xUrl: usableProfileLink(header.xUrl),
+	};
 
 	const headerData: IdentityHeaderData = {
 		firstname: header.firstname,
@@ -154,10 +162,7 @@ function TalentProfileContent({
 		location: header.location,
 		avatarUrl: header.avatarUrl,
 		openForOpportunities: preferences.openToOpportunities ?? null,
-		linkedinUrl: header.linkedinUrl,
-		portfolioUrl: header.portfolioUrl,
-		githubUrl: header.githubUrl,
-		xUrl: header.xUrl,
+		...links,
 		otherLinks: [],
 	};
 
@@ -174,7 +179,7 @@ function TalentProfileContent({
 					headerActions={
 						<div className="flex flex-col items-end gap-1.5">
 							<HeaderResumeButton talentId={header.id} scope={header.resumeScope} />
-							<HeaderProfileLinks githubUrl={header.githubUrl} xUrl={header.xUrl} portfolioUrl={header.portfolioUrl} />
+							<HeaderProfileLinks githubUrl={links.githubUrl} xUrl={links.xUrl} portfolioUrl={links.portfolioUrl} />
 						</div>
 					}
 					linkedinTracking={tracking}

@@ -1,6 +1,7 @@
 "use client";
 
 import { OrgDashboardEvents } from "@clera/posthog-events";
+import { usableProfileLink } from "@clera/shared-utils";
 import { useQueryClient } from "@tanstack/react-query";
 import { linkedinClickedEventProps, type OrgTalentSurface } from "@v2/components/tracking";
 import { ensureOrgTalentProfile } from "@v2/features/org-talent-profile";
@@ -27,7 +28,9 @@ export function useTalentBoardOpen(orgId: string, surface: OrgTalentSurface) {
 			const tab = window.open("about:blank", "_blank");
 			let url: string | null | undefined;
 			try {
-				url = linkedinUrl ?? (await ensureOrgTalentProfile(queryClient, orgId, talentId)).header.linkedinUrl;
+				url = usableProfileLink(
+					linkedinUrl ?? (await ensureOrgTalentProfile(queryClient, orgId, talentId)).header.linkedinUrl,
+				);
 			} catch (error) {
 				tab?.close();
 				throw error;
