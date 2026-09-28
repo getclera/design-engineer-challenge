@@ -16,7 +16,8 @@ const TYPICAL_SECONDS = 20;
 const SEGMENTS = [
 	{ kind: "intro", label: "intro", color: "bg-v2-brand-green" },
 	{ kind: "maybe", label: "maybe", color: "bg-v2-status-warning" },
-	{ kind: "pass", label: "pass", color: "bg-v2-status-inactive" },
+	// Same red as every other pass (list ×, swipe stamp): gray blended into the empty track.
+	{ kind: "pass", label: "pass", color: "bg-v2-status-error" },
 ] as const;
 
 const timeLeft = (seconds: number) => (seconds < 60 ? "under a minute" : `~${Math.ceil(seconds / 60)} min`);
