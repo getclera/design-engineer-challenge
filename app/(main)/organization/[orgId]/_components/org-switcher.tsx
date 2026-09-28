@@ -110,10 +110,12 @@ export function OrgSwitcher() {
 									onClick={() => setCurrentOrg(org.organizationId)}
 									className="cursor-pointer"
 								>
-									<div className="flex flex-1 items-center gap-2">
+									<div className="flex min-w-0 flex-1 items-center gap-2">
 										<OrgLogo name={org.name} logo={org.logo} size={5} />
-										<div className="flex flex-col">
-											<span className="font-v2-body text-sm text-v2-text-primary">{org.name}</span>
+										<div className="flex min-w-0 flex-col">
+											<span className="truncate font-v2-body text-sm text-v2-text-primary" title={org.name}>
+												{org.name}
+											</span>
 											<span className="font-v2-body text-xs capitalize text-v2-text-tertiary">{org.role}</span>
 										</div>
 									</div>
