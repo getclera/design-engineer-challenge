@@ -4,6 +4,7 @@ import { authRoutes } from "@clera/route-factory";
 import { MutationCache, QueryCache, QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { AuthExpiredError } from "@v2/lib/auth/auth-expired-error";
 import { type ReactNode, useState } from "react";
+import { ApiRequestError } from "@/services/api/client";
 
 function redirectToLoginOnAuthExpiry(error: unknown) {
 	if (!(error instanceof AuthExpiredError)) return;
@@ -21,7 +22,16 @@ function V2QueryProvider({ children }: { children: ReactNode }) {
 					queries: {
 						staleTime: 5 * 60 * 1000,
 						refetchOnWindowFocus: false,
-						retry: (failureCount, error) => !(error instanceof AuthExpiredError) && failureCount < 3,
+						// A 4xx (not found, forbidden) won't change on a second try: show it at once. Timeouts and rate limits still retry.
+						retry: (failureCount, error) =>
+							!(error instanceof AuthExpiredError) &&
+							!(
+								error instanceof ApiRequestError &&
+								error.status >= 400 &&
+								error.status < 500 &&
+								![408, 429].includes(error.status)
+							) &&
+							failureCount < 3,
 					},
 				},
 			}),
