@@ -1,6 +1,7 @@
 "use client";
 
 import { Check } from "@phosphor-icons/react";
+import { Card } from "@v2/components/ui/card";
 import { Tag } from "@v2/components/ui/tag";
 import { cn } from "@v2/lib/utils";
 import { type KeyboardEvent, type ReactNode, useEffect, useState } from "react";
@@ -206,6 +207,66 @@ export function Switch({
 					checked && "translate-x-4",
 				)}
 			/>
+		</button>
+	);
+}
+
+/** A titled card: Members' two sections. */
+export function SectionCard({
+	title,
+	sub,
+	action,
+	children,
+}: {
+	title: string;
+	sub: string;
+	action?: ReactNode;
+	children: ReactNode;
+}) {
+	return (
+		<Card className="overflow-hidden">
+			<section aria-label={title}>
+				<header className="flex items-end justify-between gap-3 px-5 pt-4 pb-3 max-lg:px-4 max-sm:flex-col max-sm:items-start">
+					<div>
+						<h2 className="font-v2-heading text-lg text-v2-text-primary">{title}</h2>
+						<p className="mt-0.5 font-v2-body text-v2-text-tertiary text-xs">{sub}</p>
+					</div>
+					{action}
+				</header>
+				{children}
+			</section>
+		</Card>
+	);
+}
+
+/** One choice in a Settings picker menu: who takes the calls, a member's role. */
+export function MenuItem({
+	selected,
+	onSelect,
+	icon,
+	title,
+	sub,
+}: {
+	selected?: boolean;
+	onSelect: () => void;
+	icon: ReactNode;
+	title: string;
+	sub: string;
+}) {
+	return (
+		<button
+			type="button"
+			role="menuitemradio"
+			aria-checked={!!selected}
+			onClick={onSelect}
+			className="flex w-full items-center gap-2.5 rounded-v2-sm px-2 py-1.5 text-left transition-colors hover:bg-v2-bg-input-solid focus-visible:bg-v2-bg-input-solid focus-visible:outline-none"
+		>
+			<span className="shrink-0">{icon}</span>
+			<span className="min-w-0 flex-1">
+				<span className="block truncate font-v2-body text-sm text-v2-text-primary">{title}</span>
+				<span className="block truncate font-v2-body text-v2-text-tertiary text-xs">{sub}</span>
+			</span>
+			{selected && <Check size={14} className="shrink-0 text-v2-brand-green" />}
 		</button>
 	);
 }
