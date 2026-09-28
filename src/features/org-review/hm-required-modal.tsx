@@ -25,16 +25,7 @@ interface HmRequiredModalProps {
 	hmContactId: string | null;
 }
 
-function HmRequiredModal({
-	isOpen,
-	onOpenChange,
-	onContinue,
-	orgId,
-	roleId,
-	reason,
-	hmName,
-	hmContactId,
-}: HmRequiredModalProps) {
+function HmRequiredModal({ isOpen, onOpenChange, onContinue, orgId, roleId, reason, hmName }: HmRequiredModalProps) {
 	const [dontShowAgain, setDontShowAgain] = useState(false);
 	const posthog = usePostHog();
 	const canManageContacts = useCanManageContacts();
@@ -52,8 +43,8 @@ function HmRequiredModal({
 	const ctaLabel = noHm ? "Set up hiring manager" : "Add scheduling link";
 	const ctaHref =
 		noHm && roleId
-			? orgRoutes.roles.edit(orgId, roleId, { highlightHm: true })
-			: orgRoutes.settings.contacts(orgId, hmContactId ?? undefined);
+			? `${orgRoutes.settings.members(orgId)}?focus=hm&role=${roleId}`
+			: `${orgRoutes.settings.members(orgId)}?focus=calendar${roleId ? `&role=${roleId}` : ""}`;
 
 	// biome-ignore lint/correctness/useExhaustiveDependencies: fire once per open, not on prop churn
 	useEffect(() => {

@@ -7,7 +7,8 @@ import { ServerSearchParamsProvider } from "@v2/hooks/server-search-params";
 import type { Metadata } from "next";
 import { headers } from "next/headers";
 import type { ReactNode } from "react";
-import { authKeys, companyKeys } from "@/lib/query-keys";
+import { authKeys, companyKeys, roleKeys } from "@/lib/query-keys";
+import { ROLES } from "@mock/roles";
 import { PostHogIdentify } from "../../_components/posthog-identify";
 import { AppSidebar } from "./_components/app-sidebar";
 import { MobileOrgHeader } from "./_components/mobile-org-header";
@@ -58,6 +59,8 @@ export default async function OrgIdLayout({
 	if (shellData.viewerCanManageContacts) {
 		queryClient.setQueryData(companyKeys.contactOptions(orgId), shellData.activeContactOptions);
 	}
+	// The sidebar's Settings badge counts roles whose intros can't be booked, and Settings › Team lists them.
+	queryClient.setQueryData(roleKeys.organizationRoles(orgId, false), ROLES);
 
 	return (
 		<HydrationBoundary state={dehydrate(queryClient)}>

@@ -66,7 +66,8 @@ export function companyGaps(profile: CompanyProfile): CompanyGap[] {
 			title: `${missingReasons} more reason${missingReasons === 1 ? "" : "s"} to join`,
 			why: "They open every intro we send.",
 		});
-	if (!profile.linkedin.trim())
+	// A half-typed link doesn't count: Settings won't save it, so candidates wouldn't see it.
+	if (!looksLikeUrl(profile.linkedin))
 		gaps.push({
 			key: "linkedin",
 			label: "LinkedIn",
