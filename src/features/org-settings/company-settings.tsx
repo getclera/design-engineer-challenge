@@ -1,42 +1,36 @@
 "use client";
 
-import { CaretDown, CaretRight, Check, Eye, WarningCircle } from "@phosphor-icons/react";
+import { ArrowRight, CaretDown, CaretRight, Check, Eye, Globe, Plus, Sparkle, Trash } from "@phosphor-icons/react";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@v2/components/ui/accordion";
+import { Button } from "@v2/components/ui/button";
 import { Card } from "@v2/components/ui/card";
 import { Textarea } from "@v2/components/ui/textarea";
 import { cn } from "@v2/lib/utils";
 import { motion, useReducedMotion } from "framer-motion";
-import { type ReactNode, useEffect, useRef, useState } from "react";
+import { type FormEvent, type ReactNode, useEffect, useRef, useState } from "react";
+import { toast } from "sonner";
 import { CompanyCandidateCard } from "./company-card";
 import {
+	COMPANY_SECTIONS,
 	COMPANY_SIZES,
 	COMPANY_STAGES,
-	type CompanyGap,
 	type CompanyProfile,
 	companyGaps,
 	filledReasons,
-	type GapKey,
 	looksLikeUrl,
 	PITCH_MAX,
+	SECTION_OF,
+	type SectionId,
+	sectionState,
 	URL_FIELDS,
 	WORK_MODES,
 } from "./company-profile";
-import { ChoiceChips, FIELD_CLASSES, FieldError, FieldLabel, TagInput } from "./settings-fields";
-import { useCompanyProfile, useSaveCompanyField } from "./use-company-profile";
 import { focusField } from "./focus-field";
+import { ImageList, ImagePick } from "./image-drop";
+import { ChoiceChips, FIELD_CLASSES, FieldError, FieldLabel, TagInput } from "./settings-fields";
+import { useCompanyProfile, useFillFromWebsite, useFundingRounds, useSaveCompanyField } from "./use-company-profile";
 
 type Field = keyof CompanyProfile;
-
-const SECTIONS: { id: string; title: string; sub: string; fields: Field[] }[] = [
-	{ id: "story", title: "Story", sub: "What candidates read first.", fields: ["pitch", "building", "reasons"] },
-	{
-		id: "facts",
-		title: "Facts",
-		sub: "Used to match people who want your stage.",
-		fields: ["size", "stage", "founded", "locations"],
-	},
-	{ id: "life", title: "Life there", sub: "What a normal week feels like.", fields: ["benefits", "culture", "stack"] },
-	{ id: "links", title: "Links", sub: "Where candidates check you out.", fields: ["website", "linkedin", "jobs"] },
-];
 
 const REASON_HINTS = [
 	"The work: what they'll own",
@@ -44,13 +38,32 @@ const REASON_HINTS = [
 	"The upside: growth, equity, mission",
 ];
 
-function isFilled(profile: CompanyProfile, field: Field) {
-	if (field === "reasons") return filledReasons(profile) === 3;
-	const value = profile[field];
-	return Array.isArray(value) ? value.length > 0 : !!String(value ?? "").trim();
-}
+/** The one line a closed section shows, so you can tell what's in it without opening it. */
+const SUMMARY: Record<SectionId, (p: CompanyProfile) => string> = {
+	logo: (p) => (p.logo ? "Added" : ""),
+	basic: (p) => [p.name, p.pitch].filter(Boolean).join(" · "),
+	details: (p) =>
+		[p.size && `${p.size} people`, p.stage, p.funding, p.founded && `since ${p.founded}`].filter(Boolean).join(" · "),
+	selling: (p) => `${filledReasons(p)} of 3 pitch bullets`,
+	culture: (p) =>
+		[`${p.benefits.length + p.culture.length + p.stack.length} tags`, p.locations.join(", ")]
+			.filter(Boolean)
+			.join(" · "),
+	images: (p) => `${p.teamImages.length} team · ${p.productImages.length} product`,
+	links: (p) =>
+		[looksLikeUrl(p.website) && "Website", looksLikeUrl(p.linkedin) && "LinkedIn", looksLikeUrl(p.jobs) && "Job board"]
+			.filter(Boolean)
+			.join(" · "),
+	funding: (p) => p.rounds.map((r) => `${r.round} ${r.amount}`).join(" · "),
+};
 
-/** Settings › Company: the gaps up top, every field saving as you type, and the card candidates will see. */
+const isSection = (key: string): key is SectionId => COMPANY_SECTIONS.some((s) => s.id === key);
+const domain = (url: string) => url.replace(/^https?:\/\//, "").replace(/\/$/, "");
+
+/**
+ * Settings › Company: one section open at a time. A bar on top shows which sections are done; "Fill from website"
+ * answers the empty fields; every field saves as you type; the card on the right is what candidates see.
+ */
 export function CompanySettings({
 	orgId,
 	canEdit,
@@ -60,13 +73,24 @@ export function CompanySettings({
 	orgId: string;
 	canEdit: boolean;
 	ownerName: string | null;
-	/** From Home's "Finish your company profile": open on this field. */
+	/** From Home's "Finish your company profile" (a section) or an older link (a field, like `linkedin`). */
 	focus?: string;
 }) {
 	const { data: profile } = useCompanyProfile(orgId);
 	const { save, savedAt, errors } = useSaveCompanyField(orgId);
+	const fill = useFillFromWebsite(orgId);
+	const funding = useFundingRounds(orgId);
+	// Undecided until the profile is here: then the linked section, or the first one with something missing.
+	const [chosen, setChosen] = useState<SectionId | null | undefined>(undefined);
+	// Fields "Fill from website" answered, with what was there before, for their Undo.
+	const [fromSite, setFromSite] = useState<Partial<CompanyProfile>>({});
 	const [previewOpen, setPreviewOpen] = useState(false);
 	const readOnly = !canEdit;
+
+	const gapKeys = profile ? companyGaps(profile).map((g) => g.key) : [];
+	const gapSignature = gapKeys.join(",");
+	const focusSection = focus ? (isSection(focus) ? focus : SECTION_OF[focus as Field]) : undefined;
+	const open = chosen === undefined ? (focusSection ?? gapKeys[0] ?? null) : chosen;
 
 	const loaded = !!profile;
 	// Only on arrival (and once the fields exist): typing must never scroll the page.
@@ -74,16 +98,64 @@ export function CompanySettings({
 		if (focus && loaded) focusField(focus);
 	}, [focus, loaded]);
 
-	if (!profile) return null;
-	const gaps = companyGaps(profile);
+	// A section that gets complete on this visit says so, once.
+	const lastGaps = useRef<string | null>(null);
+	useEffect(() => {
+		if (lastGaps.current !== null && canEdit) {
+			const now = gapSignature.split(",");
+			for (const key of lastGaps.current.split(",").filter(Boolean))
+				if (!now.includes(key)) toast.success(`${COMPANY_SECTIONS.find((s) => s.id === key)?.title} done`);
+		}
+		lastGaps.current = gapSignature;
+	}, [gapSignature, canEdit]);
 
-	const text = (field: Extract<Field, "name" | "pitch" | "funding" | "founded" | (typeof URL_FIELDS)[number]>) => ({
+	if (!profile) return null;
+
+	const openSection = (id: SectionId) => {
+		setChosen(id);
+		focusField(id);
+	};
+	const edit = <K extends Field>(field: K, value: CompanyProfile[K], opts?: { now?: boolean; invalid?: string }) => {
+		if (field in fromSite) setFromSite(({ [field]: _, ...rest }) => rest);
+		save(field, value, opts);
+	};
+	const undoFill = (field: Field) => {
+		edit(field, fromSite[field] as CompanyProfile[typeof field], { now: true });
+	};
+	const runFill = () =>
+		fill.mutate(undefined, {
+			onSuccess: ({ profile: next, filled, previous }) => {
+				setFromSite((marks) => ({ ...previous, ...marks }));
+				toast.success(
+					filled.length
+						? `Filled ${filled.length} empty field${filled.length === 1 ? "" : "s"} from your website`
+						: "Nothing to fill: every field has an answer",
+				);
+				const firstGap = companyGaps(next)[0]?.key;
+				if (firstGap) setChosen(firstGap);
+			},
+			onError: (error) => toast.error(error.message),
+		});
+
+	const label = (field: Field, children: ReactNode, note?: ReactNode) => (
+		<FieldLabel
+			htmlFor={`f-${field}`}
+			note={note}
+			savedAt={savedAt[field]}
+			aside={field in fromSite && <FromWebsite onUndo={() => undoFill(field)} />}
+		>
+			{children}
+		</FieldLabel>
+	);
+	const text = (
+		field: Extract<Field, "name" | "pitch" | "industry" | "funding" | "founded" | (typeof URL_FIELDS)[number]>,
+	) => ({
 		id: `f-${field}`,
 		value: profile[field],
 		readOnly,
 		"aria-invalid": errors[field] ? true : undefined,
 		"aria-describedby": errors[field] ? `e-${field}` : undefined,
-		className: FIELD_CLASSES,
+		className: cn(FIELD_CLASSES, field in fromSite && "ring-1 ring-v2-status-active"),
 		onChange: (e: { target: { value: string } }) => {
 			const value = e.target.value;
 			const invalid =
@@ -91,58 +163,157 @@ export function CompanySettings({
 					? "That doesn't look like a link yet"
 					: field === "founded" && value.trim() && !/^\d{4}$/.test(value.trim())
 						? "A year, like 2021"
-						: undefined;
-			save(field, value, { invalid });
+						: field === "name" && !value.trim()
+							? "The company needs a name"
+							: undefined;
+			edit(field, value, { invalid });
 		},
 	});
-	const label = (field: Field, children: ReactNode, note?: ReactNode) => (
-		<FieldLabel htmlFor={`f-${field}`} note={note} savedAt={savedAt[field]}>
-			{children}
-		</FieldLabel>
+	const area = (field: "building" | "team", placeholder: string) => (
+		<Textarea
+			id={`f-${field}`}
+			autoGrow
+			textareaSize="compact"
+			readOnly={readOnly}
+			value={profile[field]}
+			onChange={(e) => edit(field, e.target.value)}
+			placeholder={placeholder}
+			className={cn(
+				FIELD_CLASSES,
+				"min-h-24 resize-none leading-relaxed",
+				field in fromSite && "ring-1 ring-v2-status-active",
+			)}
+		/>
+	);
+	const tags = (field: "benefits" | "culture" | "stack" | "locations", title: string, placeholder: string) => (
+		<Row key={field} field={field}>
+			{label(field, title)}
+			<TagInput
+				id={`f-${field}`}
+				label={title}
+				values={profile[field]}
+				readOnly={readOnly}
+				onChange={(v) => edit(field, v, { now: true })}
+				placeholder={placeholder}
+			/>
+		</Row>
+	);
+	const url = (field: (typeof URL_FIELDS)[number], title: string, placeholder: string, hint?: string) => (
+		<Row key={field} field={field} full={field === "jobs"}>
+			{label(field, title)}
+			<input {...text(field)} type="url" inputMode="url" placeholder={placeholder} />
+			<FieldError id={`e-${field}`}>{errors[field]}</FieldError>
+			{hint && <p className="font-v2-body text-v2-text-tertiary text-xs">{hint}</p>}
+		</Row>
 	);
 
-	const FIELDS: Record<string, ReactNode> = {
-		name: (
-			<Row key="name" field="name" full>
-				<div className="flex items-end gap-3">
-					{profile.logo && (
-						// biome-ignore lint/performance/noImgElement: a local SVG logo, no optimisation to gain
-						<img src={profile.logo} alt="Logo" className="size-10 shrink-0 rounded-v2-md" />
-					)}
-					<div className="flex min-w-0 flex-1 flex-col gap-1.5">
-						{label("name", "Company name")}
-						<input {...text("name")} />
-					</div>
+	const BODY: Record<SectionId, ReactNode> = {
+		logo: (
+			<Row field="logo" full>
+				<div className="flex items-center gap-4">
+					<ImagePick
+						id="f-logo"
+						label="Change logo"
+						shape="square"
+						readOnly={readOnly}
+						onPick={(logo) => edit("logo", logo, { now: true })}
+					>
+						{profile.logo ? (
+							// biome-ignore lint/performance/noImgElement: a local SVG or an uploaded data URL
+							<img src={profile.logo} alt={`${profile.name} logo`} className="size-full object-cover" />
+						) : (
+							<span className="block size-full bg-v2-bg-input-solid" />
+						)}
+					</ImagePick>
+					<p className="font-v2-body text-v2-text-tertiary text-xs">PNG, JPG, or WebP, recommended 256×256.</p>
 				</div>
-				<FieldError id="e-name">{errors.name}</FieldError>
 			</Row>
 		),
-		pitch: (
-			<Row key="pitch" field="pitch" full>
-				{label("pitch", "One-line pitch", `${profile.pitch.length}/${PITCH_MAX}`)}
-				<input {...text("pitch")} maxLength={PITCH_MAX} placeholder="What you do, in one line a candidate remembers" />
-			</Row>
+		basic: (
+			<>
+				<Row field="name">
+					{label(
+						"name",
+						<>
+							Name<span className="text-v2-status-error">*</span>
+						</>,
+					)}
+					<input {...text("name")} placeholder="Company name" />
+					<FieldError id="e-name">{errors.name}</FieldError>
+				</Row>
+				<Row field="pitch" full>
+					{label("pitch", "Description", `${profile.pitch.length}/${PITCH_MAX}`)}
+					<input {...text("pitch")} maxLength={PITCH_MAX} placeholder="One line: what you do, for whom" />
+				</Row>
+				<Row field="building" full>
+					{label("building", "Product description")}
+					{area("building", "What you build and who uses it")}
+				</Row>
+				<Row field="team" full>
+					{label("team", "About the team", "Optional")}
+					{area("team", "Who candidates would work with")}
+				</Row>
+			</>
 		),
-		building: (
-			<Row key="building" field="building" full>
-				{label("building", "What you're building")}
-				<Textarea
-					id="f-building"
-					autoGrow
-					textareaSize="compact"
-					readOnly={readOnly}
-					value={profile.building}
-					onChange={(e) => save("building", e.target.value)}
-					placeholder="The problem, who has it, and how you fix it. 2–3 sentences."
-					className={cn(FIELD_CLASSES, "min-h-24 resize-none leading-relaxed")}
-				/>
-			</Row>
+		details: (
+			<>
+				<Row field="size">
+					{label("size", "Company size")}
+					<ChoiceChips
+						id="f-size"
+						label="Company size"
+						options={COMPANY_SIZES}
+						value={profile.size}
+						readOnly={readOnly}
+						onChange={(v) => edit("size", v, { now: true })}
+					/>
+				</Row>
+				<Row field="industry">
+					{label("industry", "Industry")}
+					<input {...text("industry")} placeholder="e.g. Fintech" />
+				</Row>
+				<Row field="founded">
+					{label("founded", "Founded year")}
+					<input
+						{...text("founded")}
+						inputMode="numeric"
+						maxLength={4}
+						placeholder="e.g. 2021"
+						className={cn(FIELD_CLASSES, "tabular-nums")}
+					/>
+					<FieldError id="e-founded">{errors.founded}</FieldError>
+				</Row>
+				<Row field="stage">
+					{label("stage", "Last funding round")}
+					<ChoiceChips
+						id="f-stage"
+						label="Last funding round"
+						options={COMPANY_STAGES}
+						value={profile.stage}
+						readOnly={readOnly}
+						onChange={(v) => edit("stage", v, { now: true })}
+					/>
+				</Row>
+				<Row field="funding">
+					{label("funding", "Funding amount", "Optional")}
+					<input {...text("funding")} placeholder="e.g. $5M" />
+				</Row>
+				<Row field="mode">
+					{label("mode", "Work mode")}
+					<ChoiceChips
+						id="f-mode"
+						label="Work mode"
+						options={WORK_MODES}
+						value={profile.mode}
+						readOnly={readOnly}
+						onChange={(v) => edit("mode", v, { now: true })}
+					/>
+				</Row>
+			</>
 		),
-		reasons: (
-			<Row key="reasons" field="reasons" full>
-				<FieldLabel note={`${filledReasons(profile)} of 3`} savedAt={savedAt.reasons}>
-					3 reasons to join
-				</FieldLabel>
+		selling: (
+			<Row field="reasons" full>
+				{label("reasons", "Pitch bullets", `${filledReasons(profile)} of 3`)}
 				<ol className="flex flex-col gap-1.5">
 					{profile.reasons.map((reason, i) => {
 						const done = !!reason.trim();
@@ -162,14 +333,14 @@ export function CompanySettings({
 								</span>
 								<input
 									id={i === 0 ? "f-reasons" : undefined}
-									aria-label={`Reason ${i + 1}`}
+									aria-label={`Pitch bullet ${i + 1}`}
 									value={reason}
 									readOnly={readOnly}
 									placeholder={REASON_HINTS[i]}
 									onChange={(e) => {
 										const next = [...profile.reasons] as CompanyProfile["reasons"];
 										next[i] = e.target.value;
-										save("reasons", next);
+										edit("reasons", next);
 									}}
 									className={FIELD_CLASSES}
 								/>
@@ -177,159 +348,137 @@ export function CompanySettings({
 						);
 					})}
 				</ol>
-				<p className="font-v2-body text-v2-text-tertiary text-xs">
-					Specific beats nice. “Your code runs in 40 ports” beats “Great culture”.
-				</p>
+				<p className="font-v2-body text-v2-text-tertiary text-xs">Add at least 3</p>
 			</Row>
 		),
-		size: (
-			<Row key="size" field="size" full>
-				<FieldLabel savedAt={savedAt.size}>Company size</FieldLabel>
-				<ChoiceChips
-					id="f-size"
-					label="Company size"
-					options={COMPANY_SIZES}
-					value={profile.size}
-					readOnly={readOnly}
-					onChange={(v) => save("size", v, { now: true })}
-				/>
-			</Row>
+		culture: (
+			<>
+				{tags("benefits", "Benefits", "e.g. Health insurance")}
+				{tags("culture", "Culture", "e.g. Transparency")}
+				{tags("stack", "Tech stack", "e.g. TypeScript")}
+				{tags("locations", "Office locations", "e.g. Berlin")}
+			</>
 		),
-		stage: (
-			<Row key="stage" field="stage">
-				<FieldLabel savedAt={savedAt.stage}>Stage</FieldLabel>
-				<ChoiceChips
-					label="Stage"
-					options={COMPANY_STAGES}
-					value={profile.stage}
-					readOnly={readOnly}
-					onChange={(v) => save("stage", v, { now: true })}
-				/>
-			</Row>
+		images: (
+			<>
+				<Row field="teamImages" full>
+					{label("teamImages", "Team images")}
+					<ImageList
+						id="f-teamImages"
+						label="Team image"
+						values={profile.teamImages}
+						readOnly={readOnly}
+						onChange={(v) => edit("teamImages", v, { now: true })}
+					/>
+				</Row>
+				<Row field="productImages" full>
+					{label("productImages", "Product images")}
+					<ImageList
+						id="f-productImages"
+						label="Product image"
+						values={profile.productImages}
+						readOnly={readOnly}
+						onChange={(v) => edit("productImages", v, { now: true })}
+					/>
+				</Row>
+			</>
+		),
+		links: (
+			<>
+				{url("website", "Website", "https://")}
+				{url("linkedin", "LinkedIn", "https://linkedin.com/company/example")}
+				{url(
+					"jobs",
+					"Job board",
+					"https://jobs.ashbyhq.com/acme",
+					"Your public careers board. We read it to keep your open roles in sync.",
+				)}
+			</>
 		),
 		funding: (
-			<Row key="funding" field="funding">
-				{label("funding", "Raised so far", "optional")}
-				<input {...text("funding")} placeholder="$18M" />
+			<Row field="rounds" full>
+				<FundingRounds profile={profile} readOnly={readOnly} funding={funding} />
 			</Row>
-		),
-		founded: (
-			<Row key="founded" field="founded">
-				{label("founded", "Founded")}
-				<input
-					{...text("founded")}
-					inputMode="numeric"
-					maxLength={4}
-					placeholder="2021"
-					className={cn(FIELD_CLASSES, "tabular-nums")}
-				/>
-				<FieldError id="e-founded">{errors.founded}</FieldError>
-			</Row>
-		),
-		locations: (
-			<Row key="locations" field="locations" full>
-				<FieldLabel savedAt={savedAt.locations ?? savedAt.mode}>Where people work</FieldLabel>
-				<ChoiceChips
-					label="Work mode"
-					options={WORK_MODES}
-					value={profile.mode}
-					readOnly={readOnly}
-					onChange={(v) => save("mode", v, { now: true })}
-				/>
-				<TagInput
-					id="f-locations"
-					label="Cities"
-					values={profile.locations}
-					readOnly={readOnly}
-					onChange={(v) => save("locations", v, { now: true })}
-					placeholder="Add a city, press Enter"
-				/>
-			</Row>
-		),
-		benefits: tagRow("benefits", "Benefits", "e.g. Health insurance"),
-		culture: tagRow("culture", "How you work", "e.g. Async first"),
-		stack: tagRow("stack", "Tech stack", "e.g. Rust"),
-		website: urlRow("website", "Website", "https://"),
-		linkedin: urlRow("linkedin", "LinkedIn", "linkedin.com/company/you"),
-		jobs: urlRow(
-			"jobs",
-			"Job board",
-			"https://jobs.ashbyhq.com/you",
-			"optional",
-			"We read it to keep your open roles in sync.",
 		),
 	};
 
-	function tagRow(field: "benefits" | "culture" | "stack", title: string, placeholder: string) {
-		return (
-			<Row key={field} field={field} full>
-				<FieldLabel htmlFor={`f-${field}`} savedAt={savedAt[field]}>
-					{title}
-				</FieldLabel>
-				<TagInput
-					id={`f-${field}`}
-					label={title}
-					values={profile?.[field] ?? []}
-					readOnly={readOnly}
-					onChange={(v) => save(field, v, { now: true })}
-					placeholder={placeholder}
-				/>
-			</Row>
-		);
-	}
-	function urlRow(
-		field: (typeof URL_FIELDS)[number],
-		title: string,
-		placeholder: string,
-		note?: string,
-		hint?: string,
-	) {
-		return (
-			<Row key={field} field={field} full={field === "jobs"}>
-				{label(field, title, note)}
-				<input {...text(field)} type="url" inputMode="url" placeholder={placeholder} />
-				<FieldError id={`e-${field}`}>{errors[field]}</FieldError>
-				{hint && <p className="font-v2-body text-v2-text-tertiary text-xs">{hint}</p>}
-			</Row>
-		);
-	}
+	const nextAfter = (id: SectionId) => {
+		const after = COMPANY_SECTIONS.slice(COMPANY_SECTIONS.findIndex((s) => s.id === id) + 1);
+		return (after.find((s) => gapKeys.includes(s.id)) ?? after[0])?.id;
+	};
 
 	return (
 		<div className="flex flex-col gap-4">
 			{readOnly && <ViewOnlyNote ownerName={ownerName} />}
-			<div className="grid items-start gap-5 lg:grid-cols-[minmax(0,1fr)_18rem] xl:grid-cols-[8.5rem_minmax(0,1fr)_18rem]">
-				<SectionNav profile={profile} />
-				<div className="flex min-w-0 flex-col gap-4">
-					<GapsStrip gaps={gaps} readOnly={readOnly} />
-					{SECTIONS.map((section) => (
-						<Card key={section.id} id={`sec-${section.id}`} className="scroll-mt-4">
-							<section aria-labelledby={`h-${section.id}`}>
-								<header className="flex items-baseline justify-between gap-3 px-5 pt-4 pb-2 max-sm:flex-col max-sm:gap-0.5 max-lg:px-4">
-									<h2 id={`h-${section.id}`} className="font-v2-heading text-lg text-v2-text-primary">
-										{section.title}
-									</h2>
-									<p className="font-v2-body text-v2-text-tertiary text-xs">{section.sub}</p>
-								</header>
-								<div className="grid gap-4 px-5 pt-1 pb-5 sm:grid-cols-2 max-lg:px-4">
-									{(section.id === "story"
-										? ["name", ...section.fields]
-										: section.id === "facts"
-											? ["size", "stage", "funding", "founded", "locations"]
-											: section.fields
-									).map((field) => FIELDS[field])}
-								</div>
-							</section>
-						</Card>
-					))}
+			<div className="grid items-start gap-5 lg:grid-cols-[minmax(0,1fr)_18rem]">
+				<div className="flex min-w-0 flex-col gap-3">
+					<Progress profile={profile} readOnly={readOnly} onPick={openSection} />
+					{canEdit && <FillFromWebsite website={profile.website} busy={fill.isPending} onFill={runFill} />}
+					<Accordion
+						type="single"
+						collapsible
+						value={open ?? ""}
+						onValueChange={(value) => setChosen(isSection(value) ? value : null)}
+						className="flex flex-col gap-3"
+					>
+						{COMPANY_SECTIONS.map((section) => {
+							const state = sectionState(profile, section.id);
+							const next = nextAfter(section.id);
+							return (
+								<AccordionItem
+									key={section.id}
+									value={section.id}
+									id={`sec-${section.id}`}
+									data-field={section.id}
+									variant="card"
+									className="scroll-mt-4 rounded-v2-lg shadow-v2-card data-[state=open]:shadow-v2-content"
+								>
+									<AccordionTrigger variant="card" className="md:py-3.5">
+										<span className="grid min-w-0 flex-1 grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-x-2.5 gap-y-0.5 sm:grid-cols-[auto_auto_minmax(0,1fr)_auto]">
+											<Dot full={!state.missing.length} partial={state.partial} />
+											<span className="whitespace-nowrap font-medium font-v2-heading text-base text-v2-text-primary">
+												{section.title}
+											</span>
+											<span className="truncate font-normal font-v2-body text-v2-text-tertiary text-xs max-sm:col-start-2 max-sm:row-start-2">
+												{SUMMARY[section.id](profile)}
+											</span>
+											{state.missing.length ? (
+												<span className="whitespace-nowrap font-medium font-v2-body text-v2-status-warning text-xs">
+													{state.missing.length === 1
+														? `${state.missing[0]} missing`
+														: `${state.missing.length} missing`}
+												</span>
+											) : (
+												<span className="inline-flex items-center gap-1 whitespace-nowrap font-medium font-v2-body text-v2-brand-green text-xs">
+													<Check size={12} weight="bold" /> Done
+												</span>
+											)}
+										</span>
+									</AccordionTrigger>
+									<AccordionContent variant="card">
+										<p className="mb-4 text-pretty font-v2-body text-v2-text-tertiary text-xs">{section.description}</p>
+										<div className="grid gap-4 sm:grid-cols-2">{BODY[section.id]}</div>
+										{canEdit && next && (
+											<div className="mt-4 flex justify-end">
+												<Button variant="ghost" size="sm" className="gap-1.5" onClick={() => openSection(next)}>
+													Next section <ArrowRight size={14} />
+												</Button>
+											</div>
+										)}
+									</AccordionContent>
+								</AccordionItem>
+							);
+						})}
+					</Accordion>
 				</div>
 				<aside className="flex flex-col gap-2 max-lg:order-first lg:sticky lg:top-4" aria-label="What candidates see">
 					<button
 						type="button"
 						aria-expanded={previewOpen}
-						onClick={() => setPreviewOpen((open) => !open)}
+						onClick={() => setPreviewOpen((o) => !o)}
 						className="flex items-center justify-between rounded-v2-lg border border-v2-border-divider bg-v2-bg-card px-4 py-2.5 font-medium font-v2-body text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-v2-brand-teal lg:hidden"
 					>
-						See what candidates see
+						What candidates see
 						{previewOpen ? <CaretDown size={14} /> : <CaretRight size={14} />}
 					</button>
 					<p className="flex items-center gap-1.5 font-medium font-v2-body text-2xs text-v2-text-tertiary uppercase tracking-wider max-lg:hidden">
@@ -355,45 +504,56 @@ function Row({ field, full, children }: { field: Field; full?: boolean; children
 	);
 }
 
-function SectionNav({ profile }: { profile: CompanyProfile }) {
+function Dot({ full, partial }: { full: boolean; partial: boolean }) {
+	const reduced = useReducedMotion();
 	return (
-		<nav aria-label="Sections" className="sticky top-4 hidden flex-col gap-0.5 xl:flex">
-			{SECTIONS.map((section) => {
-				const done = section.fields.filter((f) => isFilled(profile, f)).length;
-				const state = done === section.fields.length ? "full" : done === 0 ? "none" : "part";
-				return (
-					<a
-						key={section.id}
-						href={`#sec-${section.id}`}
-						className="flex items-center gap-2.5 rounded-v2-md px-2 py-1.5 font-v2-body text-sm text-v2-text-secondary transition-colors hover:bg-v2-bg-input-solid hover:text-v2-text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-v2-brand-teal"
-					>
-						<span
-							className={cn(
-								"size-2 shrink-0 rounded-full border-[1.5px]",
-								state === "full" && "border-v2-brand-green bg-v2-brand-green",
-								state === "part" &&
-									"border-v2-status-warning bg-linear-to-r from-v2-status-warning from-50% to-transparent to-50%",
-								state === "none" && "border-v2-border-default",
-							)}
-						/>
-						{section.title}
-						<span className="sr-only">
-							{state === "full" ? ", complete" : `, ${done} of ${section.fields.length} filled`}
-						</span>
-					</a>
-				);
-			})}
-		</nav>
+		<motion.span
+			aria-hidden="true"
+			key={full ? "full" : "not"}
+			initial={full && !reduced ? { scale: 0.3 } : false}
+			animate={{ scale: 1 }}
+			transition={{ type: "spring", stiffness: 500, damping: 14 }}
+			className={cn(
+				"size-2.5 shrink-0 rounded-full border-[1.5px]",
+				full && "border-v2-brand-green bg-v2-brand-green",
+				partial && "border-v2-status-warning bg-linear-to-r from-v2-status-warning from-50% to-transparent to-50%",
+				!full && !partial && "border-v2-border-default",
+			)}
+		/>
 	);
 }
 
-const RING = 2 * Math.PI * 12;
+function FromWebsite({ onUndo }: { onUndo: () => void }) {
+	return (
+		<span className="inline-flex items-center gap-1 text-2xs text-v2-brand-green">
+			<Sparkle size={11} weight="fill" /> From your website ·
+			<button
+				type="button"
+				onClick={onUndo}
+				className="font-medium text-v2-text-brand underline underline-offset-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-v2-brand-teal"
+			>
+				Undo
+			</button>
+		</span>
+	);
+}
 
-function GapsStrip({ gaps, readOnly }: { gaps: CompanyGap[]; readOnly: boolean }) {
+/** One segment per section: green when done, half when started. Click one to open it. */
+function Progress({
+	profile,
+	readOnly,
+	onPick,
+}: {
+	profile: CompanyProfile;
+	readOnly: boolean;
+	onPick: (id: SectionId) => void;
+}) {
 	const reduced = useReducedMotion();
-	// Celebrate only a gap closed on this visit, not a profile that was already complete.
-	const hadGaps = useRef(gaps.length > 0);
-	if (gaps.length === 0)
+	const states = COMPANY_SECTIONS.map((s) => ({ ...s, ...sectionState(profile, s.id) }));
+	const done = states.filter((s) => !s.missing.length).length;
+	// Celebrate only a page finished on this visit, not one that was already complete.
+	const hadGaps = useRef(done < states.length);
+	if (done === states.length)
 		return (
 			<Card className="flex items-center gap-3 border-transparent bg-v2-status-success-bg px-4 py-3.5">
 				<motion.span
@@ -406,59 +566,202 @@ function GapsStrip({ gaps, readOnly }: { gaps: CompanyGap[]; readOnly: boolean }
 				</motion.span>
 				<div>
 					<p className="font-medium font-v2-body text-sm text-v2-text-primary">Your company page is complete</p>
-					<p className="font-v2-body text-v2-text-secondary text-xs">Candidates see everything they need to say yes.</p>
+					<p className="font-v2-body text-v2-text-secondary text-xs">Candidates see every section.</p>
 				</div>
 			</Card>
 		);
-	const done = 3 - gaps.length;
 	return (
-		<Card className="px-4 py-3.5 max-lg:px-3">
-			<div className="flex items-center gap-2.5">
-				<svg viewBox="0 0 30 30" className="size-7.5 shrink-0 -rotate-90" aria-hidden="true">
-					<circle cx="15" cy="15" r="12" fill="none" strokeWidth="3.5" className="stroke-v2-border-divider" />
-					<circle
-						cx="15"
-						cy="15"
-						r="12"
-						fill="none"
-						strokeWidth="3.5"
-						strokeLinecap="round"
-						strokeDasharray={RING}
-						strokeDashoffset={RING * (1 - done / 3)}
-						className="stroke-v2-brand-green transition-[stroke-dashoffset] duration-500 motion-reduce:transition-none"
-					/>
-				</svg>
-				<p className="font-medium font-v2-body text-sm text-v2-text-primary">
-					{gaps.length} thing{gaps.length > 1 ? "s" : ""} missing
+		<Card className="flex flex-col gap-2.5 px-4 py-3.5">
+			<div className="flex flex-wrap items-baseline gap-x-2.5 gap-y-0.5">
+				<p className="font-medium font-v2-body text-sm text-v2-text-primary tabular-nums">
+					{done} of {states.length} sections complete
 				</p>
-				<p className="ml-auto font-v2-body text-v2-text-tertiary text-xs max-sm:hidden">
-					{readOnly ? "An owner can fill these" : "Click one to jump there"}
+				<p className="font-v2-body text-v2-text-tertiary text-xs">
+					{readOnly ? "An owner can fill the rest" : "Click a segment to open that section."}
 				</p>
 			</div>
-			<ul className="mt-2 flex flex-col">
-				{gaps.map((gap) => (
-					<li key={gap.key}>
-						<button
-							type="button"
-							onClick={() => focusField(gap.key as GapKey)}
-							className="flex w-full items-center gap-2.5 rounded-v2-md px-1.5 py-2 text-left transition-colors hover:bg-v2-bg-warm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-v2-brand-teal"
-						>
-							<span className="grid size-5.5 shrink-0 place-items-center rounded-full bg-v2-status-warning-bg text-v2-status-warning">
-								<WarningCircle size={13} />
-							</span>
-							<span className="font-v2-body text-sm text-v2-text-secondary">
-								<b className="font-medium text-v2-text-primary">{gap.title}.</b> {gap.why}
-							</span>
-							<CaretRight size={14} className="ml-auto shrink-0 text-v2-text-tertiary" />
-						</button>
-					</li>
+			<div className="grid grid-cols-8 gap-1">
+				{states.map((s) => (
+					<button
+						key={s.id}
+						type="button"
+						onClick={() => onPick(s.id)}
+						title={s.title}
+						aria-label={`${s.title}: ${s.missing.length ? `${s.missing.length} missing` : "complete"}`}
+						className={cn(
+							"h-1.5 rounded-full transition-colors duration-300 hover:ring-2 hover:ring-v2-status-active/25 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-v2-brand-teal",
+							!s.missing.length
+								? "bg-v2-brand-green"
+								: s.partial
+									? "bg-linear-to-r from-v2-status-warning from-50% to-v2-border-divider to-50%"
+									: "bg-v2-border-divider",
+						)}
+					/>
 				))}
-			</ul>
+			</div>
 		</Card>
 	);
 }
 
-export function ViewOnlyNote({ ownerName }: { ownerName: string | null }) {
+function FillFromWebsite({ website, busy, onFill }: { website: string; busy: boolean; onFill: () => void }) {
+	const site = looksLikeUrl(website) ? domain(website) : null;
+	return (
+		<Card className="grid grid-cols-[auto_minmax(0,1fr)] items-center gap-x-3 gap-y-2 px-4 py-3 sm:grid-cols-[auto_minmax(0,1fr)_auto]">
+			<span className="grid size-8 place-items-center rounded-v2-md bg-v2-status-success-bg text-v2-brand-green">
+				{busy ? <Sparkle size={16} className="animate-spin motion-reduce:animate-none" /> : <Globe size={16} />}
+			</span>
+			<div className="min-w-0">
+				<p className="font-medium font-v2-body text-sm text-v2-text-primary">
+					{busy ? `Reading ${site}…` : "Fill from your website"}
+				</p>
+				<p className="font-v2-body text-v2-text-tertiary text-xs">
+					{site
+						? `We fill the empty fields from ${site}. We never change what you wrote.`
+						: "Add your website under Links first."}
+				</p>
+			</div>
+			<Button variant="ghost" size="sm" onClick={onFill} disabled={busy || !site} className="gap-1.5 max-sm:col-span-2">
+				<Sparkle size={14} /> Fill empty fields
+			</Button>
+		</Card>
+	);
+}
+
+function FundingRounds({
+	profile,
+	readOnly,
+	funding,
+}: {
+	profile: CompanyProfile;
+	readOnly: boolean;
+	funding: ReturnType<typeof useFundingRounds>;
+}) {
+	const [adding, setAdding] = useState(false);
+	const [problem, setProblem] = useState<string | null>(null);
+	const submit = (e: FormEvent<HTMLFormElement>) => {
+		e.preventDefault();
+		const data = Object.fromEntries(new FormData(e.currentTarget)) as Record<string, string>;
+		if (!data.round.trim()) return setProblem("Name the round, like Seed");
+		if (!data.amount.trim()) return setProblem("Add the amount, like $3M");
+		setProblem(null);
+		funding.add.mutate(
+			{ round: data.round, amount: data.amount, date: data.date, investors: data.investors },
+			{
+				onSuccess: (round) => {
+					setAdding(false);
+					toast.success(`${round.round} added`);
+				},
+				onError: (error) => setProblem(error.message),
+			},
+		);
+	};
+	return (
+		<div className="flex flex-col gap-2">
+			{profile.rounds.length === 0 && (
+				<p className="font-v2-body text-sm text-v2-text-tertiary">
+					No funding rounds on file yet. Add your first round to show it to candidates.
+				</p>
+			)}
+			<ul className="flex flex-col gap-1.5">
+				{profile.rounds.map((round) => (
+					<li
+						key={round.id}
+						className="flex items-center gap-3 rounded-v2-md border border-v2-border-divider px-3 py-2.5 animate-in fade-in slide-in-from-top-1 motion-reduce:animate-none"
+					>
+						<div className="min-w-0 flex-1">
+							<p className="flex flex-wrap items-center gap-2 font-medium font-v2-body text-sm text-v2-text-primary">
+								{round.round} · {round.amount}
+								{round.auto && (
+									<span className="rounded-v2-sm border border-v2-border-divider bg-v2-bg-warm px-1.5 font-normal text-2xs text-v2-text-tertiary">
+										Auto-detected
+									</span>
+								)}
+							</p>
+							{(round.date || round.investors) && (
+								<p className="truncate font-v2-body text-v2-text-tertiary text-xs">
+									{[round.date, round.investors].filter(Boolean).join(" · ")}
+								</p>
+							)}
+						</div>
+						{!readOnly && (
+							<button
+								type="button"
+								onClick={() => funding.remove(round)}
+								aria-label={`Remove ${round.round}`}
+								className="grid size-8 place-items-center rounded-v2-md text-v2-text-tertiary transition-colors hover:bg-v2-bg-input-solid hover:text-v2-status-error focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-v2-brand-teal"
+							>
+								<Trash size={15} />
+							</button>
+						)}
+					</li>
+				))}
+			</ul>
+			{!readOnly &&
+				(adding ? (
+					<form
+						noValidate
+						onSubmit={submit}
+						className="grid gap-2 rounded-v2-md bg-v2-bg-warm p-3 sm:grid-cols-[repeat(3,minmax(0,1fr))_auto]"
+					>
+						<RoundInput name="round" label="Round" placeholder="Seed" autoFocus />
+						<RoundInput name="amount" label="Amount" placeholder="$3M" />
+						<RoundInput name="date" label="Date" placeholder="Jan 2024" />
+						<div className="flex items-end gap-1.5">
+							<Button type="submit" size="sm" disabled={funding.add.isPending}>
+								Add
+							</Button>
+							<Button type="button" variant="ghost" size="sm" onClick={() => setAdding(false)}>
+								Cancel
+							</Button>
+						</div>
+						<div className="sm:col-span-4">
+							<RoundInput name="investors" label="Investors" placeholder="Separate with commas" />
+						</div>
+						{problem && (
+							<p role="alert" className="font-v2-body text-v2-status-error text-xs sm:col-span-4">
+								{problem}
+							</p>
+						)}
+					</form>
+				) : (
+					<Button variant="ghost" size="sm" className="gap-1.5 self-start" onClick={() => setAdding(true)}>
+						<Plus size={14} /> Add round
+					</Button>
+				))}
+		</div>
+	);
+}
+
+function RoundInput({
+	name,
+	label,
+	placeholder,
+	autoFocus,
+}: {
+	name: string;
+	label: string;
+	placeholder: string;
+	autoFocus?: boolean;
+}) {
+	const ref = useRef<HTMLInputElement>(null);
+	// The form opens from a click on "Add round": the next thing is typing.
+	useEffect(() => {
+		if (autoFocus) ref.current?.focus();
+	}, [autoFocus]);
+	return (
+		<label className="flex flex-col gap-1 font-medium font-v2-body text-v2-text-secondary text-xs">
+			{label}
+			<input
+				ref={ref}
+				name={name}
+				placeholder={placeholder}
+				className={cn(FIELD_CLASSES, "bg-v2-bg-card font-normal")}
+			/>
+		</label>
+	);
+}
+
+export function ViewOnlyNote({ ownerName, extra }: { ownerName: string | null; extra?: ReactNode }) {
 	return (
 		<p className="flex items-center gap-2 rounded-v2-lg border border-v2-border-divider bg-v2-bg-warm px-3.5 py-2.5 font-v2-body text-sm text-v2-text-secondary">
 			<Eye size={16} className="shrink-0 text-v2-text-tertiary" />
@@ -471,7 +774,7 @@ export function ViewOnlyNote({ ownerName }: { ownerName: string | null }) {
 				) : (
 					""
 				)}{" "}
-				to change these.
+				to change these.{extra}
 			</span>
 		</p>
 	);

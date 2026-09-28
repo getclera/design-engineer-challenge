@@ -1,17 +1,17 @@
 import { dehydrate, HydrationBoundary, QueryClient } from "@tanstack/react-query";
-import { invitationsKey, membersKey, TeamSettings } from "@v2/features/org-settings";
+import { invitationsKey, MembersSettings, membersKey } from "@v2/features/org-settings";
 import type { Metadata } from "next";
 import { orgDashboardKeys } from "@/lib/query-keys";
 import { formatPageTitle } from "@/utils/pageTitle";
 import { INVITATIONS } from "@mock/org";
 import { currentUser } from "@mock/store";
-import { USERS } from "@mock/users";
+import { toMember, USERS } from "@mock/users";
 import { loadOrgShell } from "../../_loader";
 import { loadReviewItems } from "../../review/_loader";
 
-export const metadata: Metadata = { title: formatPageTitle("Team settings") };
+export const metadata: Metadata = { title: formatPageTitle("Members settings") };
 
-export default async function TeamSettingsPage({
+export default async function MembersSettingsPage({
 	params,
 	searchParams,
 }: {
@@ -26,23 +26,14 @@ export default async function TeamSettingsPage({
 		loadReviewItems({ orgId }),
 	]);
 	const queryClient = new QueryClient({ defaultOptions: { queries: { staleTime: 30_000 } } });
-	queryClient.setQueryData(
-		membersKey(orgId),
-		USERS.map((u) => ({
-			id: u.profileId,
-			role: u.orgRole,
-			firstName: u.firstName,
-			lastName: u.lastName,
-			email: u.email,
-		})),
-	);
+	queryClient.setQueryData(membersKey(orgId), USERS.map(toMember));
 	queryClient.setQueryData(invitationsKey(orgId), INVITATIONS);
 	// Waiting counts per role ("8 candidates can't book a call") come from Review's feed.
 	queryClient.setQueryData(orgDashboardKeys.review(orgId, undefined), feed);
 
 	return (
 		<HydrationBoundary state={dehydrate(queryClient)}>
-			<TeamSettings
+			<MembersSettings
 				orgId={orgId}
 				canEdit={viewerOrgRole !== "viewer"}
 				meId={me?.profileId ?? ""}

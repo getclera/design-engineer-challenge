@@ -4,7 +4,9 @@ import { useQuery } from "@tanstack/react-query";
 import { useRolesList } from "@v2/features/org-roles";
 import { useMemo } from "react";
 import { companyKeys } from "@/lib/query-keys";
-import { companyContacts, unwrap } from "@/services/api";
+import { companyContacts, organizations, unwrap } from "@/services/api";
+import { candidatesGoNowhere, type Delivery } from "../org-settings/delivery";
+import { deliveryKey } from "../org-settings/keys";
 import { resolveRoleIntroReadiness } from "./hm-readiness";
 
 /** Active roles whose intros can't be booked: no hiring manager, or one without a calendar link. */
@@ -26,9 +28,17 @@ function useIntroBlockers(orgId: string, enabled = true) {
 	);
 }
 
-/** The Settings badge in the sidebar: the same count as Settings › Team, so fixing one clears the other. */
+/**
+ * The Settings badge in the sidebar: what stops candidates reaching you. Roles that can't book intros (the Members
+ * tab count) plus new candidates going nowhere (the Communications tab count), so fixing either clears it here too.
+ */
 function useContactsActionNeededCount(orgId: string, enabled: boolean) {
-	return useIntroBlockers(orgId, enabled).length;
+	const { data: delivery } = useQuery({
+		queryKey: deliveryKey(orgId),
+		queryFn: () => organizations.getDeliveryChannels(orgId).then(unwrap) as Promise<unknown> as Promise<Delivery>,
+		enabled: enabled && !!orgId,
+	});
+	return useIntroBlockers(orgId, enabled).length + (delivery && candidatesGoNowhere(delivery) ? 1 : 0);
 }
 
 export { useContactsActionNeededCount, useIntroBlockers };

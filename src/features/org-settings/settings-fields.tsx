@@ -19,17 +19,20 @@ export function FieldLabel({
 	children,
 	note,
 	savedAt,
+	aside,
 }: {
 	htmlFor?: string;
 	children: ReactNode;
 	note?: ReactNode;
 	savedAt?: number;
+	/** Right-aligned instead of the "Saved" tick, e.g. "From your website · Undo". */
+	aside?: ReactNode;
 }) {
 	return (
 		<div className="flex items-baseline gap-2 font-medium font-v2-body text-v2-text-secondary text-xs">
 			{htmlFor ? <label htmlFor={htmlFor}>{children}</label> : <span>{children}</span>}
 			{note && <span className="font-normal text-v2-text-tertiary tabular-nums">{note}</span>}
-			<SavedTick at={savedAt} />
+			{aside ? <span className="ml-auto font-normal">{aside}</span> : <SavedTick at={savedAt} />}
 		</div>
 	);
 }
@@ -169,5 +172,40 @@ export function TagInput({
 				/>
 			)}
 		</div>
+	);
+}
+
+/** On or off (notifications). A button with role="switch", so Space and Enter both flip it. */
+export function Switch({
+	checked,
+	onChange,
+	label,
+	disabled,
+}: {
+	checked: boolean;
+	onChange: (checked: boolean) => void;
+	label: string;
+	disabled?: boolean;
+}) {
+	return (
+		<button
+			type="button"
+			role="switch"
+			aria-checked={checked}
+			aria-label={label}
+			disabled={disabled}
+			onClick={() => onChange(!checked)}
+			className={cn(
+				"relative h-6 w-10 shrink-0 rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-v2-brand-teal focus-visible:ring-offset-2 disabled:cursor-default disabled:opacity-50",
+				checked ? "bg-v2-brand-green" : "bg-v2-border-default",
+			)}
+		>
+			<span
+				className={cn(
+					"absolute top-0.75 left-0.75 size-4.5 rounded-full bg-white shadow-sm transition-transform duration-200 ease-[cubic-bezier(.3,1.4,.5,1)] motion-reduce:transition-none",
+					checked && "translate-x-4",
+				)}
+			/>
+		</button>
 	);
 }

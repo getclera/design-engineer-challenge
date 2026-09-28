@@ -2,12 +2,14 @@ import { dehydrate, HydrationBoundary, QueryClient } from "@tanstack/react-query
 import { V2ThemeScope } from "@v2/components/layout";
 import { SidebarInset, SidebarProvider } from "@v2/components/ui/sidebar";
 import { V2Toaster } from "@v2/components/ui/toaster";
+import { deliveryKey } from "@v2/features/org-settings";
 import { OrgTalentProfileProvider } from "@v2/features/org-talent-profile";
 import { ServerSearchParamsProvider } from "@v2/hooks/server-search-params";
 import type { Metadata } from "next";
 import { headers } from "next/headers";
 import type { ReactNode } from "react";
 import { authKeys, companyKeys, roleKeys } from "@/lib/query-keys";
+import { DELIVERY } from "@mock/org";
 import { ROLES } from "@mock/roles";
 import { PostHogIdentify } from "../../_components/posthog-identify";
 import { AppSidebar } from "./_components/app-sidebar";
@@ -61,6 +63,8 @@ export default async function OrgIdLayout({
 	}
 	// The sidebar's Settings badge counts roles whose intros can't be booked, and Settings › Team lists them.
 	queryClient.setQueryData(roleKeys.organizationRoles(orgId, false), ROLES);
+	// …and whether new candidates go anywhere (Settings › Communications).
+	queryClient.setQueryData(deliveryKey(orgId), DELIVERY);
 
 	return (
 		<HydrationBoundary state={dehydrate(queryClient)}>

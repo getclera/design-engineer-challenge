@@ -28,6 +28,8 @@ export interface Member {
 	firstName: string;
 	lastName: string;
 	email: string;
+	avatarUrl: string | null;
+	joinedAt: string;
 }
 export interface Invitation {
 	id: string;
@@ -40,13 +42,14 @@ const fullName = (p: { firstName: string; lastName: string | null; email: string
 	`${p.firstName} ${p.lastName ?? ""}`.trim() || p.email;
 const firstName = (name: string) => name.split(" ")[0] || name;
 const plural = (n: number, one: string) => `${n} ${one}${n === 1 ? "" : "s"}`;
+const JOINED = new Intl.DateTimeFormat("en-GB", { day: "numeric", month: "short", year: "numeric" });
 const ROLE_COPY = {
 	owner: ["Owner", "Decides on candidates, edits settings"],
 	viewer: ["Viewer", "Sees everything, can't decide"],
 } as const;
 
-/** Settings › Team: who takes intro calls (it blocks intros when missing), then who's in Clera. */
-export function TeamSettings({
+/** Settings › Members: who's in Clera, then Contacts (who candidates meet for each role, and their calendar link). */
+export function MembersSettings({
 	orgId,
 	canEdit,
 	meId,
@@ -77,13 +80,13 @@ export function TeamSettings({
 	return (
 		<div className="flex flex-col gap-5">
 			{!canEdit && <ViewOnlyNote ownerName={owners[0] ? fullName(owners[0]) : null} />}
-			<HiringManagers orgId={orgId} canEdit={canEdit} />
 			<People orgId={orgId} canEdit={canEdit} meId={meId} members={members} />
+			<HiringManagers orgId={orgId} canEdit={canEdit} />
 		</div>
 	);
 }
 
-TeamSettings.displayName = "TeamSettings";
+MembersSettings.displayName = "MembersSettings";
 
 function SectionCard({
 	title,
@@ -142,13 +145,16 @@ function HiringManagers({ orgId, canEdit }: { orgId: string; canEdit: boolean })
 	};
 
 	return (
-		<SectionCard title="Who takes intro calls" sub="When you say yes to someone, they book a call with this person.">
+		<SectionCard
+			title="Contacts"
+			sub="People at your company we should know about: primary point of contact, who to CC on intros, and more."
+		>
 			<div
 				aria-hidden="true"
 				className="grid grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)_minmax(0,1.3fr)] gap-3 border-v2-border-divider border-t bg-v2-bg-warm px-5 py-2 font-medium font-v2-body text-2xs text-v2-text-tertiary uppercase tracking-wider max-md:hidden"
 			>
 				<span>Role</span>
-				<span>Hiring manager</span>
+				<span>Candidates meet</span>
 				<span>Calendar link</span>
 			</div>
 			{ordered.map((role) => {
@@ -208,8 +214,11 @@ function HiringManagers({ orgId, canEdit }: { orgId: string; canEdit: boolean })
 					</div>
 				);
 			})}
-			<p className="border-v2-border-divider border-t px-5 py-2.5 font-v2-body text-v2-text-tertiary text-xs max-lg:px-4">
-				One calendar link per person, used for every role they take calls for.
+			<p className="flex flex-wrap justify-between gap-x-4 gap-y-1 border-v2-border-divider border-t px-5 py-2.5 font-v2-body text-v2-text-tertiary text-xs max-lg:px-4">
+				<span className="tabular-nums">
+					{plural(contacts.length, "contact")} · {contacts.filter((c) => c.calendarLink).length} ready for introductions
+				</span>
+				<span>Ready = calendar link added. One link per person, used for every role they take.</span>
 			</p>
 		</SectionCard>
 	);
@@ -517,14 +526,21 @@ function People({
 				.then((d) => d.invitations),
 	});
 	const owners = members.filter((m) => m.role === "owner").length;
-	// Removals and cancels wait out the Undo window before they're sent.
-	const held = useRef(new Map<string, ReturnType<typeof setTimeout>>());
+	// Removals and cancels wait out the Undo window before they're sent; leaving the page sends them at once.
+	const held = useRef(new Map<string, { timer: ReturnType<typeof setTimeout>; send: () => void }>());
 	useEffect(() => {
-		const timers = held.current;
+		const pending = held.current;
 		return () => {
-			for (const timer of timers.values()) clearTimeout(timer);
+			for (const { timer, send } of pending.values()) {
+				clearTimeout(timer);
+				send();
+			}
 		};
 	}, []);
+	const unhold = (key: string) => {
+		clearTimeout(held.current.get(key)?.timer);
+		held.current.delete(key);
+	};
 
 	const setRole = useMutation({
 		mutationFn: ({ member, role }: { member: Member; role: Member["role"] }) =>
@@ -546,18 +562,16 @@ function People({
 	};
 
 	const later = (key: string, list: readonly unknown[], remove: () => Promise<unknown>, restore: () => void) => {
-		held.current.set(
-			key,
-			setTimeout(() => {
-				held.current.delete(key);
-				trackSave(remove())
-					.catch((error: Error) => {
-						toast.error(error.message);
-						restore();
-					})
-					.finally(() => queryClient.invalidateQueries({ queryKey: list }));
-			}, UNDO_MS),
-		);
+		const send = () => {
+			held.current.delete(key);
+			trackSave(remove())
+				.catch((error: Error) => {
+					toast.error(error.message);
+					restore();
+				})
+				.finally(() => queryClient.invalidateQueries({ queryKey: list }));
+		};
+		held.current.set(key, { timer: setTimeout(send, UNDO_MS), send });
 	};
 	const removeMember = (member: Member) => {
 		const before = queryClient.getQueryData<Member[]>(membersKey(orgId));
@@ -570,8 +584,7 @@ function People({
 			restore,
 		);
 		undoToast(`Removed ${fullName(member)}`, () => {
-			clearTimeout(held.current.get(`m:${member.id}`));
-			held.current.delete(`m:${member.id}`);
+			unhold(`m:${member.id}`);
 			restore();
 		});
 	};
@@ -586,8 +599,7 @@ function People({
 			restore,
 		);
 		undoToast(`Invite to ${invitation.email} cancelled`, () => {
-			clearTimeout(held.current.get(`i:${invitation.id}`));
-			held.current.delete(`i:${invitation.id}`);
+			unhold(`i:${invitation.id}`);
 			restore();
 		});
 	};
@@ -605,8 +617,8 @@ function People({
 
 	return (
 		<SectionCard
-			title="People in Clera"
-			sub="Owners decide on candidates and change settings. Viewers see everything."
+			title="Team members"
+			sub={plural(members.length, "member")}
 			action={
 				canEdit && (
 					<Button
@@ -635,10 +647,16 @@ function People({
 					return (
 						<li
 							key={member.id}
-							className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 gap-y-2 border-v2-border-divider border-t px-5 py-3 sm:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)_2.5rem] max-lg:px-4"
+							className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 gap-y-2 border-v2-border-divider border-t px-5 py-3 sm:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)_minmax(0,0.7fr)_2.5rem] max-lg:px-4"
 						>
 							<div className="flex min-w-0 items-center gap-2.5">
-								<UserAvatar name={fullName(member)} generated size="sm" className="shrink-0" />
+								<UserAvatar
+									name={fullName(member)}
+									src={member.avatarUrl}
+									generated={!member.avatarUrl}
+									size="sm"
+									className="shrink-0"
+								/>
 								<div className="min-w-0">
 									<p className="truncate font-medium font-v2-body text-sm text-v2-text-primary">
 										{fullName(member)} {you && <span className="font-normal text-v2-text-tertiary">(you)</span>}
@@ -658,6 +676,9 @@ function People({
 									</p>
 								)}
 							</div>
+							<p className="font-v2-body text-sm text-v2-text-secondary tabular-nums max-sm:hidden">
+								{JOINED.format(new Date(member.joinedAt))}
+							</p>
 							<div className="justify-self-end max-sm:col-start-2 max-sm:row-start-1">
 								{canEdit && !you && !lastOwner && (
 									<Button

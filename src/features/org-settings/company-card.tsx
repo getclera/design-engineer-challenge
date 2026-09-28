@@ -13,6 +13,7 @@ export function CompanyCandidateCard({ profile }: { profile: CompanyProfile }) {
 	const reasons = profile.reasons.filter((r) => r.trim());
 	const where = [profile.mode, ...profile.locations].filter(Boolean).join(" · ");
 	const life = [...profile.benefits, ...profile.culture];
+	const photos = [...profile.teamImages, ...profile.productImages].slice(0, 3);
 	return (
 		<Card className="overflow-hidden" aria-label="Preview of your company page">
 			<div className="flex items-start gap-3 bg-linear-to-b from-v2-bg-warm to-transparent p-4">
@@ -27,7 +28,7 @@ export function CompanyCandidateCard({ profile }: { profile: CompanyProfile }) {
 						{profile.name || <Ghost>Company name</Ghost>}
 					</p>
 					<p className="mt-0.5 text-pretty font-v2-body text-v2-text-secondary text-xs">
-						{profile.pitch || <Ghost>Your one-line pitch shows here</Ghost>}
+						{profile.pitch || <Ghost>Your description shows here</Ghost>}
 					</p>
 				</div>
 			</div>
@@ -43,9 +44,19 @@ export function CompanyCandidateCard({ profile }: { profile: CompanyProfile }) {
 						{profile.funding && ` · ${profile.funding}`}
 					</Fact>
 				)}
+				{profile.industry && <Fact>{profile.industry}</Fact>}
 				{profile.founded && <Fact>Since {profile.founded}</Fact>}
 				{where && <Fact icon={<MapPin size={12} />}>{where}</Fact>}
 			</p>
+			{photos.length > 0 && (
+				<div className="grid grid-cols-3 gap-1 border-v2-border-divider border-t px-4 py-2.5">
+					{photos.map((src, i) => (
+						// biome-ignore lint/performance/noImgElement: uploaded data URLs, nothing for next/image to optimise
+						// biome-ignore lint/suspicious/noArrayIndexKey: the same photo can be in both lists
+						<img key={i} src={src} alt="" className="aspect-3/2 w-full rounded-v2-sm object-cover" />
+					))}
+				</div>
+			)}
 			<Section title="Why join">
 				{reasons.length > 0 && (
 					<ol className="list-decimal space-y-0.5 pl-4 font-v2-body text-v2-text-primary text-xs">
@@ -60,14 +71,31 @@ export function CompanyCandidateCard({ profile }: { profile: CompanyProfile }) {
 					</p>
 				)}
 			</Section>
+			{profile.team.trim() && (
+				<Section title="The team">
+					<p className="text-pretty font-v2-body text-v2-text-primary text-xs">{profile.team}</p>
+				</Section>
+			)}
 			{life.length > 0 && (
-				<Section title="Life there">
+				<Section title="Culture & offering">
 					<Chips values={life} />
 				</Section>
 			)}
 			{profile.stack.length > 0 && (
 				<Section title="Stack">
 					<Chips values={profile.stack} />
+				</Section>
+			)}
+			{profile.rounds.length > 0 && (
+				<Section title="Funding">
+					<ul className="space-y-0.5 font-v2-body text-v2-text-primary text-xs">
+						{profile.rounds.map((round) => (
+							<li key={round.id}>
+								{round.round} · {round.amount}
+								{round.investors && <span className="text-v2-text-tertiary"> · {round.investors}</span>}
+							</li>
+						))}
+					</ul>
 				</Section>
 			)}
 			<div className="flex gap-3 border-v2-border-divider border-t px-4 py-2.5 font-v2-body text-xs">
