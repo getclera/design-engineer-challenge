@@ -8,7 +8,6 @@ interface ReviewFitReasonProps {
 /** The strongest line of the fit reason, tinted so it's read right after the facts. */
 export function ReviewFitReason({ reason }: ReviewFitReasonProps) {
 	const hook = extractFitReasonHook(reason);
-	if (!hook) return null;
 
 	return (
 		<div className="border-t border-v2-border-warm/50 bg-v2-brand-green/8 px-4 py-2.5 sm:px-5">
@@ -17,7 +16,14 @@ export function ReviewFitReason({ reason }: ReviewFitReasonProps) {
 				<CleraIcon className="size-3" />
 				Why it's a match
 			</p>
-			<p className="mt-1 text-pretty font-v2-body font-medium text-sm text-v2-text-primary leading-snug">{hook}</p>
+			{hook ? (
+				<p className="mt-1 text-pretty font-v2-body font-medium text-sm text-v2-text-primary leading-snug">{hook}</p>
+			) : (
+				// No note from us: say so rather than invent one from the candidate's own headline.
+				<p className="mt-1 text-pretty font-v2-body text-sm text-v2-text-tertiary leading-snug">
+					No note from us on this one. Open the profile to see why.
+				</p>
+			)}
 		</div>
 	);
 }
