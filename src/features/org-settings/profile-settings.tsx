@@ -5,6 +5,7 @@ import { useMutation } from "@tanstack/react-query";
 import { UserAvatar } from "@v2/components/ui/avatar";
 import { Button } from "@v2/components/ui/button";
 import { Card } from "@v2/components/ui/card";
+import { ErrorBanner } from "@v2/components/ui/error-banner";
 import { cn } from "@v2/lib/utils";
 import { type ReactNode, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
@@ -17,10 +18,13 @@ import { useMyProfile, useSaveMyProfile } from "./use-my-profile";
 
 /** Settings › Profile: your photo, name and title, your booking link, and leaving the company. */
 export function ProfileSettings({ orgId, companyName }: { orgId: string; companyName: string }) {
-	const { data: me } = useMyProfile(orgId);
+	const { data: me, isError, refetch } = useMyProfile(orgId);
 	const { save, savedAt, errors } = useSaveMyProfile(orgId);
 	const [previewOpen, setPreviewOpen] = useState(false);
-	if (!me) return null;
+	if (!me)
+		return isError ? (
+			<ErrorBanner action={{ label: "Try again", onClick: () => refetch() }}>Couldn't load your profile.</ErrorBanner>
+		) : null;
 
 	return (
 		<div className="grid items-start gap-5 lg:grid-cols-[minmax(0,1fr)_18rem]">

@@ -1,5 +1,6 @@
 "use client";
 
+import { ErrorBanner } from "@v2/components/ui/error-banner";
 import { CaretDown, CheckCircle, Plus, WarningCircle } from "@phosphor-icons/react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { UserAvatar } from "@v2/components/ui/avatar";
@@ -25,11 +26,19 @@ import { MenuItem, SectionCard } from "./settings-fields";
 
 export function HiringManagers({ orgId, canEdit }: { orgId: string; canEdit: boolean }) {
 	const queryClient = useQueryClient();
-	const { data: contacts = [] } = useQuery({
+	const {
+		data: contactsData,
+		isError: contactsFailed,
+		refetch: refetchContacts,
+	} = useQuery({
 		queryKey: companyKeys.contactOptions(orgId),
 		queryFn: () => companyContacts.listActive(orgId).then(unwrap),
 	});
-	const { data: roles = [] } = useRolesList(orgId, false);
+	const { data: rolesData, isError: rolesFailed, refetch: refetchRoles } = useRolesList(orgId, false);
+	const contacts = contactsData ?? [];
+	const roles = rolesData ?? [];
+	// A failed load would otherwise read as "no roles" or "nobody picked".
+	const loadFailed = (contactsFailed && !contactsData) || (rolesFailed && !rolesData);
 	const { data: feed } = useQuery(reviewFeedQueryOptions(orgId));
 	const [adding, setAdding] = useState<string | null>(null);
 	const ordered = [...roles].sort((a, b) => Number(a.status === "paused") - Number(b.status === "paused"));
@@ -63,6 +72,21 @@ export function HiringManagers({ orgId, canEdit }: { orgId: string; canEdit: boo
 				<span>Candidates meet</span>
 				<span>Calendar link</span>
 			</div>
+			{loadFailed && (
+				<div className="border-v2-border-divider border-t px-5 py-4 max-lg:px-4">
+					<ErrorBanner
+						action={{
+							label: "Try again",
+							onClick: () => {
+								if (contactsFailed) refetchContacts();
+								if (rolesFailed) refetchRoles();
+							},
+						}}
+					>
+						Couldn't load your contacts.
+					</ErrorBanner>
+				</div>
+			)}
 			{ordered.map((role) => {
 				const paused = role.status === "paused";
 				const hm = resolveEffectiveHmContact(contacts, role.companyContactId);

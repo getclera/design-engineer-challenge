@@ -4,6 +4,7 @@ import { CaretDown, CaretRight, EnvelopeSimple, Hash, Info, SlackLogo, WarningCi
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@v2/components/ui/button";
 import { Card } from "@v2/components/ui/card";
+import { ErrorBanner } from "@v2/components/ui/error-banner";
 import { Checkbox } from "@v2/components/ui/checkbox";
 import { Tag } from "@v2/components/ui/tag";
 import { cn } from "@v2/lib/utils";
@@ -45,7 +46,11 @@ export function CommunicationsSettings({
 	atsHref: string;
 }) {
 	const queryClient = useQueryClient();
-	const { data: delivery } = useQuery({
+	const {
+		data: delivery,
+		isError,
+		refetch,
+	} = useQuery({
 		queryKey: deliveryKey(orgId),
 		queryFn: () => organizations.getDeliveryChannels(orgId).then(unwrap) as Promise<unknown> as Promise<Delivery>,
 	});
@@ -68,7 +73,12 @@ export function CommunicationsSettings({
 		onSettled: () => queryClient.invalidateQueries({ queryKey: deliveryKey(orgId) }),
 	});
 
-	if (!delivery) return null;
+	if (!delivery)
+		return isError ? (
+			<ErrorBanner action={{ label: "Try again", onClick: () => refetch() }}>
+				Couldn't load where candidates go.
+			</ErrorBanner>
+		) : null;
 	const nowhere = candidatesGoNowhere(delivery);
 	const tick = (kind: DeliveryKind, channel: Channel, on: boolean) =>
 		change.mutate({ grid: { ...delivery.grid, [kind]: { ...delivery.grid[kind], [channel]: on } } });

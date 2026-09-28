@@ -1,5 +1,6 @@
 "use client";
 
+import { ErrorBanner } from "@v2/components/ui/error-banner";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect } from "react";
 import { organizations, unwrap } from "@/services/api";
@@ -25,7 +26,11 @@ export function MembersSettings({
 	focus?: string;
 	focusRole?: string;
 }) {
-	const { data: members = [] } = useQuery({
+	const {
+		data: members,
+		isError,
+		refetch,
+	} = useQuery({
 		queryKey: membersKey(orgId),
 		queryFn: () =>
 			organizations
@@ -33,7 +38,7 @@ export function MembersSettings({
 				.then(unwrap)
 				.then((d) => d.members),
 	});
-	const owners = members.filter((m) => m.role === "owner");
+	const owners = (members ?? []).filter((m) => m.role === "owner");
 
 	useEffect(() => {
 		if (focus) focusField(focus === "hm" ? "hm" : "calendar", focusRole);
@@ -42,7 +47,15 @@ export function MembersSettings({
 	return (
 		<div className="flex flex-col gap-5">
 			{!canEdit && <ViewOnlyNote ownerName={owners[0] ? fullName(owners[0]) : null} />}
-			<People orgId={orgId} canEdit={canEdit} meId={meId} members={members} />
+			{members ? (
+				<People orgId={orgId} canEdit={canEdit} meId={meId} members={members} />
+			) : (
+				isError && (
+					<ErrorBanner action={{ label: "Try again", onClick: () => refetch() }}>
+						Couldn't load your team members.
+					</ErrorBanner>
+				)
+			)}
 			<HiringManagers orgId={orgId} canEdit={canEdit} />
 		</div>
 	);

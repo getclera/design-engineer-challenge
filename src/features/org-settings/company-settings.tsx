@@ -4,6 +4,7 @@ import { ArrowRight, CaretDown, CaretRight, Check, Eye } from "@phosphor-icons/r
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@v2/components/ui/accordion";
 import { Button } from "@v2/components/ui/button";
 import { Card } from "@v2/components/ui/card";
+import { ErrorBanner } from "@v2/components/ui/error-banner";
 import { Textarea } from "@v2/components/ui/textarea";
 import { cn } from "@v2/lib/utils";
 import { motion, useReducedMotion } from "framer-motion";
@@ -77,7 +78,7 @@ export function CompanySettings({
 	/** From Home's "Finish your company profile" (a section) or an older link (a field, like `linkedin`). */
 	focus?: string;
 }) {
-	const { data: profile } = useCompanyProfile(orgId);
+	const { data: profile, isError, refetch } = useCompanyProfile(orgId);
 	const { save, savedAt, errors } = useSaveCompanyField(orgId);
 	const fill = useFillFromWebsite(orgId);
 	const funding = useFundingRounds(orgId);
@@ -110,7 +111,12 @@ export function CompanySettings({
 		lastGaps.current = gapSignature;
 	}, [gapSignature, canEdit]);
 
-	if (!profile) return null;
+	if (!profile)
+		return isError ? (
+			<ErrorBanner action={{ label: "Try again", onClick: () => refetch() }}>
+				Couldn't load your company profile.
+			</ErrorBanner>
+		) : null;
 
 	const openSection = (id: SectionId) => {
 		setChosen(id);
