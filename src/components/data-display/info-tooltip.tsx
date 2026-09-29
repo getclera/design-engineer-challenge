@@ -18,18 +18,19 @@ function InfoTooltip({ children, side = "top", contentClassName, trigger }: Info
 			<Tooltip>
 				<TooltipTrigger asChild>
 					{
-						// biome-ignore lint/a11y/noStaticElementInteractions: stopPropagation prevents tooltip click from toggling clickable ancestors
-						<span
+						// A real button, so keyboard and screen-reader users reach the explanation too.
+						<button
+							type="button"
+							aria-label={trigger ? undefined : "More about this"}
 							className={cn(
-								"inline-flex cursor-help items-center",
+								"focus-ring relative inline-flex cursor-help items-center rounded-full before:absolute before:-inset-2",
 								trigger ? "underline decoration-dotted underline-offset-2" : "text-v2-text-muted",
 							)}
 							onClick={(e) => e.stopPropagation()}
 							onKeyDown={(e) => e.stopPropagation()}
-							role="presentation"
 						>
 							{trigger ?? <Info size={11} weight="regular" aria-hidden="true" />}
-						</span>
+						</button>
 					}
 				</TooltipTrigger>
 				<TooltipContent side={side} className={cn("max-w-60 text-xs", contentClassName)}>
