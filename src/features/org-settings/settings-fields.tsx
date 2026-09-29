@@ -50,7 +50,7 @@ function SavedTick({ at }: { at?: number }) {
 		<span
 			aria-hidden={!shown}
 			className={cn(
-				"ml-auto inline-flex items-center gap-1 font-normal text-2xs text-v2-brand-green transition-opacity duration-300",
+				"ml-auto inline-flex items-center gap-1 font-normal text-2xs text-v2-text-brand-green transition-opacity duration-300",
 				shown ? "opacity-100" : "opacity-0",
 			)}
 		>
@@ -266,7 +266,7 @@ export function MenuItem({
 				<span className="block truncate font-v2-body text-sm text-v2-text-primary">{title}</span>
 				<span className="block truncate font-v2-body text-v2-text-tertiary text-xs">{sub}</span>
 			</span>
-			{selected && <Check size={14} className="shrink-0 text-v2-brand-green" />}
+			{selected && <Check size={14} className="shrink-0 text-v2-text-brand-green" />}
 		</button>
 	);
 }

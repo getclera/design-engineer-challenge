@@ -9,7 +9,7 @@ const domain = (url: string) => url.replace(/^https?:\/\//, "").replace(/\/$/, "
 
 export function FromWebsite({ onUndo }: { onUndo: () => void }) {
 	return (
-		<span className="inline-flex items-center gap-1 text-2xs text-v2-brand-green">
+		<span className="inline-flex items-center gap-1 text-2xs text-v2-text-brand-green">
 			<Sparkle size={11} weight="fill" /> From your website ·
 			<button
 				type="button"
@@ -26,7 +26,7 @@ export function FillFromWebsite({ website, busy, onFill }: { website: string; bu
 	const site = looksLikeUrl(website) ? domain(website) : null;
 	return (
 		<Card className="grid grid-cols-[auto_minmax(0,1fr)] items-center gap-x-3 gap-y-2 px-4 py-3 sm:grid-cols-[auto_minmax(0,1fr)_auto]">
-			<span className="grid size-8 place-items-center rounded-v2-md bg-v2-status-success-bg text-v2-brand-green">
+			<span className="grid size-8 place-items-center rounded-v2-md bg-v2-status-success-bg text-v2-text-brand-green">
 				{busy ? <Sparkle size={16} className="animate-spin motion-reduce:animate-none" /> : <Globe size={16} />}
 			</span>
 			<div className="min-w-0">

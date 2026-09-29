@@ -107,7 +107,7 @@ export function ReviewEmpty({
 				</>
 			) : (
 				<>
-					<CheckCircleIcon size={28} weight="light" className="mb-4 text-v2-brand-green" />
+					<CheckCircleIcon size={28} weight="light" className="mb-4 text-v2-text-brand-green" />
 					<h3 className="font-v2-heading text-v2-text-primary text-lg">
 						{isListDone ? "That list is done" : `Nothing left in ${roleName ?? "this role"}`}
 					</h3>

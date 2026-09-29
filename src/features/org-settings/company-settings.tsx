@@ -332,7 +332,7 @@ export function CompanySettings({
 									className={cn(
 										"grid size-5 shrink-0 place-items-center rounded-full font-v2-body text-2xs tabular-nums transition-colors",
 										done
-											? "bg-v2-status-success-bg text-v2-brand-green"
+											? "bg-v2-status-success-bg text-v2-text-brand-green"
 											: "border border-v2-border-divider text-v2-text-tertiary",
 									)}
 								>
@@ -456,7 +456,7 @@ export function CompanySettings({
 														: `${state.missing.length} missing`}
 												</span>
 											) : (
-												<span className="inline-flex items-center gap-1 whitespace-nowrap font-medium font-v2-body text-v2-brand-green text-xs">
+												<span className="inline-flex items-center gap-1 whitespace-nowrap font-medium font-v2-body text-v2-text-brand-green text-xs">
 													<Check size={12} weight="bold" /> Done
 												</span>
 											)}

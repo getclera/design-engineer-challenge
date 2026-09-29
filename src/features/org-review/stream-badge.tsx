@@ -15,8 +15,8 @@ export const STREAM_CONFIG = {
 		label: "We think it's a match",
 		tooltip: "Clera surfaced this candidate as a strong fit for the role, but they haven't been asked yet.",
 		icon: Lightning,
-		iconClassName: "text-v2-brand-green",
-		className: "bg-v2-brand-green/10 text-v2-brand-green",
+		iconClassName: "text-v2-text-brand-green",
+		className: "bg-v2-brand-green/10 text-v2-text-brand-green",
 	},
 	drop: {
 		label: "Outstanding this week",

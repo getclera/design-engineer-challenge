@@ -130,7 +130,7 @@ export function HomeGetReady({ day, steps: initial }: { day: string; steps: Setu
 									initial={justDone === step.key && !reduced ? { scale: 0.3, opacity: 0 } : false}
 									animate={{ scale: 1, opacity: 1 }}
 									transition={{ type: "spring", stiffness: 500, damping: 15 }}
-									className="grid text-v2-brand-green"
+									className="grid text-v2-text-brand-green"
 								>
 									<CheckCircle size={18} weight="fill" />
 								</motion.span>

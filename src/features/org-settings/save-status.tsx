@@ -59,7 +59,7 @@ export function SaveStatus() {
 				</>
 			) : (
 				<>
-					<CheckCircle size={14} className="text-v2-brand-green" />
+					<CheckCircle size={14} className="text-v2-text-brand-green" />
 					All changes saved
 				</>
 			)}

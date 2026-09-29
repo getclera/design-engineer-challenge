@@ -47,7 +47,7 @@ export function ReviewCardActions({ talentName, isPending, onIntro, onPass }: Re
 					setDecisionOrigin(e.currentTarget);
 					onIntro();
 				}}
-				className={cn(ACTION_CLASSES, "hover:border-v2-brand-green hover:text-v2-brand-green")}
+				className={cn(ACTION_CLASSES, "hover:border-v2-brand-green hover:text-v2-text-brand-green")}
 			>
 				<PaperPlaneTilt size={14} weight="fill" />
 			</Button>

@@ -121,7 +121,7 @@ export function HiringManagers({ orgId, canEdit }: { orgId: string; canEdit: boo
 									<Missing>Pick who takes the calls</Missing>
 								) : ready ? (
 									<span className="flex min-w-0 items-center gap-1.5 font-v2-body text-sm text-v2-text-secondary">
-										<CheckCircle size={15} className="shrink-0 text-v2-brand-green" />
+										<CheckCircle size={15} className="shrink-0 text-v2-text-brand-green" />
 										<span className="truncate">{hm.calendarLink?.replace(/^https?:\/\//, "")}</span>
 									</span>
 								) : (

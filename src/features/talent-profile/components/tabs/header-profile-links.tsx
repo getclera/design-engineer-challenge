@@ -20,7 +20,7 @@ function HeaderProfileLinks({ githubUrl, xUrl, portfolioUrl }: HeaderProfileLink
 				<HeaderLinkButton
 					href={portfolioUrl}
 					label="Portfolio"
-					icon={<Globe size={14} weight="regular" className="text-v2-brand-green" />}
+					icon={<Globe size={14} weight="regular" className="text-v2-text-brand-green" />}
 				/>
 			)}
 			{githubUrl && <HeaderLinkButton href={githubUrl} label="GitHub" icon={<GithubLogo size={14} weight="fill" />} />}

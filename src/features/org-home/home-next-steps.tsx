@@ -324,7 +324,7 @@ function CaughtUpBlock({ orgId, week }: { orgId: string; week: CaughtUpWeek }) {
 						// A spring can't run through keyframes, so the ripple is a plain fade.
 						boxShadow: { duration: 1.2, ease: "easeOut" },
 					}}
-					className="grid size-8 shrink-0 place-items-center rounded-full bg-v2-bg-card text-v2-brand-green"
+					className="grid size-8 shrink-0 place-items-center rounded-full bg-v2-bg-card text-v2-text-brand-green"
 				>
 					<CheckCircle size={20} weight="fill" />
 				</motion.span>

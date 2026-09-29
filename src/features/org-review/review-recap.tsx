@@ -24,7 +24,7 @@ function namesLine(names: string[]) {
 export function ReviewRecap({ roleName, moreComing, tally, decisions, onReviewMaybes }: ReviewRecapProps) {
 	const intros = decisions.filter((d) => d.kind === "intro").map((d) => d.name);
 	const stats = [
-		{ label: "intros requested", value: tally.intro, className: "text-v2-brand-green" },
+		{ label: "intros requested", value: tally.intro, className: "text-v2-text-brand-green" },
 		{ label: "to revisit", value: tally.maybe, className: "text-v2-status-warning" },
 		{ label: "passed", value: tally.pass, className: "text-v2-text-primary" },
 	];
