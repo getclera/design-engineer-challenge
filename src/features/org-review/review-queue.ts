@@ -50,6 +50,22 @@ export function queueSections(items: ReviewItem[], similarToName: (item: ReviewI
 	return sections;
 }
 
+/**
+ * Who comes after `from`: someone whose decision didn't save first, so it's retried before moving on;
+ * otherwise the next one down, or back up from the end.
+ */
+export function nextInQueue<T>(
+	items: T[],
+	from: number,
+	isHidden: (item: T) => boolean,
+	isFailed: (item: T) => boolean,
+): T | null {
+	const failed = items.find((item, i) => i !== from && isFailed(item) && !isHidden(item));
+	return (
+		failed ?? stepNavigable(items, from, 1, isHidden) ?? (from > 0 ? stepNavigable(items, from, -1, isHidden) : null)
+	);
+}
+
 /** The next item in `dir` that isn't hidden (in a closed group), or null at the end of the list. */
 export function stepNavigable<T>(items: T[], from: number, dir: 1 | -1, isHidden: (item: T) => boolean): T | null {
 	for (let i = from + dir; i >= 0 && i < items.length; i += dir) if (!isHidden(items[i])) return items[i];

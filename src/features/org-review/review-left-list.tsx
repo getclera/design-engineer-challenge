@@ -69,6 +69,8 @@ export function ReviewLeftList({
 					...(isOpen(section.key) ? section.items : []).map((item) => (
 						<motion.div
 							key={reviewItemKey(item)}
+							// A failed save puts the same row back while it's still leaving: return it to its full height.
+							animate={{ opacity: 1, height: "auto" }}
 							exit={exit}
 							transition={{ duration: 0.15 }}
 							className="overflow-hidden"

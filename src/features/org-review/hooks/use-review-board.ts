@@ -8,7 +8,7 @@ import { type CSSProperties, type RefObject, useCallback, useEffect, useMemo, us
 import { toast } from "sonner";
 import { orgTalents } from "@/services/api/org-talents";
 import { isHmLinkWarningSuppressed } from "../hm-warning-cookie";
-import { sortByQueue, stepNavigable } from "../review-queue";
+import { nextInQueue, sortByQueue, stepNavigable } from "../review-queue";
 import {
 	REVIEW_STREAMS,
 	type ReviewItem,
@@ -144,12 +144,8 @@ export function useReviewBoard(
 	const undoLast = useCallback(() => undoRef.current?.run(), []);
 	const { data: roles } = useRolesList(orgId, false);
 
-	// Who the reviewer was on when a save failed: the failed person comes back right after them.
-	const selectedKeyRef = useRef<string | null>(null);
-	const retryAnchors = useRef(new Map<string, string | null>());
 	const { mutation, isPending, isFailed, retry, failed } = useReviewAction(orgId, roleId, {
 		onFailed: ({ item, action }) => {
-			retryAnchors.current.set(reviewItemKey(item), selectedKeyRef.current);
 			// Nothing left to undo for a decision that didn't save; its toast became the error.
 			if (undoRef.current?.id === `review-action:${reviewItemKey(item)}`) undoRef.current = null;
 			uncountDecision(reviewItemKey(item));
@@ -208,18 +204,9 @@ export function useReviewBoard(
 		// ponytail: they jump to the top, not to where the anchor sat; fine while reviewing top-down.
 		// In the order they were pulled (Clera's ranking), the order the deck selects them in, so none gets skipped.
 		const pulled = [...similarTo.keys()].flatMap((key) => visible.filter((i) => reviewItemKey(i) === key));
-		const ordered =
-			similarTo.size === 0 ? visible : [...pulled, ...visible.filter((i) => !similarTo.has(reviewItemKey(i)))];
-		// A decision that didn't save comes back as the next card, not at its old spot behind the reviewer.
-		const anchored = ordered.filter((i) => failed.has(reviewItemKey(i)));
-		if (anchored.length === 0) return ordered;
-		const result = ordered.filter((i) => !failed.has(reviewItemKey(i)));
-		for (const i of anchored.reverse()) {
-			const anchor = retryAnchors.current.get(reviewItemKey(i));
-			result.splice(result.findIndex((r) => reviewItemKey(r) === anchor) + 1, 0, i);
-		}
-		return result;
-	}, [feed, streams, heldKey, showMaybe, similarTo, failed]);
+		// A decision that didn't save keeps its place in its group; nextInQueue() makes it the next card.
+		return similarTo.size === 0 ? visible : [...pulled, ...visible.filter((i) => !similarTo.has(reviewItemKey(i)))];
+	}, [feed, streams, heldKey, showMaybe, similarTo]);
 	const roleFeedCount = data?.items?.length ?? 0;
 	const streamCounts = useMemo(() => {
 		const acc: Record<ReviewStream, number> = { curated: 0, drop: 0, interest: 0 };
@@ -239,19 +226,16 @@ export function useReviewBoard(
 		() => items.find((i) => reviewItemKey(i) === selectedKey) ?? items[0] ?? null,
 		[items, selectedKey],
 	);
-	useEffect(() => {
-		selectedKeyRef.current = selected ? reviewItemKey(selected) : null;
-	}, [selected]);
 	useSimilarPicks(orgId, isDesktop ? (selected?.roleId ?? null) : null, selected?.talentId ?? null);
 
 	const advance = useCallback(
 		(acted: Pick<ReviewItem, "talentId" | "roleId">) => {
 			const idx = items.findIndex((i) => reviewItemKey(i) === reviewItemKey(acted));
 			const hidden = isHiddenRef?.current ?? NONE_HIDDEN;
-			const next = stepNavigable(items, idx, 1, hidden) ?? (idx > 0 ? stepNavigable(items, idx, -1, hidden) : null);
+			const next = nextInQueue(items, idx, hidden, (i) => failed.has(reviewItemKey(i)));
 			setSelectedKey(next ? reviewItemKey(next) : null);
 		},
-		[items, isHiddenRef],
+		[items, isHiddenRef, failed],
 	);
 
 	const undoHeldIntro = useCallback(

@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { queueSections, sortByQueue, stepNavigable } from "./review-queue.ts";
+import { queueSections, sortByQueue, stepNavigable, nextInQueue } from "./review-queue.ts";
 import type { ReviewItem } from "./types.ts";
 
 const person = (talentId: string, bucket: ReviewItem["bucket"], receivedAt: string | null = null) =>
@@ -60,5 +60,30 @@ test("stepNavigable: skips people in closed groups, both ways, null at the ends"
 	assert.equal(
 		stepNavigable(items, 1, -1, () => false),
 		"a",
+	);
+});
+
+test("next: a decision that didn't save comes first, then down the list, then back up", () => {
+	const items = ["a", "b", "c", "d"];
+	const none = () => false;
+	assert.equal(nextInQueue(items, 1, none, none), "c");
+	assert.equal(nextInQueue(items, 3, none, none), "c");
+	assert.equal(
+		nextInQueue(items, 1, none, (i) => i === "a"),
+		"a",
+	);
+	// The failed person being the current one doesn't send you back to them.
+	assert.equal(
+		nextInQueue(items, 0, none, (i) => i === "a"),
+		"b",
+	);
+	assert.equal(
+		nextInQueue(
+			items,
+			1,
+			(i) => i === "a",
+			(i) => i === "a",
+		),
+		"c",
 	);
 });

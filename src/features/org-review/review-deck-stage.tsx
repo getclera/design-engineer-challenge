@@ -1,7 +1,8 @@
 "use client";
 
-import { ArrowsOutSimple, ArrowsInSimple } from "@phosphor-icons/react";
+import { ArrowsOutSimple, ArrowsInSimple, WarningCircle } from "@phosphor-icons/react";
 import { Button } from "@v2/components/ui/button";
+import { ErrorBanner } from "@v2/components/ui/error-banner";
 import { Card } from "@v2/components/ui/card";
 import { Kbd } from "@v2/components/ui/kbd";
 import { UserAvatar } from "@v2/components/ui/avatar";
@@ -19,9 +20,9 @@ import { ReviewHeaderMeta } from "./review-header-meta";
 import { ReviewMaybeButton } from "./review-maybe-button";
 import { ReviewNextUp } from "./review-next-up";
 import { ReviewProfileShell } from "./review-profile-shell";
-import { QUEUE_GROUP_TITLES } from "./review-queue";
+import { nextInQueue, QUEUE_GROUP_TITLES } from "./review-queue";
 import { ReviewViewOnlyNote } from "./review-view-only-note";
-import { reviewItemKey, streamOf } from "./types";
+import { type ReviewItem, reviewItemKey, streamOf } from "./types";
 
 interface ReviewDeckStageProps {
 	orgId: string;
@@ -84,7 +85,7 @@ export function ReviewDeckStage({
 	const index = board.items.findIndex((i) => reviewItemKey(i) === key);
 	const behind = expanded || focus ? 0 : Math.min(2, board.items.length - 1 - index);
 	// Who comes after a decision: the same pick as the board's advance().
-	const next = board.items[index + 1] ?? (index > 0 ? board.items[index - 1] : undefined);
+	const next = nextInQueue<ReviewItem>(board.items, index, () => false, board.isFailed) ?? undefined;
 	// The two after that, in the order advance() walks: on down the list, then back up from the end.
 	const upcoming =
 		focus && index >= 0 ? [...board.items.slice(index + 1), ...board.items.slice(0, index).reverse()].slice(0, 2) : [];
@@ -110,6 +111,16 @@ export function ReviewDeckStage({
 		) : (
 			<ReviewDecisionPopover orgId={orgId} disabled={decisionsInSheet}>
 				<div>
+					{/* Their decision didn't save: say so on the card itself, with the same Retry as the list. */}
+					{board.isFailed(item) && (
+						<ErrorBanner
+							icon={<WarningCircle size={16} className="shrink-0" />}
+							action={{ label: "Retry", onClick: () => board.retry(item) }}
+							className={cn("mb-2", !focus && "mx-4 mt-3")}
+						>
+							Not saved. Your decision on {item.talentName.split(" ")[0]} didn't go through.
+						</ErrorBanner>
+					)}
 					<TalentDecisionActionBar
 						alreadyInterested={streamOf(item.bucket) === "interest"}
 						isPending={board.isPending(item)}
