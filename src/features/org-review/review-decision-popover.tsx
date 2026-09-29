@@ -10,7 +10,7 @@ import { useRolesList } from "@v2/features/org-roles";
 import { INTRO_DECISION_CATEGORIES, PASS_DECISION_CATEGORIES } from "@v2/features/org-shared-modals";
 import { useMediaQuery } from "@v2/hooks/use-media-query";
 import { cn } from "@v2/lib/utils";
-import { type ReactNode, useEffect, useRef, useState } from "react";
+import { type ReactNode, useEffect, useId, useRef, useState } from "react";
 import { bestFitRoleId } from "./best-fit-role";
 import { useRoleIntroReadiness } from "./hooks/use-role-intro-readiness";
 import { useReviewBoardContext } from "./review-board-context";
@@ -136,7 +136,6 @@ export function ReviewDecisionPopover({
 					<SheetContent
 						side="bottom"
 						aria-describedby={undefined}
-						onOpenAutoFocus={(e) => e.preventDefault()}
 						onEscapeKeyDown={onEscapeKeyDown}
 						className={PHONE_SHEET_CLASSES}
 					>
@@ -164,6 +163,7 @@ export function ReviewDecisionPopover({
 					: // The anchor is the whole action bar (border-t + py-3), so land 8px from the button itself.
 						{ side: "top", align: isPass ? "start" : "end", sideOffset: 8 - 13, alignOffset: 16 })}
 				className="w-96 p-2"
+				// The option list takes focus itself (see DecisionOptions), not the first button.
 				onOpenAutoFocus={(e) => e.preventDefault()}
 				onEscapeKeyDown={onEscapeKeyDown}
 			>
@@ -209,12 +209,21 @@ function DecisionOptions({
 	const [hl, setHl] = useState(initial);
 	const [text, setText] = useState("");
 	const inputRef = useRef<HTMLInputElement>(null);
+	const listRef = useRef<HTMLDivElement>(null);
+	const listId = useId();
+
+	// Focus moves into the list on open, so screen readers hear the question and the highlighted answer.
+	useEffect(() => {
+		if (!touch) listRef.current?.focus();
+	}, [touch]);
 
 	// While open, the popup owns the keyboard wherever focus is (like the old reason panel did).
 	useEffect(() => {
 		if (touch) return;
 		const onKey = (e: KeyboardEvent) => {
 			if (e.target === inputRef.current || e.metaKey || e.ctrlKey || e.altKey) return;
+			// The Back button keeps its own Enter and Space.
+			if (e.target instanceof Element && e.target.closest("button:not([role=option])")) return;
 			// The physical key, so Shift+1 still picks option 1.
 			const digit = Number(/^Digit([1-9])$/.exec(e.code)?.[1]);
 			if (e.key === "ArrowDown" || e.key === "ArrowUp") {
@@ -241,7 +250,7 @@ function DecisionOptions({
 	}, [touch, options, hl, withText, onChoose, onClose]);
 
 	return (
-		<div role="listbox" aria-label={title}>
+		<div>
 			{back && (
 				<Button
 					variant="unstyled"
@@ -268,9 +277,18 @@ function DecisionOptions({
 					</span>
 				)}
 			</div>
-			{options.map((option, i) => (
+			<div
+				ref={listRef}
+				role="listbox"
+				aria-label={title}
+				tabIndex={-1}
+				aria-activedescendant={touch ? undefined : `${listId}-${hl}`}
+				className="outline-none"
+			>
+				{options.map((option, i) => (
 				<button
 					key={option.id}
+					id={`${listId}-${i}`}
 					type="button"
 					role="option"
 					aria-selected={i === hl}
@@ -290,10 +308,12 @@ function DecisionOptions({
 						</span>
 					)}
 				</button>
-			))}
+				))}
+			</div>
 			{withText && (
 				<Input
 					ref={inputRef}
+					aria-label="Something else"
 					value={text}
 					onChange={(e) => setText(e.target.value)}
 					onKeyDown={(e) => {
