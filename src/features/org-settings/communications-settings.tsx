@@ -125,11 +125,11 @@ export function CommunicationsSettings({
 			{delivery.emails.map((email) => (
 				<li key={email} className="max-w-full">
 					<Tag
-						className="h-6 max-w-44 bg-v2-bg-card px-2 text-xs max-sm:max-w-60"
+						className="h-auto min-h-6 max-w-full bg-v2-bg-card px-2 py-0.5 text-xs"
 						onDismiss={canEdit ? () => removeEmail(email) : undefined}
 						dismissLabel={`Remove ${email}`}
 					>
-						<span className="truncate">{email}</span>
+						<span className="break-all">{email}</span>
 					</Tag>
 				</li>
 			))}
