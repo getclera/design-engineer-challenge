@@ -9,7 +9,7 @@ import { Checkbox } from "@v2/components/ui/checkbox";
 import { Tag } from "@v2/components/ui/tag";
 import { cn } from "@v2/lib/utils";
 import Link from "next/link";
-import { type FormEvent, type ReactNode, useState } from "react";
+import { type FormEvent, Fragment, type ReactNode, useState } from "react";
 import { toast } from "sonner";
 import { organizations, unwrap } from "@/services/api";
 import { ViewOnlyNote } from "./company-settings";
@@ -129,7 +129,15 @@ export function CommunicationsSettings({
 						onDismiss={canEdit ? () => removeEmail(email) : undefined}
 						dismissLabel={`Remove ${email}`}
 					>
-						<span className="break-all">{email}</span>
+						<span className="[overflow-wrap:anywhere]">
+						{/* Line breaks only after "@" or ".", never mid-word. */}
+						{email.split(/(?<=[@.])/).map((part, i) => (
+							<Fragment key={`${i}-${part}`}>
+								{i > 0 && <wbr />}
+								{part}
+							</Fragment>
+						))}
+					</span>
 					</Tag>
 				</li>
 			))}
