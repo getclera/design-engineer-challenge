@@ -287,28 +287,28 @@ function DecisionOptions({
 				className="outline-none"
 			>
 				{options.map((option, i) => (
-				<button
-					key={option.id}
-					id={`${listId}-${i}`}
-					type="button"
-					role="option"
-					aria-selected={i === hl}
-					onMouseEnter={touch ? undefined : () => setHl(i)}
-					onClick={() => onChoose(option)}
-					className={cn(
-						"focus-ring flex w-full items-center gap-2 rounded-v2-sm text-left font-v2-body text-v2-text-body",
-						touch ? "min-h-12 px-3 text-base active:bg-v2-bg-active" : "px-2 py-1.5 text-sm",
-						!touch && i === hl && "bg-v2-bg-active font-medium text-v2-text-brand",
-					)}
-				>
-					{!touch && i < 9 && <Kbd className="bg-v2-bg-card">{i + 1}</Kbd>}
-					<span className="min-w-0 flex-1 truncate">{option.label}</span>
-					{option.note && (
-						<span className={cn("shrink-0 text-2xs", option.warn ? "text-v2-status-warning" : "text-v2-text-tertiary")}>
-							{option.note}
-						</span>
-					)}
-				</button>
+					<button
+						key={option.id}
+						id={`${listId}-${i}`}
+						type="button"
+						role="option"
+						aria-selected={i === hl}
+						onMouseEnter={touch ? undefined : () => setHl(i)}
+						onClick={() => onChoose(option)}
+						className={cn(
+							"focus-ring flex w-full items-center gap-2 rounded-v2-sm text-left font-v2-body text-v2-text-body",
+							touch ? "min-h-12 px-3 text-base active:bg-v2-bg-active" : "px-2 py-1.5 text-sm",
+							!touch && i === hl && "bg-v2-bg-active font-medium text-v2-text-brand",
+						)}
+					>
+						{!touch && i < 9 && <Kbd className="bg-v2-bg-card">{i + 1}</Kbd>}
+						<span className="min-w-0 flex-1 truncate">{option.label}</span>
+						{option.note && (
+							<span className={cn("shrink-0 text-2xs", option.warn ? "text-v2-status-warning" : "text-v2-text-tertiary")}>
+								{option.note}
+							</span>
+						)}
+					</button>
 				))}
 			</div>
 			{withText && (
