@@ -295,7 +295,7 @@ export function ReviewBoard({
 							aria-label="Show list"
 							title="Show list (L)"
 							onClick={() => setListHidden(false)}
-							className="focus-ring absolute top-1/2 left-0 z-10 grid h-18 w-5.5 -translate-y-1/2 place-items-center rounded-r-v2-lg border border-v2-border-default border-l-0 bg-v2-bg-card text-v2-text-tertiary shadow-v2-content transition-[width] hover:w-7 hover:text-v2-text-primary"
+							className="focus-ring absolute top-1/2 left-0 z-10 grid h-18 w-6 -translate-y-1/2 place-items-center rounded-r-v2-lg border border-v2-border-default border-l-0 bg-v2-bg-card text-v2-text-tertiary shadow-v2-content transition-[width] hover:w-7 hover:text-v2-text-primary"
 						>
 							<CaretRight size={16} />
 						</Button>

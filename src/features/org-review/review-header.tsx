@@ -28,7 +28,7 @@ export function ReviewHeader({ maybe = false, onHide }: ReviewHeaderProps) {
 					aria-label="Hide list"
 					title="Hide list (L)"
 					onClick={onHide}
-					className="focus-ring -my-1 text-v2-text-tertiary hover:text-v2-text-primary"
+					className="focus-ring -my-1 shrink-0 text-v2-text-tertiary hover:text-v2-text-primary"
 				>
 					<SidebarSimple size={16} />
 				</Button>

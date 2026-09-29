@@ -72,7 +72,7 @@ export function ReviewShortcutsHelp({ open, onOpenChange, canDecide }: ReviewSho
 			{showTip && !open && (
 				<div role="status" className="flex items-center gap-2 rounded-v2-full bg-v2-bg-card py-1 pr-1.5 pl-3 font-v2-body text-v2-text-secondary text-xs shadow-v2-content">
 					Tip: press <Kbd>?</Kbd> for all shortcuts
-					<Button variant="unstyled" size="unstyled" aria-label="Dismiss tip" onClick={dismissTip} className="focus-ring rounded-v2-full p-1">
+					<Button variant="unstyled" size="unstyled" aria-label="Dismiss tip" onClick={dismissTip} className="focus-ring rounded-v2-full p-1.5">
 						<X size={12} />
 					</Button>
 				</div>
