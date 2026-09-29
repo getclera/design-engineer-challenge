@@ -191,7 +191,7 @@ export function People({
 									onChange={(role) => changeRole(member, role)}
 								/>
 								{lastOwner && canEdit && (
-									<p className="mt-1 font-v2-body text-2xs text-v2-text-tertiary">
+									<p className="mt-1 font-v2-body text-v2-text-tertiary text-xs">
 										Only owner. Make someone else an owner first.
 									</p>
 								)}

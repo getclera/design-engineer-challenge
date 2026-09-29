@@ -196,7 +196,7 @@ export function HomeExampleCandidate({ day }: { day: string }) {
 					isSelected={false}
 					onSelect={note}
 					onPrefetch={() => {}}
-					badge={<span className="ml-auto font-v2-body text-2xs text-v2-text-tertiary">just now</span>}
+					badge={<span className="ml-auto font-v2-body text-xs text-v2-text-tertiary">just now</span>}
 					footer={
 						<p className="flex items-center gap-1.5 font-v2-body text-v2-text-brand text-xs">
 							<Lightning size={12} className="shrink-0" />

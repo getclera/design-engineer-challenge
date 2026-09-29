@@ -107,7 +107,7 @@ function When({ person }: { person: MovingForwardPerson }) {
 	);
 	const ago = person.at && inBrowser ? formatTimeAgoCompact(person.at) : "";
 	const text = person.next ?? (ago === "now" ? "just now" : ago ? `${ago} ago` : null);
-	return text ? <span className="font-v2-body text-2xs text-v2-text-tertiary tabular-nums">{text}</span> : null;
+	return text ? <span className="font-v2-body text-v2-text-tertiary text-xs tabular-nums">{text}</span> : null;
 }
 
 const noop = () => () => {};

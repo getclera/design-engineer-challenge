@@ -50,7 +50,7 @@ function SavedTick({ at }: { at?: number }) {
 		<span
 			aria-hidden={!shown}
 			className={cn(
-				"ml-auto inline-flex items-center gap-1 font-normal text-2xs text-v2-text-brand-green transition-opacity duration-300",
+				"ml-auto inline-flex items-center gap-1 font-normal text-v2-text-brand-green text-xs transition-opacity duration-300",
 				shown ? "opacity-100" : "opacity-0",
 			)}
 		>

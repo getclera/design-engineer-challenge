@@ -9,7 +9,7 @@ const domain = (url: string) => url.replace(/^https?:\/\//, "").replace(/\/$/, "
 
 export function FromWebsite({ onUndo }: { onUndo: () => void }) {
 	return (
-		<span className="inline-flex items-center gap-1 text-2xs text-v2-text-brand-green">
+		<span className="inline-flex items-center gap-1 text-v2-text-brand-green text-xs">
 			<Sparkle size={11} weight="fill" /> From your website ·
 			<button
 				type="button"
