@@ -96,11 +96,19 @@ export function HiringManagers({ orgId, canEdit }: { orgId: string; canEdit: boo
 					<div
 						key={role.id}
 						data-scope={role.id}
-						className={cn("border-v2-border-divider border-t", paused && "opacity-60")}
+						className="border-v2-border-divider border-t"
 					>
 						<div className="grid items-center gap-3 px-5 py-3 md:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)_minmax(0,1.3fr)] max-lg:px-4">
 							<div className="min-w-0">
-								<p className="truncate font-medium font-v2-body text-sm text-v2-text-primary">{role.position}</p>
+								<p
+									className={cn(
+										"truncate font-medium font-v2-body text-sm",
+										// Paused reads quieter by colour, not by fading the row (that dropped "Paused" below 3:1).
+										paused ? "text-v2-text-secondary" : "text-v2-text-primary",
+									)}
+								>
+									{role.position}
+								</p>
 								<p className="font-v2-body text-v2-text-tertiary text-xs">
 									{paused ? "Paused" : waiting ? `${waiting} waiting on you` : "Nobody waiting"}
 								</p>
