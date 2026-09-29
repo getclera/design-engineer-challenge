@@ -14,6 +14,9 @@ const OrgHeaderButton = forwardRef<
 	<SidebarMenuButton
 		ref={ref}
 		size="lg"
+		// With one org there's nothing to switch to: plain text, not a Tab stop that does nothing.
+		tabIndex={interactive ? undefined : -1}
+		role={interactive ? undefined : "none"}
 		className={cn(
 			"h-8 p-2",
 			interactive ? "data-[state=open]:bg-v2-bg-active data-[state=open]:text-v2-text-primary" : "pointer-events-none",
