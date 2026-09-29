@@ -87,7 +87,7 @@ export function HomeMovingForward({
 				</span>
 				<Link
 					href={orgRoutes.pipeline(orgId)}
-					className="flex shrink-0 items-center gap-1 font-medium text-v2-text-brand hover:underline"
+					className="-my-2 flex shrink-0 items-center gap-1 py-2 font-medium text-v2-text-brand hover:underline"
 				>
 					Open Pipeline <ArrowRight size={12} />
 				</Link>

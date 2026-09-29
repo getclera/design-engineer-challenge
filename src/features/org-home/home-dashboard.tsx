@@ -78,7 +78,7 @@ export function HomeDashboard({
 	const { feed: realFeed, roles: realRoles, readinessFor: realReadiness, isError, refetch } = useHome(orgId);
 	if (!realFeed || !realRoles)
 		return isError ? (
-			<Card className="flex flex-col items-center gap-3 px-6 py-10 text-center">
+			<Card role="alert" className="flex flex-col items-center gap-3 px-6 py-10 text-center">
 				<p className="font-v2-body text-sm text-v2-text-secondary">Couldn't load what's waiting on you.</p>
 				<Button variant="ghost" size="compact" onClick={() => refetch()}>
 					Try again
@@ -247,16 +247,17 @@ function WeekTiles({
 	const reviewHref = orgRoutes.review(orgId);
 	const { intro, maybe, pass } = feed.decidedThisWeek;
 	const maybes = feed.items.filter((i) => i.maybe).length;
-	const link = "text-v2-text-brand hover:underline";
+	// Inline, but with a 24px+ hit area.
+	const link = "-my-1.5 inline-block py-1.5 text-v2-text-brand hover:underline";
 	return (
 		<Card className="grid grid-cols-3 divide-x divide-v2-border-divider">
 			<Link href={reviewHref} className={`${TILE_CLASSES} transition-colors hover:bg-v2-bg-warm`}>
 				<TileValue label="Waiting on you" short="Waiting" value={waiting} />
-				<span className="font-v2-body text-v2-text-tertiary text-xs tabular-nums max-sm:hidden">{hint}</span>
+				<span className="font-v2-body text-v2-text-tertiary text-xs tabular-nums">{hint}</span>
 			</Link>
 			<div className={TILE_CLASSES}>
 				<TileValue label="You decided this week" short="Decided" value={intro + maybe + pass} />
-				<span className="font-v2-body text-v2-text-tertiary text-xs tabular-nums max-sm:hidden">
+				<span className="font-v2-body text-v2-text-tertiary text-xs tabular-nums">
 					{intro + maybe + pass === 0 ? (
 						"Nothing yet"
 					) : (
@@ -275,7 +276,7 @@ function WeekTiles({
 			</div>
 			<Link href={withView(reviewHref, "maybe")} className={`${TILE_CLASSES} transition-colors hover:bg-v2-bg-warm`}>
 				<TileValue label="Maybe" short="Maybe" value={maybes} />
-				<span className="font-v2-body text-v2-text-tertiary text-xs max-sm:hidden">
+				<span className="font-v2-body text-v2-text-tertiary text-xs">
 					{maybes > 0 ? "Parked. Decide whenever." : "No maybes yet"}
 				</span>
 			</Link>
@@ -382,7 +383,7 @@ function RolesCard({
 						)}
 						{fresh > 0 && <span className="text-v2-text-brand-green">+{fresh} new</span>}
 						{stages.length > 0 && <span>{stages.join(" · ")}</span>}
-						{count === 0 && !flag && <span>{emptyLabel}</span>}
+						{count === 0 && !flag && stages.length === 0 && <span>{emptyLabel}</span>}
 					</RoleRow>
 				);
 			})}
@@ -435,6 +436,7 @@ function RoleRow({
 			>
 				{count}
 				{plus && "+"}
+				<span className="sr-only"> waiting</span>
 			</span>
 			<CaretRight size={12} className="shrink-0 text-v2-text-tertiary" />
 		</Link>
@@ -446,7 +448,10 @@ function CardFooter({ href, action, children }: { href: string; action: string; 
 	return (
 		<div className="flex items-center gap-3 border-v2-border-divider border-t px-4 py-2.5 font-v2-body text-v2-text-tertiary text-xs max-lg:px-3">
 			<p className="min-w-0 flex-1 truncate">{children}</p>
-			<Link href={href} className="flex shrink-0 items-center gap-1 font-medium text-v2-text-brand hover:underline">
+			<Link
+				href={href}
+				className="-my-2 flex shrink-0 items-center gap-1 py-2 font-medium text-v2-text-brand hover:underline"
+			>
 				{action} <ArrowRight size={12} />
 			</Link>
 		</div>
@@ -455,7 +460,7 @@ function CardFooter({ href, action, children }: { href: string; action: string; 
 
 export function HomeDashboardSkeleton() {
 	return (
-		<div className="flex flex-col gap-4 max-lg:gap-3" aria-busy="true">
+		<div className="flex flex-col gap-4 max-lg:gap-3" role="status" aria-label="Loading Home" aria-busy="true">
 			<Skeleton className="h-20 w-full rounded-v2-lg" />
 			<div className="grid items-start gap-4 max-lg:gap-3 lg:grid-cols-[minmax(0,1.5fr)_minmax(18rem,1fr)]">
 				<div className="flex flex-col gap-4 max-lg:gap-3">

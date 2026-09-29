@@ -181,7 +181,7 @@ export function HomeNextMoves({
 					<button
 						type="button"
 						onClick={() => setAll((a) => !a)}
-						className="flex items-center gap-1 font-medium text-v2-text-brand hover:underline"
+						className="-my-2 flex items-center gap-1 py-2 font-medium text-v2-text-brand hover:underline"
 					>
 						{all ? "Show less" : "See all"} <ArrowRight size={12} />
 					</button>
@@ -345,7 +345,8 @@ function CaughtUpBlock({ orgId, week }: { orgId: string; week: CaughtUpWeek }) {
 					<button
 						type="button"
 						onClick={() => setReplay((r) => r + 1)}
-						className="shrink-0 font-v2-body text-2xs text-v2-text-brand hover:underline"
+						aria-label="Replay celebration"
+						className="-my-2 shrink-0 py-2 font-v2-body text-v2-text-brand text-xs hover:underline"
 					>
 						Replay
 					</button>
