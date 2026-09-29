@@ -604,9 +604,11 @@ function Progress({
 						type="button"
 						onClick={() => onPick(s.id)}
 						title={s.title}
+						// A mouse shortcut to a section; the section headers below are the keyboard path.
+						tabIndex={-1}
 						aria-label={`${s.title}: ${s.missing.length ? `${s.missing.length} missing` : "complete"}`}
 						className={cn(
-							"h-1.5 rounded-full transition-colors duration-300 hover:ring-2 hover:ring-v2-status-active/25 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-v2-brand-teal",
+							"relative h-1.5 rounded-full transition-colors duration-300 before:absolute before:-inset-y-2 hover:ring-2 hover:ring-v2-status-active/25 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-v2-brand-teal",
 							!s.missing.length
 								? "bg-v2-brand-green"
 								: s.partial

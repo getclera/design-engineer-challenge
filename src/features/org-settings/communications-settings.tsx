@@ -98,10 +98,10 @@ export function CommunicationsSettings({
 			onCheckedChange={(on) => tick(kind.key, channel, on === true)}
 			disabled={!canEdit || (channel === "slack" && !delivery.slackChannel)}
 			aria-label={`${kind.title} by ${CHANNEL_NAME[channel]}`}
-			className="size-4.5"
+			className="relative size-4.5 before:absolute before:-inset-1"
 		/>
 	);
-	const atsBox = (id?: string) => <Checkbox id={id} disabled aria-label="ATS not connected" className="size-4.5" />;
+	const atsBox = (id?: string) => <Checkbox id={id} disabled aria-label="ATS not connected" className="relative size-4.5 before:absolute before:-inset-1" />;
 	const slackTarget = delivery.slackChannel ? (
 		<span className="inline-flex items-center gap-1 text-v2-text-primary">
 			<Hash size={13} />
