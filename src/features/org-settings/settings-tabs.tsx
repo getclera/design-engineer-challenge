@@ -7,7 +7,6 @@ import { useIntroBlockers } from "@v2/features/company-contacts";
 import { cn } from "@v2/lib/utils";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useRef } from "react";
 import { organizations, unwrap } from "@/services/api";
 import { companyGaps } from "./company-profile";
 import { candidatesGoNowhere, type Delivery } from "./delivery";
@@ -66,21 +65,10 @@ export function SettingsTabs({ orgId }: { orgId: string }) {
 	] as const;
 	const current = tabs.find((tab) => pathname === tab.href);
 
-	// Phones: the tabs scroll sideways; keep the open one in view.
-	const nav = useRef<HTMLElement>(null);
-	useEffect(() => {
-		nav.current
-			?.querySelector<HTMLElement>("[aria-current=page]")
-			?.scrollIntoView({ block: "nearest", inline: "nearest" });
-	}, []);
-
 	return (
 		<div className="flex flex-col gap-4">
-			<nav
-				ref={nav}
-				aria-label="Settings"
-				className="-mt-1 flex gap-1 overflow-x-auto border-v2-border-divider border-b [scrollbar-width:none]"
-			>
+			{/* Phones: the tabs wrap to a second line rather than hide off-screen. */}
+			<nav aria-label="Settings" className="-mt-1 flex flex-wrap gap-x-1 border-v2-border-divider border-b">
 				{tabs.map((tab) => {
 					const on = tab === current;
 					return (
