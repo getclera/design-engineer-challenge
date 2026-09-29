@@ -24,6 +24,7 @@ import { Kbd } from "@v2/components/ui/kbd";
 import { Popover, PopoverContent, PopoverTrigger } from "@v2/components/ui/popover";
 import { Sheet, SheetContent, SheetTitle } from "@v2/components/ui/sheet";
 import { invalidateOrgDashboard, PHONE_SHEET_CLASSES, SheetGrabber } from "@v2/features/org-review";
+import { singleKeysOn } from "@v2/features/org-shared-cards";
 import { useMediaQuery } from "@v2/hooks/use-media-query";
 import { cn } from "@v2/lib/utils";
 import { motion, useReducedMotion } from "framer-motion";
@@ -99,7 +100,7 @@ export function HomeNextMoves({
 				return;
 			}
 			const step = numbered[Number(e.key) - 1];
-			if (!step || !canEdit) return;
+			if (!step || !canEdit || !singleKeysOn()) return;
 			e.preventDefault();
 			const href = linkFor(orgId, step);
 			if (href) router.push(href);
@@ -110,7 +111,11 @@ export function HomeNextMoves({
 	}, [numbered, reviewShown, open, orgId, reviewHref, router, canEdit]);
 
 	return (
-		<HomeCard title="Next moves" note={steps.length > SHOWN ? `${SHOWN} of ${steps.length}` : `${steps.length} to do`}>
+		<HomeCard
+			title="Next moves"
+			// Once caught up, what's left is optional: "to do" would contradict "you're all done".
+			note={steps.length > SHOWN ? `${SHOWN} of ${steps.length}` : `${steps.length} ${caughtUp ? "optional" : "to do"}`}
+		>
 			{!canEdit && <Lede>View only. Ask an owner to request intros.</Lede>}
 			{caughtUp && <CaughtUpBlock orgId={orgId} week={caughtUp} />}
 			{shown.map((step, i) => {
@@ -122,14 +127,15 @@ export function HomeNextMoves({
 						{group !== (i > 0 ? STEP_GROUP[shown[i - 1].kind] : 0) && (
 							<GroupBand
 								title={GROUP_LABEL[group]}
-								count={steps.filter((s) => STEP_GROUP[s.kind] === group).length}
+								// What this group shows; the footer's "+N more" and See all cover the rest.
+								count={shown.filter((s) => STEP_GROUP[s.kind] === group).length}
 								open={groups.isOpen(GROUP_KEY[group])}
 								onToggle={() => groups.toggle(GROUP_KEY[group])}
 								className="border-v2-border-divider border-t"
 							/>
 						)}
 						{isShown(step) && (
-							<StepRow step={step} rank={i + 1} primary={isPrimary}>
+							<StepRow step={step} primary={isPrimary}>
 								{step.kind === "review" ? (
 									<Button
 										asChild
@@ -241,12 +247,10 @@ const STEP_VIEW: { [K in NextStep["kind"]]: (s: Extract<NextStep, { kind: K }>) 
 
 function StepRow({
 	step,
-	rank,
 	primary,
 	children,
 }: {
 	step: NextStep;
-	rank: number;
 	primary: boolean;
 	children: ReactNode;
 }) {
@@ -258,7 +262,6 @@ function StepRow({
 				primary && "bg-gradient-to-r from-v2-status-success-bg to-transparent to-60%",
 			)}
 		>
-			<span className="w-4 shrink-0 text-center font-v2-body text-v2-text-tertiary text-xs tabular-nums">{rank}</span>
 			<span className={cn("grid size-8 shrink-0 place-items-center rounded-v2-md", TONE_CLASSES[tone])}>
 				<StepIcon size={16} />
 			</span>
