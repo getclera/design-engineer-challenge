@@ -18,7 +18,7 @@ import { type ContactOption, companyContacts, organizations, unwrap } from "@/se
 import { looksLikeUrl } from "./company-profile";
 import { focusField } from "./focus-field";
 import { trackSave, undoToast } from "./save-status";
-import { FIELD_CLASSES } from "./settings-fields";
+import { FIELD_CLASSES, FieldError } from "./settings-fields";
 import { firstName, fullName, plural, useFirstFocus } from "./people";
 import { MenuItem, SectionCard } from "./settings-fields";
 
@@ -293,6 +293,7 @@ function CalendarLinkField({
 						inputMode="url"
 						aria-label={`${name}'s booking link`}
 						aria-invalid={invalid || undefined}
+						aria-describedby={invalid ? `e-cal-${contact.id}` : undefined}
 						placeholder={`Paste ${name}'s booking link`}
 						className={cn(FIELD_CLASSES, "py-1.5")}
 					/>
@@ -301,14 +302,13 @@ function CalendarLinkField({
 					</Button>
 				</form>
 			)}
-			{invalid && (
-				<p role="alert" className="font-v2-body text-v2-status-error text-xs">
-					Paste a link, like cal.com/{name.toLowerCase()}
-				</p>
-			)}
+			<FieldError id={`e-cal-${contact.id}`}>{invalid ? `Paste a link, like cal.com/${name.toLowerCase()}` : undefined}</FieldError>
 		</div>
 	);
 }
+
+const NO_NAME = "Add their name";
+const BAD_EMAIL = "That doesn't look like an email address";
 
 function NewHiringManager({
 	orgId,
@@ -359,9 +359,16 @@ function NewHiringManager({
 			noValidate
 			onSubmit={(e) => {
 				e.preventDefault();
-				if (!name.trim()) return setProblem("Add their name");
-				if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim()))
-					return setProblem("That doesn't look like an email address");
+				// Say which field is wrong, and put the cursor there.
+				const field = e.currentTarget.elements;
+				if (!name.trim()) {
+					(field.namedItem("name") as HTMLInputElement | null)?.focus();
+					return setProblem(NO_NAME);
+				}
+				if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
+					(field.namedItem("email") as HTMLInputElement | null)?.focus();
+					return setProblem(BAD_EMAIL);
+				}
 				setProblem(null);
 				create.mutate();
 			}}
@@ -371,16 +378,24 @@ function NewHiringManager({
 				ref={first}
 				value={name}
 				onChange={(e) => setName(e.target.value)}
+				name="name"
 				placeholder="Full name"
 				aria-label="Full name"
+				aria-required="true"
+				aria-invalid={problem === NO_NAME || undefined}
+				aria-describedby={problem ? "e-new-contact" : undefined}
 				className={cn(FIELD_CLASSES, "bg-v2-bg-card")}
 			/>
 			<input
 				value={email}
 				onChange={(e) => setEmail(e.target.value)}
+				name="email"
 				type="email"
 				placeholder="Work email"
 				aria-label="Work email"
+				aria-required="true"
+				aria-invalid={problem === BAD_EMAIL || undefined}
+				aria-describedby={problem ? "e-new-contact" : undefined}
 				className={cn(FIELD_CLASSES, "bg-v2-bg-card")}
 			/>
 			<input
@@ -398,11 +413,9 @@ function NewHiringManager({
 					Cancel
 				</Button>
 			</div>
-			{problem && (
-				<p role="alert" className="font-v2-body text-v2-status-error text-xs md:col-span-4">
-					{problem}
-				</p>
-			)}
+			<div className="md:col-span-4">
+				<FieldError id="e-new-contact">{problem ?? undefined}</FieldError>
+			</div>
 		</form>
 	);
 }

@@ -11,7 +11,7 @@ import { toast } from "sonner";
 import { organizations, unwrap } from "@/services/api";
 import { invitationsKey, membersKey } from "./keys";
 import { trackSave, UNDO_MS, undoToast } from "./save-status";
-import { FIELD_CLASSES } from "./settings-fields";
+import { FIELD_CLASSES, FieldError } from "./settings-fields";
 import { type Invitation, type Member, fullName, plural, useFirstFocus } from "./people";
 import { MenuItem, SectionCard } from "./settings-fields";
 
@@ -354,11 +354,13 @@ function InviteRow({ orgId, onDone }: { orgId: string; onDone: () => void }) {
 				placeholder="name@company.com"
 				aria-label="Email"
 				aria-invalid={problem ? true : undefined}
+				aria-describedby={problem ? "e-invite" : undefined}
 				autoComplete="off"
 				className={cn(FIELD_CLASSES, "bg-v2-bg-card")}
 			/>
 			<fieldset
 				aria-label="Role"
+				aria-describedby="invite-role-note"
 				className="m-0 inline-flex min-w-0 rounded-v2-md border border-v2-border-divider bg-v2-bg-card p-0.5"
 			>
 				{(["viewer", "owner"] as const).map((option) => (
@@ -366,7 +368,6 @@ function InviteRow({ orgId, onDone }: { orgId: string; onDone: () => void }) {
 						key={option}
 						type="button"
 						aria-pressed={role === option}
-						title={ROLE_COPY[option][1]}
 						onClick={() => setRole(option)}
 						className={cn(
 							"rounded-v2-sm px-3 py-1 font-v2-body text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-v2-brand-teal",
@@ -380,11 +381,13 @@ function InviteRow({ orgId, onDone }: { orgId: string; onDone: () => void }) {
 			<Button type="submit" size="sm" disabled={invite.isPending} className="gap-1.5">
 				<PaperPlaneTilt size={14} weight="fill" /> Send invite
 			</Button>
-			{problem && (
-				<p role="alert" className="font-v2-body text-v2-status-error text-xs sm:col-span-3">
-					{problem}
-				</p>
-			)}
+			{/* What the chosen role can do, in view (it used to hide in a hover title). */}
+			<p id="invite-role-note" className="font-v2-body text-v2-text-tertiary text-xs sm:col-span-3">
+				{ROLE_COPY[role][0]}: {ROLE_COPY[role][1].toLowerCase()}.
+			</p>
+			<div className="sm:col-span-3">
+				<FieldError id="e-invite">{problem ?? undefined}</FieldError>
+			</div>
 		</form>
 	);
 }

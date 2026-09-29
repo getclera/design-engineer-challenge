@@ -25,7 +25,7 @@ import {
 import { deliveryKey } from "./keys";
 import type { MyProfile } from "./my-profile";
 import { trackSave, undoToast } from "./save-status";
-import { FIELD_CLASSES, FieldLabel, Switch } from "./settings-fields";
+import { FIELD_CLASSES, FieldError, FieldLabel, Switch } from "./settings-fields";
 import { useMyProfile, useSaveMyProfile } from "./use-my-profile";
 
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -365,17 +365,14 @@ function AddEmail({ onAdd }: { onAdd: (email: string) => string | null }) {
 					}}
 					placeholder="hiring@company.com"
 					aria-invalid={problem ? true : undefined}
+					aria-describedby={problem ? "e-new-email" : undefined}
 					className={FIELD_CLASSES}
 				/>
 				<Button type="submit" size="sm" className="h-auto shrink-0" disabled={!email.trim()}>
 					Add
 				</Button>
 			</div>
-			{problem && (
-				<p role="alert" className="font-v2-body text-v2-status-error text-xs">
-					{problem}
-				</p>
-			)}
+			<FieldError id="e-new-email">{problem ?? undefined}</FieldError>
 		</form>
 	);
 }

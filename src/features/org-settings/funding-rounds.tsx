@@ -6,7 +6,7 @@ import { cn } from "@v2/lib/utils";
 import { type FormEvent, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import type { CompanyProfile } from "./company-profile";
-import { FIELD_CLASSES } from "./settings-fields";
+import { FIELD_CLASSES, FieldError } from "./settings-fields";
 import type { useFundingRounds } from "./use-company-profile";
 
 export function FundingRounds({
@@ -20,11 +20,16 @@ export function FundingRounds({
 }) {
 	const [adding, setAdding] = useState(false);
 	const [problem, setProblem] = useState<string | null>(null);
+	const [bad, setBad] = useState<"round" | "amount" | null>(null);
 	const submit = (e: FormEvent<HTMLFormElement>) => {
 		e.preventDefault();
 		const data = Object.fromEntries(new FormData(e.currentTarget)) as Record<string, string>;
-		if (!data.round.trim()) return setProblem("Name the round, like Seed");
-		if (!data.amount.trim()) return setProblem("Add the amount, like $3M");
+		const missing = !data.round.trim() ? "round" : !data.amount.trim() ? "amount" : null;
+		setBad(missing);
+		if (missing) {
+			(e.currentTarget.elements.namedItem(missing) as HTMLInputElement | null)?.focus();
+			return setProblem(missing === "round" ? "Name the round, like Seed" : "Add the amount, like $3M");
+		}
 		setProblem(null);
 		funding.add.mutate(
 			{ round: data.round, amount: data.amount, date: data.date, investors: data.investors },
@@ -85,8 +90,8 @@ export function FundingRounds({
 						onSubmit={submit}
 						className="grid gap-2 rounded-v2-md bg-v2-bg-warm p-3 sm:grid-cols-[repeat(3,minmax(0,1fr))_auto]"
 					>
-						<RoundInput name="round" label="Round" placeholder="Seed" autoFocus />
-						<RoundInput name="amount" label="Amount" placeholder="$3M" />
+						<RoundInput name="round" label="Round" placeholder="Seed" autoFocus invalid={bad === "round"} />
+						<RoundInput name="amount" label="Amount" placeholder="$3M" invalid={bad === "amount"} />
 						<RoundInput name="date" label="Date" placeholder="Jan 2024" />
 						<div className="flex items-end gap-1.5">
 							<Button type="submit" size="sm" disabled={funding.add.isPending}>
@@ -97,13 +102,16 @@ export function FundingRounds({
 							</Button>
 						</div>
 						<div className="sm:col-span-4">
-							<RoundInput name="investors" label="Investors" placeholder="Separate with commas" />
+							<RoundInput
+								name="investors"
+								label="Investors"
+								hint="Separate with commas"
+								placeholder="Index Ventures, Seedcamp"
+							/>
 						</div>
-						{problem && (
-							<p role="alert" className="font-v2-body text-v2-status-error text-xs sm:col-span-4">
-								{problem}
-							</p>
-						)}
+						<div className="sm:col-span-4">
+							<FieldError id="e-round">{problem ?? undefined}</FieldError>
+						</div>
 					</form>
 				) : (
 					<Button variant="ghost" size="sm" className="gap-1.5 self-start" onClick={() => setAdding(true)}>
@@ -117,13 +125,18 @@ export function FundingRounds({
 export function RoundInput({
 	name,
 	label,
+	hint,
 	placeholder,
 	autoFocus,
+	invalid,
 }: {
 	name: string;
 	label: string;
+	/** Shown under the field, where it stays visible while typing (a placeholder would vanish). */
+	hint?: string;
 	placeholder: string;
 	autoFocus?: boolean;
+	invalid?: boolean;
 }) {
 	const ref = useRef<HTMLInputElement>(null);
 	// The form opens from a click on "Add round": the next thing is typing.
@@ -137,8 +150,11 @@ export function RoundInput({
 				ref={ref}
 				name={name}
 				placeholder={placeholder}
+				aria-invalid={invalid || undefined}
+				aria-describedby={invalid ? "e-round" : undefined}
 				className={cn(FIELD_CLASSES, "bg-v2-bg-card font-normal")}
 			/>
+			{hint && <span className="font-normal text-v2-text-tertiary">{hint}</span>}
 		</label>
 	);
 }
