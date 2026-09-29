@@ -90,10 +90,10 @@ export function ReviewCard({
 			footer={hasTags ? <div className="flex flex-wrap gap-1.5">{tags}</div> : undefined}
 		/>
 	);
-	// The card is itself a button, so Retry sits beside it rather than inside.
+	// The card is itself a button, so Try again sits beside it rather than inside.
 	const retry = failed && onRetry && (
 		<Button variant="ghost" size="compact" onClick={onRetry} className="absolute right-4 bottom-2.5">
-			Retry
+			Try again
 		</Button>
 	);
 

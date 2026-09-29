@@ -41,7 +41,7 @@ export function useReviewAction(orgId: string, roleId?: string, callbacks?: Revi
 	const queryClient = useQueryClient();
 	const posthog = usePostHog();
 	const [pendingKeys, setPendingKeys] = useState<Set<string>>(new Set());
-	// Decisions the server refused, kept so the list can offer Retry with the exact same request.
+	// Decisions the server refused, kept so the list can offer Try again with the exact same request.
 	const [failed, setFailed] = useState<Map<string, ReviewActionPayload>>(new Map());
 	const queryKey = orgDashboardKeys.review(orgId, roleId);
 
@@ -125,7 +125,7 @@ export function useReviewAction(orgId: string, roleId?: string, callbacks?: Revi
 				closeButton: true,
 				className: "",
 				style: {},
-				action: notOpen ? undefined : { label: "Retry", onClick: () => mutation.mutate(variables) },
+				action: notOpen ? undefined : { label: "Try again", onClick: () => mutation.mutate(variables) },
 			});
 		},
 		onSettled: (_data, _error, { item }) => {

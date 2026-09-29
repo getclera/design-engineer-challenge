@@ -40,7 +40,7 @@ export function useTalentDecisionKeyboard<TItem>({
 				return;
 			}
 			if (e.metaKey || e.ctrlKey || e.altKey) return;
-			// A focused control (filter, group header, Retry…) owns its keys; only the list rows and the card decide.
+			// A focused control (filter, group header, Try again…) owns its keys; only the list rows and the card decide.
 			const control = el instanceof Element ? el.closest(CONTROLS) : null;
 			if (control && !control.hasAttribute("data-board-key")) return;
 			if (isSingleKey(e) && !singleKeysOn()) return;

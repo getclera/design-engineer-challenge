@@ -164,7 +164,7 @@ function PdfViewer({
 							}}
 							variant="ghost"
 						>
-							Retry
+							Try again
 						</Button>
 						<Button onClick={() => globalThis.window.open(url, "_blank")} variant="ghost">
 							Open PDF in new tab

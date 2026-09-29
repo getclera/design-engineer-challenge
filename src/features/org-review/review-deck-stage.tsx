@@ -111,11 +111,11 @@ export function ReviewDeckStage({
 		) : (
 			<ReviewDecisionPopover orgId={orgId} disabled={decisionsInSheet}>
 				<div>
-					{/* Their decision didn't save: say so on the card itself, with the same Retry as the list. */}
+					{/* Their decision didn't save: say so on the card itself, with the same Try again as the list. */}
 					{board.isFailed(item) && (
 						<ErrorBanner
 							icon={<WarningCircle size={16} className="shrink-0" />}
-							action={{ label: "Retry", onClick: () => board.retry(item) }}
+							action={{ label: "Try again", onClick: () => board.retry(item) }}
 							className={cn("mb-2", !focus && "mx-4 mt-3")}
 						>
 							Not saved. Your decision on {item.talentName.split(" ")[0]} didn't go through.
