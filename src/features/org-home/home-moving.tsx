@@ -61,7 +61,7 @@ export function HomeMovingForward({
 							href={orgRoutes.pipeline(orgId, p.roleId)}
 							className="flex items-center gap-3 px-4 py-2.5 transition-colors hover:bg-v2-bg-warm max-lg:px-3"
 						>
-							<UserAvatar name={p.name} generated size="sm" />
+							<UserAvatar name={p.name} size="sm" />
 							<div className="min-w-0 flex-1">
 								<p className="truncate font-medium font-v2-body text-sm text-v2-text-primary">{p.name}</p>
 								<p className="truncate font-v2-body text-v2-text-tertiary text-xs">{p.roleName}</p>

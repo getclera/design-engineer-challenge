@@ -72,14 +72,12 @@ interface UserAvatarProps extends VariantProps<typeof avatarVariants> {
 	fallbackClassName?: string;
 	fallback?: React.ReactNode;
 	alt?: string;
-	/** Always the generated avatar, even when there's a photo (talents, so everyone looks consistent). */
-	generated?: boolean;
 }
 
 const FILL = { width: "100%", height: "100%" };
 
 const UserAvatar = React.forwardRef<HTMLSpanElement, UserAvatarProps>(
-	({ src, name, size, className, fallbackClassName, fallback, alt = "", generated = false }, ref) => {
+	({ src, name, size, className, fallbackClassName, fallback, alt = "" }, ref) => {
 		// No photo (or it failed): a generated dither avatar, stable per person, instead of grey initials.
 		const fallbackContent =
 			fallback ??
@@ -92,7 +90,7 @@ const UserAvatar = React.forwardRef<HTMLSpanElement, UserAvatarProps>(
 		const decorative = alt === "";
 		return (
 			<Avatar ref={ref} size={size} className={className}>
-				{src && !generated ? <AvatarImage src={src} alt={alt} /> : null}
+				{src ? <AvatarImage src={src} alt={alt} /> : null}
 				<AvatarFallback className={fallbackClassName} aria-hidden={decorative ? "true" : undefined}>
 					{fallbackContent}
 				</AvatarFallback>

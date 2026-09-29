@@ -9,7 +9,7 @@ export function ReviewNextUp({ item }: { item: ReviewItem }) {
 	return (
 		<div className="flex items-center gap-2 border-t border-v2-border-divider bg-v2-bg-warm px-4 py-2 font-v2-body text-v2-text-tertiary text-xs">
 			<span className="shrink-0">Next up</span>
-			<UserAvatar src={item.talentAvatarUrl} name={item.talentName} generated size="xs" className="shrink-0" />
+			<UserAvatar src={item.talentAvatarUrl} name={item.talentName} size="xs" className="shrink-0" />
 			<span className="min-w-0 truncate">
 				<b className="font-medium text-v2-text-primary">{item.talentName}</b> ·{" "}
 				{QUEUE_GROUP_TITLES[streamOf(item.bucket)]}

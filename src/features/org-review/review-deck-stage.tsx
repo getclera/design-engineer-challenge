@@ -158,7 +158,7 @@ export function ReviewDeckStage({
 						)}
 					>
 						<p className="flex h-6 items-center gap-2 px-4 font-v2-body text-v2-text-tertiary text-xs">
-							<UserAvatar src={peek.talentAvatarUrl} name={peek.talentName} generated size="xs" className="shrink-0" />
+							<UserAvatar src={peek.talentAvatarUrl} name={peek.talentName} size="xs" className="shrink-0" />
 							<span className="min-w-0 truncate">
 								<b className="font-medium text-v2-text-secondary">{peek.talentName}</b> ·{" "}
 								{QUEUE_GROUP_TITLES[streamOf(peek.bucket)]}

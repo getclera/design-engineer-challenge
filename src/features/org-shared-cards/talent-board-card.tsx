@@ -106,7 +106,6 @@ function TalentBoardCard({
 				<UserAvatar
 					src={hasEnteredViewport ? (item.avatarUrl ?? undefined) : undefined}
 					name={item.name}
-					generated
 					fallback={item.avatarFallback}
 					className={cn("shrink-0", isNameless ? "size-8" : "size-9")}
 				/>

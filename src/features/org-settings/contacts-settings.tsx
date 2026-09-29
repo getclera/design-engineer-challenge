@@ -198,7 +198,7 @@ function PersonPicker({
 		>
 			{current ? (
 				<>
-					<UserAvatar name={fullName(current)} generated size="xs" className="shrink-0" />
+					<UserAvatar name={fullName(current)} size="xs" className="shrink-0" />
 					<span className="truncate">{fullName(current)}</span>
 				</>
 			) : (
@@ -221,7 +221,7 @@ function PersonPicker({
 								setOpen(false);
 								onPick(contact);
 							}}
-							icon={<UserAvatar name={fullName(contact)} generated size="xs" />}
+							icon={<UserAvatar name={fullName(contact)} size="xs" />}
 							title={fullName(contact)}
 							sub={`${contact.title ?? contact.email}${contact.calendarLink ? "" : " · no calendar link"}`}
 						/>
