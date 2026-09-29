@@ -118,8 +118,13 @@ export function useReviewAction(orgId: string, roleId?: string, callbacks?: Revi
 			const message = notOpen
 				? "This candidate is not currently open to opportunities."
 				: FAILED_MESSAGE[variables.action](firstNameOf(variables.item));
+			// A failure stays until dismissed or retried (the countdown styling of the decision toast is dropped).
 			toast.error(message, {
 				id: context?.toastId,
+				duration: Number.POSITIVE_INFINITY,
+				closeButton: true,
+				className: "",
+				style: {},
 				action: notOpen ? undefined : { label: "Retry", onClick: () => mutation.mutate(variables) },
 			});
 		},
