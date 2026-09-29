@@ -2,8 +2,10 @@
 
 import { X } from "@phosphor-icons/react";
 import { Button } from "@v2/components/ui/button";
+import { Checkbox } from "@v2/components/ui/checkbox";
 import { Kbd } from "@v2/components/ui/kbd";
 import { Popover, PopoverContent, PopoverTrigger } from "@v2/components/ui/popover";
+import { setSingleKeys, useSingleKeys } from "@v2/features/org-shared-cards";
 import { useEffect, useState } from "react";
 
 const TIP_SEEN_KEY = "clera-review-keys-tip-seen";
@@ -47,6 +49,7 @@ interface ReviewShortcutsHelpProps {
 
 /** Round "?" in the deck's corner: all keyboard shortcuts, plus a one-time tip that they exist. */
 export function ReviewShortcutsHelp({ open, onOpenChange, canDecide }: ReviewShortcutsHelpProps) {
+	const singleKeys = useSingleKeys();
 	const [showTip, setShowTip] = useState(false);
 	useEffect(() => {
 		try {
@@ -114,6 +117,17 @@ export function ReviewShortcutsHelp({ open, onOpenChange, canDecide }: ReviewSho
 							</dl>
 						</section>
 					))}
+					<label className="mt-3 flex cursor-pointer items-start gap-2.5 border-v2-border-divider border-t pt-3 font-v2-body text-v2-text-body text-xs">
+						<Checkbox
+							checked={singleKeys}
+							onCheckedChange={(on) => setSingleKeys(on === true)}
+							className="mt-0.5"
+						/>
+						<span>
+							Letter and number keys (M, Z, L, ?, 1–9)
+							<span className="block text-v2-text-tertiary">Arrows, Enter and Esc always work.</span>
+						</span>
+					</label>
 				</PopoverContent>
 			</Popover>
 		</div>

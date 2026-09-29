@@ -1,5 +1,6 @@
 export { HELD_ACTION_WINDOW_MS, useHeldAction } from "./hooks/use-held-action";
 export { useTalentBoardOpen } from "./hooks/use-talent-board-open";
+export { setSingleKeys, singleKeysOn, useSingleKeys } from "./hooks/use-single-keys";
 export { useTalentDecisionKeyboard } from "./hooks/use-talent-decision-keyboard";
 export { TalentBoardCard } from "./talent-board-card";
 export { TalentBoardDetailPane } from "./talent-board-detail-pane";

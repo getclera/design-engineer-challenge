@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import { isSingleKey, singleKeysOn } from "./use-single-keys";
 
 const CONTROLS =
 	"button,a[href],select,summary,[role=button],[role=combobox],[role=option],[role=menuitem],[role=menuitemradio],[role=tab],[role=checkbox],[role=switch]";
@@ -42,6 +43,7 @@ export function useTalentDecisionKeyboard<TItem>({
 			// A focused control (filter, group header, Retry…) owns its keys; only the list rows and the card decide.
 			const control = el instanceof Element ? el.closest(CONTROLS) : null;
 			if (control && !control.hasAttribute("data-board-key")) return;
+			if (isSingleKey(e) && !singleKeysOn()) return;
 			if (onKey?.(e.key)) {
 				e.preventDefault();
 				return;

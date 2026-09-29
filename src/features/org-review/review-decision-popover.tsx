@@ -7,6 +7,7 @@ import { Kbd } from "@v2/components/ui/kbd";
 import { Popover, PopoverAnchor, PopoverContent } from "@v2/components/ui/popover";
 import { Sheet, SheetContent, SheetTitle } from "@v2/components/ui/sheet";
 import { useRolesList } from "@v2/features/org-roles";
+import { singleKeysOn } from "@v2/features/org-shared-cards";
 import { INTRO_DECISION_CATEGORIES, PASS_DECISION_CATEGORIES } from "@v2/features/org-shared-modals";
 import { useMediaQuery } from "@v2/hooks/use-media-query";
 import { cn } from "@v2/lib/utils";
@@ -235,7 +236,7 @@ function DecisionOptions({
 			} else if (e.key === "ArrowLeft" || e.key === "ArrowRight") {
 				e.preventDefault();
 				onClose();
-			} else if (digit >= 1 && digit <= options.length) {
+			} else if (digit >= 1 && digit <= options.length && singleKeysOn()) {
 				e.preventDefault();
 				onChoose(options[digit - 1]);
 			} else if (withText && e.key.length === 1) {
