@@ -466,7 +466,7 @@ function MessagePreview({ delivery }: { delivery: Delivery }) {
 	);
 	return (
 		<Card className="font-v2-body">
-			<div role="tablist" aria-label="Preview" className="flex gap-0.5 border-v2-border-divider border-b p-1">
+			<div role="group" aria-label="Preview" className="flex gap-0.5 border-v2-border-divider border-b p-1">
 				{(
 					[
 						["email", "Email", EnvelopeSimple],
@@ -476,8 +476,7 @@ function MessagePreview({ delivery }: { delivery: Delivery }) {
 					<button
 						key={key}
 						type="button"
-						role="tab"
-						aria-selected={tab === key}
+						aria-pressed={tab === key}
 						onClick={() => setTab(key)}
 						className={cn(
 							"flex flex-1 items-center justify-center gap-1.5 rounded-v2-md py-1.5 text-xs transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-v2-brand-teal",

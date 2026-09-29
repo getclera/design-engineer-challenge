@@ -256,10 +256,9 @@ export function MenuItem({
 	return (
 		<button
 			type="button"
-			role="menuitemradio"
-			aria-checked={!!selected}
+			aria-pressed={!!selected}
 			onClick={onSelect}
-			className="flex w-full items-center gap-2.5 rounded-v2-sm px-2 py-1.5 text-left transition-colors hover:bg-v2-bg-input-solid focus-visible:bg-v2-bg-input-solid focus-visible:outline-none"
+			className="flex w-full items-center gap-2.5 rounded-v2-sm px-2 py-1.5 text-left transition-colors focus-ring hover:bg-v2-bg-input-solid focus-visible:bg-v2-bg-input-solid"
 		>
 			<span className="shrink-0">{icon}</span>
 			<span className="min-w-0 flex-1">

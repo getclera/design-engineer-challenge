@@ -185,6 +185,7 @@ export function People({
 							</div>
 							<div className="max-sm:col-span-2 max-sm:row-start-2">
 								<RolePicker
+									label={`Role for ${fullName(member)}`}
 									value={member.role}
 									disabled={!canEdit || lastOwner}
 									onChange={(role) => changeRole(member, role)}
@@ -267,10 +268,12 @@ function SentAgo({ at }: { at: string }) {
 }
 
 function RolePicker({
+	label,
 	value,
 	disabled,
 	onChange,
 }: {
+	label: string;
 	value: Member["role"];
 	disabled: boolean;
 	onChange: (role: Member["role"]) => void;
@@ -280,6 +283,7 @@ function RolePicker({
 		<button
 			type="button"
 			disabled={disabled}
+			aria-label={`${label}: ${ROLE_COPY[value][0]}`}
 			className="inline-flex items-center gap-1.5 rounded-v2-md border border-v2-border-divider bg-v2-bg-card px-2.5 py-1 font-v2-body text-sm transition-colors hover:border-v2-border-default focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-v2-brand-teal disabled:cursor-default disabled:text-v2-text-secondary disabled:hover:border-v2-border-divider"
 		>
 			{ROLE_COPY[value][0]}
@@ -291,7 +295,7 @@ function RolePicker({
 		<Popover open={open} onOpenChange={setOpen}>
 			<PopoverTrigger asChild>{trigger}</PopoverTrigger>
 			<PopoverContent align="start" tone="grey" className="w-60 p-1">
-				<div role="menu" aria-label="Role">
+				<div role="group" aria-label={label}>
 					{(["owner", "viewer"] as const).map((role) => (
 						<MenuItem
 							key={role}

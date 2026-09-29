@@ -107,6 +107,7 @@ export function HiringManagers({ orgId, canEdit }: { orgId: string; canEdit: boo
 							</div>
 							<div data-field="hm" data-scope={role.id} className="min-w-0 rounded-v2-md">
 								<PersonPicker
+									label={`Hiring manager for ${role.position}`}
 									contacts={contacts}
 									current={hm}
 									disabled={!canEdit || paused}
@@ -164,12 +165,15 @@ function Missing({ children }: { children: ReactNode }) {
 }
 
 function PersonPicker({
+	label,
 	contacts,
 	current,
 	disabled,
 	onPick,
 	onAddNew,
 }: {
+	/** Names the row, so a screen reader hears whose hiring manager this is. */
+	label: string;
 	contacts: ContactOption[];
 	current: ContactOption | null;
 	disabled: boolean;
@@ -181,6 +185,7 @@ function PersonPicker({
 		<button
 			type="button"
 			disabled={disabled}
+			aria-label={`${label}: ${current ? fullName(current) : "choose someone"}`}
 			className="inline-flex max-w-full items-center gap-2 rounded-v2-md border border-v2-border-divider bg-v2-bg-card py-1 pr-2 pl-1 font-v2-body text-sm transition-colors hover:border-v2-border-default focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-v2-brand-teal disabled:cursor-default disabled:hover:border-v2-border-divider"
 		>
 			{current ? (
@@ -199,7 +204,7 @@ function PersonPicker({
 		<Popover open={open} onOpenChange={setOpen}>
 			<PopoverTrigger asChild>{trigger}</PopoverTrigger>
 			<PopoverContent align="start" tone="grey" className="w-64 p-1">
-				<div role="menu" aria-label="Hiring manager">
+				<div role="group" aria-label={label}>
 					{contacts.map((contact) => (
 						<MenuItem
 							key={contact.id}
