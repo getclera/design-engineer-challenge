@@ -34,7 +34,8 @@ export function HomeFirstDrop({ drop, roleName }: { drop: NextDrop; roleName: st
 					className="absolute inset-0 rounded-full"
 					style={{ background: "conic-gradient(from 0deg, transparent 0 280deg, rgba(3,147,101,0.5) 360deg)" }}
 					animate={reduced ? undefined : { rotate: 360 }}
-					transition={{ duration: 2.8, ease: "linear", repeat: Number.POSITIVE_INFINITY }}
+					// Two sweeps (under 5s), then it rests: no endless motion next to text (WCAG 2.2.2).
+					transition={{ duration: 2.4, ease: "linear", repeat: 1 }}
 				/>
 			</span>
 			<div className="min-w-0 flex-1">
@@ -42,7 +43,7 @@ export function HomeFirstDrop({ drop, roleName }: { drop: NextDrop; roleName: st
 					<motion.span
 						className="size-1.5 rounded-full bg-v2-brand-green"
 						animate={reduced ? undefined : { opacity: [1, 0.35, 1], scale: [1, 0.7, 1] }}
-						transition={{ duration: 1.6, repeat: Number.POSITIVE_INFINITY }}
+						transition={{ duration: 1.6, repeat: 2 }}
 					/>
 					<b className="font-medium text-v2-text-secondary">Searching for you</b>
 				</p>
