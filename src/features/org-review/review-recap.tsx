@@ -31,9 +31,9 @@ export function ReviewRecap({ roleName, moreComing, tally, decisions, onReviewMa
 
 	return (
 		<div className="flex flex-col items-center">
-			<h3 className="text-balance font-v2-heading text-v2-text-primary text-xl">
+			<h2 className="text-balance font-v2-heading text-v2-text-primary text-xl">
 				{moreComing ? "This batch is done" : `All caught up${roleName ? ` for ${roleName}` : ""}`}
-			</h3>
+			</h2>
 			{moreComing && (
 				<p className="mt-1 font-v2-body text-sm text-v2-text-secondary">More candidates are on the way.</p>
 			)}

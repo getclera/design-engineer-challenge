@@ -70,6 +70,7 @@ export function ReviewScoreboard({ left, truncated, tally }: ReviewScoreboardPro
 				role="progressbar"
 				aria-label="Review progress"
 				aria-valuenow={done}
+				aria-valuetext={`${done} of ${total} reviewed`}
 				aria-valuemin={0}
 				aria-valuemax={total}
 				className="flex h-2 gap-0.5"
