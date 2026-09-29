@@ -384,6 +384,7 @@
 	--color-v2-border-warm-soft: var(--v2-border-warm-soft);
 	--color-v2-border-default: var(--v2-border-default);
 	--color-v2-border-medium: var(--v2-border-medium);
+	--color-v2-border-control: var(--v2-border-control);
 	--color-v2-border-divider: var(--v2-border-divider);
 	--color-v2-border-active: var(--v2-border-active);
 
@@ -650,6 +651,8 @@
 	--v2-border-warm-soft: rgba(224, 202, 197, 0.3);
 	--v2-border-default: #d3d3d3;
 	--v2-border-medium: #bcbcbc;
+	/* Edges of inputs, checkboxes and the off switch: 3:1 against white and the page (WCAG 1.4.11). */
+	--v2-border-control: #8a8a8a;
 	--v2-border-divider: #e9e9e9;
 	--v2-border-active: #c2d6cd;
 
@@ -772,6 +775,7 @@
 	--v2-status-neutral-bg: rgba(107, 114, 128, 0.15);
 	--v2-border-default: #4a4a4a;
 	--v2-border-medium: #4a4a4a;
+	--v2-border-control: #828282;
 
 	/* Chart palette */
 	--v2-chart-1: #60a5fa;

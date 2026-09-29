@@ -12,7 +12,7 @@ import { undoToast } from "./save-status";
  * 16px on phones, or iOS zooms the page when a field gets focus.
  */
 export const FIELD_CLASSES =
-	"w-full rounded-v2-md border border-transparent bg-v2-bg-input-solid px-3 py-2 font-v2-body text-sm text-v2-text-body outline-none max-sm:text-base transition-[border-color,background-color,box-shadow] placeholder:text-v2-text-muted hover:border-v2-border-divider focus:border-v2-status-active focus:bg-v2-bg-card focus:ring-3 focus:ring-v2-status-active/15 read-only:cursor-default read-only:hover:border-transparent aria-invalid:border-v2-status-error";
+	"w-full rounded-v2-md border border-v2-border-control bg-v2-bg-input-solid px-3 py-2 font-v2-body text-sm text-v2-text-body outline-none max-sm:text-base transition-[border-color,background-color,box-shadow] placeholder:text-v2-text-muted hover:border-v2-text-tertiary focus:border-v2-status-active focus:bg-v2-bg-card focus:ring-3 focus:ring-v2-status-active/15 read-only:cursor-default read-only:border-transparent aria-invalid:border-v2-status-error";
 
 /** Label row: the label, an optional note on the right, and a brief "Saved" after each save. */
 export function FieldLabel({
@@ -198,7 +198,7 @@ export function Switch({
 			onClick={() => onChange(!checked)}
 			className={cn(
 				"relative h-6 w-10 shrink-0 rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-v2-brand-teal focus-visible:ring-offset-2 disabled:cursor-default disabled:opacity-50",
-				checked ? "bg-v2-brand-green" : "bg-v2-border-default",
+				checked ? "bg-v2-brand-green" : "bg-v2-border-control",
 			)}
 		>
 			<span
