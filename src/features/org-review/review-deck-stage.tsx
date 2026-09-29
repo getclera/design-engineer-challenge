@@ -182,6 +182,8 @@ export function ReviewDeckStage({
 							}, 300);
 						}}
 						tabIndex={-1}
+						// A named group, so a screen reader says who is next when focus lands here.
+						role="group"
 						aria-label={item?.talentName}
 						custom={board.lastMove}
 						variants={reduceMotion ? fadeMotion : focus ? focusCardMotion : cardMotion}
@@ -189,7 +191,8 @@ export function ReviewDeckStage({
 						animate="animate"
 						exit="exit"
 						transition={{ duration: 0.22, ease: [0.2, 0.8, 0.2, 1] }}
-						drag={swipe && canDecide && !!item}
+						// Full profile scrolls, so it only drags sideways there (a free drag blocks touch scrolling).
+						drag={swipe && canDecide && !!item ? (expanded ? "x" : true) : false}
 						dragSnapToOrigin
 						onDrag={(_, { offset }) => {
 							dragX.set(offset.x);
@@ -275,7 +278,7 @@ export function ReviewDeckStage({
 														size="unstyled"
 														aria-expanded={expanded}
 														onClick={() => onExpandedChange(!expanded)}
-														className="focus-ring flex items-center gap-1.5 rounded-v2-sm font-v2-body font-medium text-v2-text-brand text-xs"
+														className="focus-ring flex min-h-6 items-center gap-1.5 rounded-v2-sm font-v2-body font-medium text-v2-text-brand text-xs"
 													>
 														{expanded ? <ArrowsInSimple size={14} /> : <ArrowsOutSimple size={14} />}
 														Full profile
