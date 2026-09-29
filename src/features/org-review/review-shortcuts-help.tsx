@@ -124,8 +124,10 @@ export function ReviewShortcutsHelp({ open, onOpenChange, canDecide }: ReviewSho
 							className="mt-0.5"
 						/>
 						<span>
-							Letter and number keys (M, Z, L, ?, 1–9)
-							<span className="block text-v2-text-tertiary">Arrows, Enter and Esc always work.</span>
+							Letter and number keys
+							<span className="block text-v2-text-tertiary">
+								M, Z, L, ? and <span className="whitespace-nowrap">1–9</span>. Arrows, Enter and Esc always work.
+							</span>
 						</span>
 					</label>
 				</PopoverContent>
