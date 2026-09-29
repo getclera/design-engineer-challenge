@@ -44,7 +44,7 @@ export function useAutosave<T extends object>(
 		waiting.current.delete(field);
 		markDirty(field, false);
 		try {
-			await trackSave(latest.current.patch({ [field]: value } as Partial<T>));
+			await trackSave(latest.current.patch({ [field]: value } as Partial<T>), field);
 			setErrors(({ [field]: _, ...rest }) => rest as Partial<Record<K, string>>);
 			setSavedAt((s) => ({ ...s, [field]: Date.now() }));
 			latest.current.onSaved?.();

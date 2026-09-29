@@ -66,6 +66,7 @@ export function ProfileSettings({ orgId, companyName }: { orgId: string; company
 								placeholder="Jane Doe"
 								autoComplete="name"
 								aria-invalid={errors.name ? true : undefined}
+								aria-describedby={errors.name ? "e-me-name" : undefined}
 								className={FIELD_CLASSES}
 							/>
 							<FieldError id="e-me-name">{errors.name}</FieldError>
@@ -80,8 +81,11 @@ export function ProfileSettings({ orgId, companyName }: { orgId: string; company
 								onChange={(e) => save("title", e.target.value)}
 								placeholder="e.g. CTO"
 								autoComplete="organization-title"
+								aria-invalid={errors.title ? true : undefined}
+								aria-describedby={errors.title ? "e-me-title" : undefined}
 								className={FIELD_CLASSES}
 							/>
+							<FieldError id="e-me-title">{errors.title}</FieldError>
 						</div>
 						<div className="flex flex-col gap-1.5">
 							<FieldLabel htmlFor="f-me-email">Email</FieldLabel>

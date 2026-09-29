@@ -8,7 +8,7 @@ import { ErrorBanner } from "@v2/components/ui/error-banner";
 import { Textarea } from "@v2/components/ui/textarea";
 import { cn } from "@v2/lib/utils";
 import { motion, useReducedMotion } from "framer-motion";
-import { type ReactNode, useEffect, useRef, useState } from "react";
+import { createContext, type ReactNode, useContext, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { CompanyCandidateCard } from "./company-card";
 import {
@@ -184,6 +184,8 @@ export function CompanySettings({
 			readOnly={readOnly}
 			value={profile[field]}
 			onChange={(e) => edit(field, e.target.value)}
+			aria-invalid={errors[field] ? true : undefined}
+			aria-describedby={errors[field] ? `e-${field}` : undefined}
 			placeholder={placeholder}
 			className={cn(
 				FIELD_CLASSES,
@@ -209,7 +211,6 @@ export function CompanySettings({
 		<Row key={field} field={field} full={field === "jobs"}>
 			{label(field, title)}
 			<input {...text(field)} type="url" inputMode="url" placeholder={placeholder} />
-			<FieldError id={`e-${field}`}>{errors[field]}</FieldError>
 			{hint && <p className="font-v2-body text-v2-text-tertiary text-xs">{hint}</p>}
 		</Row>
 	);
@@ -246,7 +247,6 @@ export function CompanySettings({
 						</>,
 					)}
 					<input {...text("name")} placeholder="Company name" />
-					<FieldError id="e-name">{errors.name}</FieldError>
 				</Row>
 				<Row field="pitch" full>
 					{label("pitch", "Description", `${profile.pitch.length}/${PITCH_MAX}`)}
@@ -288,7 +288,6 @@ export function CompanySettings({
 						placeholder="e.g. 2021"
 						className={cn(FIELD_CLASSES, "tabular-nums")}
 					/>
-					<FieldError id="e-founded">{errors.founded}</FieldError>
 				</Row>
 				<Row field="stage">
 					{label("stage", "Last funding round")}
@@ -464,7 +463,9 @@ export function CompanySettings({
 									</AccordionTrigger>
 									<AccordionContent variant="card">
 										<p className="mb-4 text-pretty font-v2-body text-v2-text-tertiary text-xs">{section.description}</p>
-										<div className="grid gap-4 sm:grid-cols-2">{BODY[section.id]}</div>
+										<FieldErrors.Provider value={errors}>
+											<div className="grid gap-4 sm:grid-cols-2">{BODY[section.id]}</div>
+										</FieldErrors.Provider>
 										{canEdit && next && (
 											<div className="mt-4 flex justify-end">
 												<Button variant="ghost" size="sm" className="gap-1.5" onClick={() => openSection(next)}>
@@ -503,10 +504,15 @@ export function CompanySettings({
 
 CompanySettings.displayName = "CompanySettings";
 
+// Every autosaved field shows its own save error, so a failed change never hides behind a later success.
+const FieldErrors = createContext<Partial<Record<string, string>>>({});
+
 function Row({ field, full, children }: { field: Field; full?: boolean; children: ReactNode }) {
+	const error = useContext(FieldErrors)[field];
 	return (
 		<div data-field={field} className={cn("flex min-w-0 flex-col gap-1.5 rounded-v2-md", full && "sm:col-span-2")}>
 			{children}
+			<FieldError id={`e-${field}`}>{error}</FieldError>
 		</div>
 	);
 }
