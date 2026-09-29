@@ -8,7 +8,7 @@ import { useTalentBoardOpen, useTalentDecisionKeyboard } from "@v2/features/org-
 import { prefetchOrgTalentProfile } from "@v2/features/org-talent-profile";
 import { useMediaQuery } from "@v2/hooks/use-media-query";
 import { usePersistFilterParams } from "@v2/hooks/use-persisted-search";
-import { CaretRight, Cards, Coffee, SidebarSimple } from "@phosphor-icons/react";
+import { CaretRight, Cards, SidebarSimple, WarningCircle } from "@phosphor-icons/react";
 import { Button } from "@v2/components/ui/button";
 import { cn } from "@v2/lib/utils";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -329,12 +329,12 @@ export function ReviewBoard({
 						{board.loadFailed ? (
 							<EmptyState
 								live
-								icon={<Coffee />}
-								heading="Our server is on a coffee break"
-								description="Your candidates are safe and nothing you decided is lost. We'll try again on our own."
+								icon={<WarningCircle />}
+								heading="Couldn't load candidates"
+								description="Nothing you decided is lost."
 								actions={
 									<Button variant="ghost" onClick={() => board.retryLoad()}>
-										Try now
+										Try again
 									</Button>
 								}
 							/>
