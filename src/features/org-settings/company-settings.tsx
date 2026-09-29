@@ -439,23 +439,42 @@ export function CompanySettings({
 									variant="card"
 									className="scroll-mt-4 rounded-v2-lg shadow-v2-card data-[state=open]:shadow-v2-content"
 								>
-									<AccordionTrigger variant="card" className="md:py-3.5">
+									<AccordionTrigger
+										variant="card"
+										level={2}
+										// The heading reads as its title; summary and status come after, as a description.
+										aria-labelledby={`sec-t-${section.id}`}
+										aria-describedby={`sec-m-${section.id} sec-s-${section.id}`}
+										className="md:py-3.5"
+									>
 										<span className="grid min-w-0 flex-1 grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-x-2.5 gap-y-0.5 sm:grid-cols-[auto_auto_minmax(0,1fr)_auto]">
 											<Dot full={!state.missing.length} partial={state.partial} />
-											<span className="whitespace-nowrap font-medium font-v2-heading text-base text-v2-text-primary">
+											<span
+												id={`sec-t-${section.id}`}
+												className="whitespace-nowrap font-medium font-v2-heading text-base text-v2-text-primary"
+											>
 												{section.title}
 											</span>
-											<span className="truncate font-normal font-v2-body text-v2-text-tertiary text-xs max-sm:col-start-2 max-sm:row-start-2">
+											<span
+												id={`sec-s-${section.id}`}
+												className="truncate font-normal font-v2-body text-v2-text-tertiary text-xs max-sm:col-start-2 max-sm:row-start-2"
+											>
 												{SUMMARY[section.id](profile)}
 											</span>
 											{state.missing.length ? (
-												<span className="whitespace-nowrap font-medium font-v2-body text-v2-status-warning text-xs">
+												<span
+													id={`sec-m-${section.id}`}
+													className="whitespace-nowrap font-medium font-v2-body text-v2-status-warning text-xs"
+												>
 													{state.missing.length === 1
 														? `${state.missing[0]} missing`
 														: `${state.missing.length} missing`}
 												</span>
 											) : (
-												<span className="inline-flex items-center gap-1 whitespace-nowrap font-medium font-v2-body text-v2-text-brand-green text-xs">
+												<span
+													id={`sec-m-${section.id}`}
+													className="inline-flex items-center gap-1 whitespace-nowrap font-medium font-v2-body text-v2-text-brand-green text-xs"
+												>
 													<Check size={12} weight="bold" /> Done
 												</span>
 											)}

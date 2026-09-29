@@ -28,39 +28,48 @@ AccordionItem.displayName = "AccordionItem";
 
 const AccordionTrigger = React.forwardRef<
 	React.ElementRef<typeof AccordionPrimitive.Trigger>,
-	React.ComponentPropsWithoutRef<typeof AccordionPrimitive.Trigger> & { variant?: AccordionVariant }
->(({ className, variant = "default", children, ...props }, ref) => (
-	<AccordionPrimitive.Header className="flex">
-		<AccordionPrimitive.Trigger
-			ref={ref}
-			className={cn(
-				"flex flex-1 cursor-pointer items-center justify-between text-left",
-				"transition-all [&[data-state=open]>svg]:rotate-180",
-				variant === "card"
-					? [
-							"min-h-11 gap-3 px-4 py-3 md:px-5 md:py-4",
-							"font-v2-body text-base font-medium text-v2-text-primary",
-							"hover:bg-v2-bg-active",
-							"focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-v2-brand-teal focus-visible:ring-inset",
-						]
-					: [
-							"py-5 font-v2-body text-lg font-normal text-v2-text-primary",
-							"focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-v2-brand-teal focus-visible:ring-offset-2",
-						],
-				className,
-			)}
-			{...props}
-		>
-			{children}
-			<CaretDown
-				className={cn(
-					"size-4 shrink-0 transition-transform duration-200",
-					variant === "card" ? "text-v2-text-secondary" : "text-v2-text-muted",
-				)}
-			/>
-		</AccordionPrimitive.Trigger>
-	</AccordionPrimitive.Header>
-));
+	React.ComponentPropsWithoutRef<typeof AccordionPrimitive.Trigger> & {
+		variant?: AccordionVariant;
+		/** The heading level around the trigger, so the page outline doesn't skip (h1 then h3). */
+		level?: 2 | 3 | 4;
+	}
+>(({ className, variant = "default", level = 3, children, ...props }, ref) => {
+	const Heading = `h${level}` as const;
+	return (
+		<AccordionPrimitive.Header asChild>
+			<Heading className="flex">
+				<AccordionPrimitive.Trigger
+					ref={ref}
+					className={cn(
+						"flex flex-1 cursor-pointer items-center justify-between text-left",
+						"transition-all [&[data-state=open]>svg]:rotate-180",
+						variant === "card"
+							? [
+									"min-h-11 gap-3 px-4 py-3 md:px-5 md:py-4",
+									"font-v2-body text-base font-medium text-v2-text-primary",
+									"hover:bg-v2-bg-active",
+									"focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-v2-brand-teal focus-visible:ring-inset",
+								]
+							: [
+									"py-5 font-v2-body text-lg font-normal text-v2-text-primary",
+									"focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-v2-brand-teal focus-visible:ring-offset-2",
+								],
+						className,
+					)}
+					{...props}
+				>
+					{children}
+					<CaretDown
+						className={cn(
+							"size-4 shrink-0 transition-transform duration-200",
+							variant === "card" ? "text-v2-text-secondary" : "text-v2-text-muted",
+						)}
+					/>
+				</AccordionPrimitive.Trigger>
+			</Heading>
+		</AccordionPrimitive.Header>
+	);
+});
 AccordionTrigger.displayName = "AccordionTrigger";
 
 const AccordionContent = React.forwardRef<
