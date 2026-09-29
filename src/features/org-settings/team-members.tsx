@@ -172,6 +172,7 @@ export function People({
 								<UserAvatar
 									name={fullName(member)}
 									src={member.avatarUrl}
+									generated={!member.avatarUrl}
 									size="sm"
 									className="shrink-0"
 								/>

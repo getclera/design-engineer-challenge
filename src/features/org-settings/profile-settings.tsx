@@ -43,6 +43,7 @@ export function ProfileSettings({ orgId, companyName }: { orgId: string; company
 							<UserAvatar
 								name={me.name || me.email}
 								src={me.avatarUrl}
+								generated={!me.avatarUrl}
 								size="lg"
 								className="size-16"
 							/>
@@ -295,7 +296,7 @@ function IntroPreview({ me, companyName }: { me: MyProfile; companyName: string 
 				<span className="text-v2-text-muted italic">No calendar link: no booking button</span>
 			)}
 			<div className="flex items-center gap-2.5 border-v2-border-divider border-t pt-2.5">
-				<UserAvatar name={me.name || me.email} src={me.avatarUrl} size="sm" />
+				<UserAvatar name={me.name || me.email} src={me.avatarUrl} generated={!me.avatarUrl} size="sm" />
 				<div className="min-w-0">
 					<p className="truncate font-medium text-sm text-v2-text-primary">
 						{me.name || <span className="text-v2-text-muted italic">Your name</span>}

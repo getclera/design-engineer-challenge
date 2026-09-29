@@ -276,6 +276,7 @@ function StepRow({
 								<UserAvatar
 									key={`${i.talentId}:${i.roleId}`}
 									name={i.talentName}
+									generated
 									size="xs"
 									className="-ml-1.5 border-2 border-v2-bg-card first:ml-0"
 								/>
