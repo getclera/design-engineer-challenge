@@ -12,7 +12,6 @@ const DAY_MS = 86_400_000;
 // A few decisions from earlier this week, so Home's "you decided this week" isn't empty on a fresh start.
 // Nobody who asked to meet is among them: they're the ones Home asks you to answer.
 const DECIDED_EARLIER: { name: string; roleId: string; action: DecisionAction; daysAgo: number }[] = [
-  { name: "Noah Becker", roleId: ROLE_IDS.backend, action: "interview", daysAgo: 0.5 },
   { name: "Aiko Morimoto", roleId: ROLE_IDS.ml, action: "interview", daysAgo: 0.3 },
   { name: "Prince", roleId: ROLE_IDS.backend, action: "pass", daysAgo: 2 },
   { name: "Lukas Hoffmann", roleId: ROLE_IDS.design, action: "pass", daysAgo: 4 },
