@@ -39,7 +39,7 @@ test("sections follow runs, similar picks get their own", () => {
 		sections.map((s) => [s.title, s.items.length]),
 		[
 			["Similar to Mara", 1],
-			["Expressed interest", 1],
+			["Asked to meet you", 1],
 			["We think it's a match", 1],
 		],
 	);

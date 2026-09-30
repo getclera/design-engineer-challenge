@@ -16,7 +16,7 @@ interface GroupBandProps {
 	className?: string;
 }
 
-/** A list's group header ("Expressed interest · 4") that opens and closes its rows. */
+/** A list's group header ("Asked to meet you · 4") that opens and closes its rows. */
 export function GroupBand({ title, count, open, onToggle, sticky = false, controls, className }: GroupBandProps) {
 	return (
 		<button

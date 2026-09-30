@@ -26,7 +26,7 @@ export const STREAM_CONFIG = {
 		className: "bg-v2-status-info/10 text-v2-status-info",
 	},
 	interest: {
-		label: "Expressed interest",
+		label: "Asked to meet you",
 		tooltip: "This candidate saw the role and told us they want to work with you.",
 		icon: Star,
 		iconClassName: "text-v2-status-warning",
