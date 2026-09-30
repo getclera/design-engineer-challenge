@@ -4,7 +4,7 @@ import { OrgDashboardEvents } from "@clera/posthog-events";
 import { TALENT_NOT_OPEN_ERROR } from "@clera/shared-types";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { usePostHog } from "posthog-js/react/slim";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { toast } from "sonner";
 import { orgDashboardKeys } from "@/lib/query-keys";
 import { organizations } from "@/services/api";
@@ -44,6 +44,8 @@ export function useReviewAction(orgId: string, roleId?: string, callbacks?: Revi
 	// Decisions the server refused, kept so the list can offer Try again with the exact same request.
 	const [failed, setFailed] = useState<Map<string, ReviewActionPayload>>(new Map());
 	const queryKey = orgDashboardKeys.review(orgId, roleId);
+	// Requests still in flight. Refetching before the last one lands would bring its person back for a moment.
+	const inFlight = useRef(0);
 
 	const mutation = useMutation({
 		mutationFn: async ({
@@ -77,6 +79,7 @@ export function useReviewAction(orgId: string, roleId?: string, callbacks?: Revi
 			return result.data;
 		},
 		onMutate: async ({ item, action, maybeNote }) => {
+			inFlight.current += 1;
 			setPendingKeys((prev) => new Set(prev).add(reviewItemKey(item)));
 			setFailed((prev) => {
 				if (!prev.has(reviewItemKey(item))) return prev;
@@ -134,7 +137,8 @@ export function useReviewAction(orgId: string, roleId?: string, callbacks?: Revi
 				next.delete(reviewItemKey(item));
 				return next;
 			});
-			invalidateOrgDashboard(queryClient);
+			inFlight.current -= 1;
+			if (inFlight.current === 0) invalidateOrgDashboard(queryClient);
 		},
 	});
 
