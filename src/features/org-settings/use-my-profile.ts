@@ -22,9 +22,10 @@ export function useSaveMyProfile(orgId: string) {
 	const queryClient = useQueryClient();
 	return useAutosave<MyProfile>(
 		myProfileKey(orgId),
-		(change) =>
+		(change, keepalive) =>
 			callApi<MyProfile, MyProfileUpdate>(`/api/organizations/${orgId}/me`, change as MyProfileUpdate, {
 				method: "PATCH",
+				keepalive,
 			}).then(unwrap),
 		() => {
 			queryClient.invalidateQueries({ queryKey: authKeys.me() });

@@ -19,6 +19,11 @@ const subscribe = (listener: () => void) => {
 	listeners.add(listener);
 	return () => listeners.delete(listener);
 };
+// Closing the tab mid-save would lose the change: ask first, like any editor.
+if (typeof window !== "undefined")
+	window.addEventListener("beforeunload", (e) => {
+		if (pending > 0 || dirty.size > 0) e.preventDefault();
+	});
 const snapshot = () => (pending > 0 || dirty.size > 0 ? "saving" : failed.size > 0 ? `failed:${failed.size}` : "saved");
 
 export function markDirty(key: string, isDirty: boolean) {

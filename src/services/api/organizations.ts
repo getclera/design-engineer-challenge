@@ -584,8 +584,8 @@ function getCompany<T>(orgId: string): Promise<ApiResult<T>> {
 	return fetchApi<T>(`/api/organizations/${orgId}/company`);
 }
 
-function updateCompany<T>(orgId: string, data: unknown): Promise<ApiResult<T>> {
-	return callApi<T, unknown>(`/api/organizations/${orgId}/company`, data, { method: "PATCH" });
+function updateCompany<T>(orgId: string, data: unknown, options?: { keepalive?: boolean }): Promise<ApiResult<T>> {
+	return callApi<T, unknown>(`/api/organizations/${orgId}/company`, data, { method: "PATCH", ...options });
 }
 
 function getAgentLog<T>(companyId: string): Promise<ApiResult<T>> {

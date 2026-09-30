@@ -26,7 +26,8 @@ type Field = keyof CompanyProfile;
  */
 export function useAutosave<T extends object>(
 	queryKey: readonly unknown[],
-	patch: (change: Partial<T>) => Promise<unknown>,
+	/** `keepalive`: the page is closing; the request has to outlive it. */
+	patch: (change: Partial<T>, keepalive?: boolean) => Promise<unknown>,
 	onSaved?: () => void,
 ) {
 	type K = keyof T & string;
@@ -40,11 +41,11 @@ export function useAutosave<T extends object>(
 	latest.current = { patch, onSaved };
 	const keyString = JSON.stringify(queryKey);
 
-	const send = useCallback(async (field: K, value: unknown) => {
+	const send = useCallback(async (field: K, value: unknown, keepalive = false) => {
 		waiting.current.delete(field);
 		markDirty(field, false);
 		try {
-			await trackSave(latest.current.patch({ [field]: value } as Partial<T>), field);
+			await trackSave(latest.current.patch({ [field]: value } as Partial<T>, keepalive), field);
 			setErrors(({ [field]: _, ...rest }) => rest as Partial<Record<K, string>>);
 			setSavedAt((s) => ({ ...s, [field]: Date.now() }));
 			latest.current.onSaved?.();
@@ -86,9 +87,16 @@ export function useAutosave<T extends object>(
 	useEffect(() => {
 		const pendingTimers = timers.current;
 		const pendingValues = waiting.current;
-		return () => {
+		const flush = (keepalive: boolean) => {
 			for (const timer of pendingTimers.values()) clearTimeout(timer);
-			for (const [field, value] of pendingValues) void send(field, value);
+			for (const [field, value] of pendingValues) void send(field, value, keepalive);
+		};
+		// Closing the tab doesn't unmount anything, so send what's waiting here too.
+		const onPageHide = () => flush(true);
+		window.addEventListener("pagehide", onPageHide);
+		return () => {
+			window.removeEventListener("pagehide", onPageHide);
+			flush(false);
 		};
 	}, [send]);
 
@@ -96,8 +104,8 @@ export function useAutosave<T extends object>(
 }
 
 export function useSaveCompanyField(orgId: string) {
-	return useAutosave<CompanyProfile>(companyKeys.full(orgId), (change) =>
-		organizations.updateCompany<CompanyProfile>(orgId, change).then(unwrap),
+	return useAutosave<CompanyProfile>(companyKeys.full(orgId), (change, keepalive) =>
+		organizations.updateCompany<CompanyProfile>(orgId, change, { keepalive }).then(unwrap),
 	);
 }
 
