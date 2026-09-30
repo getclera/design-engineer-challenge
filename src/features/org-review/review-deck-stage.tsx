@@ -289,6 +289,9 @@ export function ReviewDeckStage({
 										) : null
 									}
 									fallback={item ? <ReviewProfileShell item={item} /> : null}
+									unavailable={
+										item ? <ReviewProfileShell item={item} top={<ReviewFitReason reason={item.fitReason} />} settled /> : null
+									}
 									footer={focus ? undefined : decisions}
 									unboxed={focus}
 								/>

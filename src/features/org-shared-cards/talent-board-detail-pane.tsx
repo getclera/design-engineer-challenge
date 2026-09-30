@@ -14,6 +14,8 @@ interface TalentBoardDetailPaneProps {
 	identiconSeed?: string | null;
 	displayNameOverride?: string | null;
 	fallback: ReactNode;
+	/** What we already know about the person, shown when their profile won't load. */
+	unavailable?: ReactNode;
 	profileMeta?: ReactNode;
 	profileTop?: ReactNode;
 	profileBelowHeader?: ReactNode;
@@ -33,6 +35,7 @@ function TalentBoardDetailPane({
 	identiconSeed,
 	displayNameOverride,
 	fallback,
+	unavailable,
 	profileMeta,
 	profileTop,
 	profileBelowHeader,
@@ -43,7 +46,7 @@ function TalentBoardDetailPane({
 	compact,
 	unboxed,
 }: TalentBoardDetailPaneProps) {
-	const { data: bundle, isError, refetch, isRefetching } = useOrgTalentProfile(orgId, talentId ?? "");
+	const { data: bundle, isError, error, refetch, isRefetching } = useOrgTalentProfile(orgId, talentId ?? "");
 
 	if (!talentId) {
 		return <EmptyState heading={emptyHeading} description={emptyDescription} />;
@@ -69,15 +72,25 @@ function TalentBoardDetailPane({
 						className="max-w-187"
 					/>
 				) : isError ? (
-					<EmptyState
-						heading="Could not load profile"
-						description="Something went wrong. Please try again."
-						actions={
-							<Button variant="ghost" size="sm" disabled={isRefetching} onClick={() => refetch()}>
-								Try again
-							</Button>
-						}
-					/>
+					<>
+						{unavailable}
+						{/* A missing profile won't appear on retry; only offer one when it might help. */}
+						{(error as { status?: number } | null)?.status === 404 ? (
+							<p className="px-6 py-3 text-center font-v2-body text-sm text-v2-text-tertiary">
+								No full profile for this person. Decide from what's above.
+							</p>
+						) : (
+							<EmptyState
+								heading="Could not load profile"
+								description="Something went wrong. Please try again."
+								actions={
+									<Button variant="ghost" size="sm" disabled={isRefetching} onClick={() => refetch()}>
+										Try again
+									</Button>
+								}
+							/>
+						)}
+					</>
 				) : (
 					fallback
 				)}
