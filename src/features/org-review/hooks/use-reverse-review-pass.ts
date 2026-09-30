@@ -19,9 +19,9 @@ interface ReverseReviewPassCallbacks {
 	onFailed?: (input: ReverseReviewPassInput) => void;
 }
 
-export function useReverseReviewPass(orgId: string, callbacks?: ReverseReviewPassCallbacks) {
+export function useReverseReviewPass(orgId: string, roleId?: string, callbacks?: ReverseReviewPassCallbacks) {
 	const queryClient = useQueryClient();
-	const queryKey = orgDashboardKeys.review(orgId, undefined);
+	const queryKey = orgDashboardKeys.review(orgId, roleId);
 
 	return useMutation({
 		mutationFn: async ({ opportunityId, action = "pass" }: ReverseReviewPassInput) => {

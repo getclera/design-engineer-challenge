@@ -115,7 +115,7 @@ export function useReviewBoard(
 	}, []);
 	const uncountDecision = useCallback((key: string) => setDecisions((prev) => prev.filter((d) => d.key !== key)), []);
 
-	const reversePass = useReverseReviewPass(orgId, {
+	const reversePass = useReverseReviewPass(orgId, roleId, {
 		onFailed: ({ item, action }) => countDecision(item, action ?? "pass"),
 	});
 	// Decision toasts: 5s with a countdown bar; Undo (or Z) reverses the latest one.
