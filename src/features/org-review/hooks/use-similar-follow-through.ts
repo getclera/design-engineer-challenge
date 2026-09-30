@@ -6,6 +6,8 @@ import { useMediaQuery } from "@v2/hooks/use-media-query";
 import { usePostHog } from "posthog-js/react/slim";
 import { useCallback, useRef, useState } from "react";
 import { toast } from "sonner";
+import { orgDashboardKeys } from "@/lib/query-keys";
+import type { ReviewListData } from "@v2/lib/review-feed";
 import { orgTalents } from "@/services/api/org-talents";
 import { type ReviewItem, reviewItemKey, type SimilarPick } from "../types";
 import { similarPicksKey, similarPicksQuery } from "./use-similar-picks";
@@ -29,7 +31,14 @@ export function useSimilarFollowThrough(orgId: string) {
 	const liveAnchors = useRef(new Set<string>());
 
 	const pull = useCallback(
-		(anchor: ReviewItem, roleId: string, picks: SimilarPick[]): string[] => {
+		(anchor: ReviewItem, roleId: string, allPicks: SimilarPick[]): string[] => {
+			// Only people still waiting in the list you have, so the count in the toast is what moves up.
+			const waiting = new Set(
+				queryClient
+					.getQueriesData<ReviewListData>({ queryKey: orgDashboardKeys.review(orgId).slice(0, -1) })
+					.flatMap(([, data]) => data?.items.filter((i) => !i.maybe).map(reviewItemKey) ?? []),
+			);
+			const picks = allPicks.filter((pick) => waiting.has(reviewItemKey({ talentId: pick.talentId, roleId })));
 			if (picks.length === 0) return [];
 			const keys = picks.map((pick) => reviewItemKey({ talentId: pick.talentId, roleId }));
 			setSimilarTo((prev) => {
@@ -48,7 +57,7 @@ export function useSimilarFollowThrough(orgId: string) {
 				.catch(() => {});
 			return keys;
 		},
-		[orgId, posthog],
+		[orgId, posthog, queryClient],
 	);
 
 	/**
