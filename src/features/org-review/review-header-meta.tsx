@@ -1,8 +1,10 @@
 "use client";
 
 import { orgRoutes } from "@clera/route-factory";
+import { StatusPill } from "@v2/components/ui/status-pill";
 import Link from "next/link";
 import type { ReviewItem } from "./types";
+import { ReviewWaiting } from "./review-waiting";
 
 interface ReviewHeaderMetaProps {
 	item: ReviewItem;
@@ -10,24 +12,30 @@ interface ReviewHeaderMetaProps {
 	showRole: boolean;
 }
 
+/** Above the card: the role (in All roles, or "No role yet") and how long they've waited, as in the list rows. */
 export function ReviewHeaderMeta({ item, orgId, showRole }: ReviewHeaderMetaProps) {
 	const roleName = showRole ? item.roleName : null;
-	if (!roleName) return null;
-
-	if (!item.roleId) {
-		return (
-			<span className="max-w-full truncate font-v2-body text-xs font-medium text-v2-text-secondary">{roleName}</span>
-		);
-	}
+	if (!roleName && item.roleId && !item.receivedAt) return null;
 
 	return (
-		<Link
-			href={orgRoutes.roles.edit(orgId, item.roleId)}
-			title={roleName}
-			className="max-w-full truncate font-v2-body text-xs font-medium text-v2-text-brand transition-colors hover:underline"
-		>
-			{roleName}
-		</Link>
+		<>
+			{!item.roleId ? (
+				<StatusPill tone="warning" size="xs">
+					No role yet
+				</StatusPill>
+			) : (
+				roleName && (
+					<Link
+						href={orgRoutes.roles.edit(orgId, item.roleId)}
+						title={roleName}
+						className="max-w-full truncate font-v2-body text-xs font-medium text-v2-text-brand transition-colors hover:underline"
+					>
+						{roleName}
+					</Link>
+				)
+			)}
+			<ReviewWaiting item={item} />
+		</>
 	);
 }
 
