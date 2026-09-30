@@ -3,10 +3,10 @@ import { AdminPageShell } from "@v2/components/layout";
 import { HomeDashboard, HomeDashboardSkeleton, type HomeDemo, parseHomeDemo } from "@v2/features/org-home";
 import type { Metadata } from "next";
 import { Suspense } from "react";
-import { orgDashboardKeys, roleKeys } from "@/lib/query-keys";
+import { companyKeys, orgDashboardKeys, roleKeys } from "@/lib/query-keys";
 import { formatPageTitle } from "@/utils/pageTitle";
 import { companyGaps } from "@v2/features/org-settings/company-profile";
-import { COMPANY_PROFILE, COMPANY_SETUP, NEXT_DROP } from "@mock/org";
+import { ACTIVE_CONTACTS, COMPANY_PROFILE, COMPANY_SETUP, NEXT_DROP } from "@mock/org";
 import { buildMovingForward } from "@mock/pipeline";
 import { ROLES } from "@mock/roles";
 import { loadOrgShell } from "./_loader";
@@ -44,6 +44,8 @@ async function OrgHomeContent({ orgId, demo }: { orgId: string; demo: HomeDemo |
 	queryClient.setQueryData(orgDashboardKeys.review(orgId, undefined), feed);
 	// Roles come with the page too, so Home shows at once instead of a skeleton while they load.
 	queryClient.setQueryData(roleKeys.organizationRoles(orgId, false), ROLES);
+	// And the hiring managers, so the scheduling-link fixes don't pop in and push "Start reviewing" down.
+	queryClient.setQueryData(companyKeys.contactOptions(orgId), ACTIVE_CONTACTS);
 	// The same gaps Settings lists, so filling one there clears it here.
 	const gaps = companyGaps(COMPANY_PROFILE);
 
