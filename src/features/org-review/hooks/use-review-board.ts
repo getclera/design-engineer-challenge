@@ -150,6 +150,8 @@ export function useReviewBoard(
 			if (undoRef.current?.id === `review-action:${reviewItemKey(item)}`) undoRef.current = null;
 			uncountDecision(reviewItemKey(item));
 		},
+		// Counted again once it's retried, so the tally matches what's saved.
+		onRetried: ({ item, action }) => countDecision(item, action === "request_intro" ? "intro" : action),
 	});
 	const { mutate } = mutation;
 

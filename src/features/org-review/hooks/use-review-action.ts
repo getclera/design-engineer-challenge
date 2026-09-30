@@ -28,6 +28,8 @@ interface ReviewActionPayload {
 
 interface ReviewActionCallbacks {
 	onFailed?: (payload: ReviewActionPayload) => void;
+	/** Try again on a decision that failed (from the list, the card or the toast). */
+	onRetried?: (payload: ReviewActionPayload) => void;
 }
 
 const firstNameOf = (item: ReviewItem) => item.talentName.split(" ")[0] || item.talentName;
@@ -78,8 +80,10 @@ export function useReviewAction(orgId: string, roleId?: string, callbacks?: Revi
 			if (!result.ok) throw new Error(result.error.message);
 			return result.data;
 		},
-		onMutate: async ({ item, action, maybeNote }) => {
+		onMutate: async (variables) => {
+			const { item, action, maybeNote } = variables;
 			inFlight.current += 1;
+			if (failed.has(reviewItemKey(item))) callbacks?.onRetried?.(variables);
 			setPendingKeys((prev) => new Set(prev).add(reviewItemKey(item)));
 			setFailed((prev) => {
 				if (!prev.has(reviewItemKey(item))) return prev;
