@@ -122,6 +122,8 @@ interface TalentProfileContentProps {
 	identiconSeed?: string | null;
 	tracking?: OrgTalentTracking;
 	aboveHeader?: ReactNode;
+	/** First thing inside the identity box, before the name (Review: why it's a match). */
+	identityTop?: ReactNode;
 	/** Under name, headline and location (Review: past companies). */
 	belowHeader?: ReactNode;
 	belowFacts?: ReactNode;
@@ -140,6 +142,7 @@ function TalentProfileContent({
 	identiconSeed,
 	tracking,
 	aboveHeader,
+	identityTop,
 	belowHeader,
 	belowFacts,
 	compact = false,
@@ -169,6 +172,7 @@ function TalentProfileContent({
 	const factsProps = { preferences };
 	const identity = (
 		<>
+			{identityTop}
 			<div className="px-4 py-2 sm:px-5 sm:py-2.5">
 				<IdentityPublicZone
 					data={headerData}
