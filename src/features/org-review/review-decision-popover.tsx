@@ -227,12 +227,18 @@ function DecisionOptions({
 			if (e.target instanceof Element && e.target.closest("button:not([role=option])")) return;
 			// The physical key, so Shift+1 still picks option 1.
 			const digit = Number(/^Digit([1-9])$/.exec(e.code)?.[1]);
-			if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+			const last = options.length - 1;
+			if (e.key === "ArrowDown") {
 				e.preventDefault();
-				setHl((h) => (h + (e.key === "ArrowDown" ? 1 : options.length - 1)) % options.length);
+				// Past the last reason, ↓ steps into the "something else" field instead of looping.
+				if (withText && hl === last) inputRef.current?.focus();
+				else setHl(hl >= last ? 0 : hl + 1);
+			} else if (e.key === "ArrowUp") {
+				e.preventDefault();
+				setHl(hl <= 0 ? last : Math.min(hl, options.length) - 1);
 			} else if (e.key === "Enter") {
 				e.preventDefault();
-				onChoose(options[hl]);
+				if (options[hl]) onChoose(options[hl]);
 			} else if (e.key === "ArrowLeft" || e.key === "ArrowRight") {
 				e.preventDefault();
 				onClose();
@@ -283,7 +289,7 @@ function DecisionOptions({
 				role="listbox"
 				aria-label={title}
 				tabIndex={-1}
-				aria-activedescendant={touch ? undefined : `${listId}-${hl}`}
+				aria-activedescendant={touch || !options[hl] ? undefined : `${listId}-${hl}`}
 				className="outline-none"
 			>
 				{options.map((option, i) => (
@@ -317,7 +323,15 @@ function DecisionOptions({
 					aria-label="Something else"
 					value={text}
 					onChange={(e) => setText(e.target.value)}
+					// hl past the list means the field is the highlighted row.
+					onFocus={() => setHl(options.length)}
 					onKeyDown={(e) => {
+						if (e.key === "ArrowUp" && !touch) {
+							e.preventDefault();
+							setHl(options.length - 1);
+							listRef.current?.focus();
+							return;
+						}
 						if (e.key !== "Enter" || e.nativeEvent.isComposing || !text.trim()) return;
 						e.preventDefault();
 						onChoose(undefined, text.trim());
