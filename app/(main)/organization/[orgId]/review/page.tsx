@@ -6,8 +6,10 @@ import { TrackOrgPageView } from "@v2/components/tracking";
 import { ReviewBoard } from "@v2/features/org-review";
 import type { Metadata } from "next";
 import { Suspense } from "react";
-import { orgDashboardKeys } from "@/lib/query-keys";
+import { companyKeys, orgDashboardKeys, roleKeys } from "@/lib/query-keys";
 import { formatPageTitle } from "@/utils/pageTitle";
+import { ACTIVE_CONTACTS } from "@mock/org";
+import { ROLES } from "@mock/roles";
 import { loadOrgShell } from "../_loader";
 import { loadReviewItems, loadSendoutScope } from "./_loader";
 import Loading from "./loading";
@@ -82,6 +84,9 @@ async function OrgReviewContent({
 	if (data) {
 		queryClient.setQueryData(orgDashboardKeys.review(orgId, effectiveRoleId), data);
 	}
+	// Roles and hiring managers come with the page, so the "no scheduling link" check is ready for the first intro.
+	queryClient.setQueryData(roleKeys.organizationRoles(orgId, false), ROLES);
+	queryClient.setQueryData(companyKeys.contactOptions(orgId), ACTIVE_CONTACTS);
 
 	return (
 		<HydrationBoundary state={dehydrate(queryClient)}>
