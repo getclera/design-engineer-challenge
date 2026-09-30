@@ -38,7 +38,7 @@ export { normalizeHeadingText } from "./markdown-heading.ts";
 export { getFullName, getInitials } from "./name-utils.ts";
 export { cleanLinkedinCompanyName } from "./normalize.ts";
 export { cleanSentinelField } from "./sentinel.ts";
-export { extractFitReasonHook } from "./submission-reason-format.ts";
+export { extractFitReasonDetails, extractFitReasonHook } from "./submission-reason-format.ts";
 export type { EmployerGroup } from "./talent-merge/index.ts";
 export { groupRolesByEmployer } from "./talent-merge/index.ts";
 export { cleanMetaDescription } from "./truncate.ts";

@@ -85,3 +85,15 @@ export function extractFitReasonHook(input: string | null | undefined): string |
 
 	return capped.length > 0 ? capped : null;
 }
+
+/** The supporting lines after the hook (bullets or a numbered list), cleaned for display. */
+export function extractFitReasonDetails(input: string | null | undefined, max = 3): string[] {
+	if (!input) return [];
+	const normalized = input.replace(/\\n/g, "\n");
+	const rest = normalized.slice(firstBlockOf(normalized).length);
+	return rest
+		.split("\n")
+		.map((line) => stripSlackMrkdwn(line.trim().replace(/^[•\-*]\s+/, "").replace(LEADING_ENUMERATOR_PATTERN, "")).trim())
+		.filter(Boolean)
+		.slice(0, max);
+}

@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { extractFitReasonHook } from "./submission-reason-format.ts";
+import { extractFitReasonDetails, extractFitReasonHook } from "./submission-reason-format.ts";
 
 // The fit reason formats the review feed really receives (see mock/review-items.ts).
 test("a labelled pitch gives its first line, without the label", () => {
@@ -26,4 +26,18 @@ test("a long paragraph is cut to two sentences, and empty input gives nothing", 
 	assert.equal(hook, "One. Two.");
 	assert.equal(extractFitReasonHook(null), null);
 	assert.equal(extractFitReasonHook("   "), null);
+});
+
+test("the details are the lines after the hook, without markers or markup", () => {
+	assert.deepEqual(
+		extractFitReasonDetails("*Why this fit:* Wrote the compaction layer.\n\n• _Rust_ and Go\n• Talks at two database conferences"),
+		["Rust and Go", "Talks at two database conferences"],
+	);
+	assert.deepEqual(extractFitReasonDetails("1) Asked for an intro herself.\n2) Managed 4 designers\n3) Strong systems thinker"), [
+		"Managed 4 designers",
+		"Strong systems thinker",
+	]);
+	assert.deepEqual(extractFitReasonDetails("Why this fit: Led it.\\n\\n• Research-heavy process"), ["Research-heavy process"]);
+	assert.deepEqual(extractFitReasonDetails("A single sentence."), []);
+	assert.deepEqual(extractFitReasonDetails(null), []);
 });
