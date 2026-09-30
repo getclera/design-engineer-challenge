@@ -222,7 +222,7 @@ function DecisionOptions({
 	useEffect(() => {
 		if (touch) return;
 		const onKey = (e: KeyboardEvent) => {
-			if (e.target === inputRef.current || e.metaKey || e.ctrlKey || e.altKey) return;
+			if (e.target === inputRef.current || e.repeat || e.metaKey || e.ctrlKey || e.altKey) return;
 			// The Back button keeps its own Enter and Space.
 			if (e.target instanceof Element && e.target.closest("button:not([role=option])")) return;
 			// The physical key, so Shift+1 still picks option 1.
