@@ -463,6 +463,8 @@ export function useReviewBoard(
 		truncated: data?.truncated ?? false,
 		isLoading: isLoading && !everFailed,
 		loadFailed: (isError || everFailed) && (!data || isPlaceholderData),
+		// A background refresh failed: the list on screen may be out of date until the next retry works.
+		refreshFailed: isError && !!data && !isPlaceholderData,
 		retryLoad: refetch,
 		isSwitching: isPlaceholderData,
 		chipsFor,

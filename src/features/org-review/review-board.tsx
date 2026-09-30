@@ -384,6 +384,11 @@ export function ReviewBoard({
 								{reviewView === "unreviewed" && (
 									<ReviewScoreboard left={board.items.length} truncated={board.truncated} tally={board.tally} />
 								)}
+								{board.refreshFailed && (
+									<p role="status" className="font-v2-body text-v2-text-tertiary text-xs">
+										Couldn't refresh. Trying again…
+									</p>
+								)}
 								<div className={cn(REVIEW_BOARD_GRID_CLASSES, listHidden && !isMobile && "lg:grid-cols-1")}>
 									{(isMobile && !mobileList) || (listHidden && !isMobile) ? null : (
 										<Card className={REVIEW_LEFT_CARD_CLASSES}>
