@@ -28,7 +28,7 @@ export function LogoLabel({ logoUrl, label }: LogoLabelProps) {
 					}}
 				/>
 			)}
-			<span className="truncate">{label}</span>
+			<span title={label} className="truncate">{label}</span>
 		</span>
 	);
 }

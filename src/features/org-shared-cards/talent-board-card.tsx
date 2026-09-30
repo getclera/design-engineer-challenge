@@ -113,6 +113,7 @@ function TalentBoardCard({
 				<div className="min-w-0 flex-1">
 					<div className="flex items-start gap-1.5">
 						<span
+							title={title ?? undefined}
 							className={cn(
 								"font-v2-body font-medium text-sm text-v2-text-primary",
 								isNameless ? "line-clamp-2" : "truncate",
@@ -123,7 +124,9 @@ function TalentBoardCard({
 						{badge}
 					</div>
 					{item.subtitle && item.subtitle !== title && (
-						<p className="mt-0.5 truncate font-v2-body text-v2-text-tertiary text-xs">{item.subtitle}</p>
+						<p title={item.subtitle} className="mt-0.5 truncate font-v2-body text-v2-text-tertiary text-xs">
+							{item.subtitle}
+						</p>
 					)}
 				</div>
 			</div>

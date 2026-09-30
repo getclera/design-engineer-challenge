@@ -145,10 +145,10 @@ function IdentityPublicZone({
 							tracking={linkedinTracking}
 							className={cn(NAME_TEXT, "transition-opacity hover:opacity-80")}
 						>
-							{name}
+							<span title={name ?? undefined}>{name}</span>
 						</LinkedInProfileLink>
 					) : name ? (
-						<span className={NAME_TEXT}>{name}</span>
+						<span title={name} className={NAME_TEXT}>{name}</span>
 					) : (
 						occupation && <span className={NAME_TEXT}>{occupation}</span>
 					)}
@@ -165,7 +165,10 @@ function IdentityPublicZone({
 				) : (
 					occupation &&
 					name && (
-						<p className="line-clamp-2 max-w-[min(24rem,70cqw)] font-v2-body text-xs font-light leading-snug text-v2-text-secondary">
+						<p
+							title={occupation}
+							className="line-clamp-2 max-w-[min(24rem,70cqw)] font-v2-body text-xs font-light leading-snug text-v2-text-secondary"
+						>
 							{occupation}
 						</p>
 					)
