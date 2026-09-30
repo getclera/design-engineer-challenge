@@ -11,7 +11,7 @@ import { type Member, fullName } from "./people";
 import { HiringManagers } from "./contacts-settings";
 import { People } from "./team-members";
 
-/** Settings › Members: who's in Clera, then Contacts (who candidates meet for each role, and their calendar link). */
+/** Settings › Members: who's in Clera, then Contacts (who candidates meet for each role, and their scheduling link). */
 export function MembersSettings({
 	orgId,
 	canEdit,

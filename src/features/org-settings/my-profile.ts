@@ -9,7 +9,7 @@ export interface MyProfile {
 	avatarUrl: string | null;
 	role: "owner" | "viewer";
 	notifications: MyNotifications;
-	/** Only when you're a hiring-manager contact: your booking link, the same one Members › Contacts shows. */
+	/** Only when you're a hiring-manager contact: your scheduling link, the same one Members › Contacts shows. */
 	contactId: string | null;
 	calendarLink: string | null;
 	/** Roles candidates meet you for. */

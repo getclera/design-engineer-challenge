@@ -70,7 +70,7 @@ export function HiringManagers({ orgId, canEdit }: { orgId: string; canEdit: boo
 			>
 				<span>Role</span>
 				<span>Candidates meet</span>
-				<span>Calendar link</span>
+				<span>Scheduling link</span>
 			</div>
 			{loadFailed && (
 				<div className="border-v2-border-divider border-t px-5 py-4 max-lg:px-4">
@@ -157,7 +157,7 @@ export function HiringManagers({ orgId, canEdit }: { orgId: string; canEdit: boo
 				<span className="tabular-nums">
 					{plural(contacts.length, "contact")} · {contacts.filter((c) => c.calendarLink).length} ready for introductions
 				</span>
-				<span>Ready = calendar link added. One link per person, used for every role they take.</span>
+				<span>Ready = scheduling link added. One link per person, used for every role they take.</span>
 			</p>
 		</SectionCard>
 	);
@@ -223,7 +223,7 @@ function PersonPicker({
 							}}
 							icon={<UserAvatar name={fullName(contact)} generated size="xs" />}
 							title={fullName(contact)}
-							sub={`${contact.title ?? contact.email}${contact.calendarLink ? "" : " · no calendar link"}`}
+							sub={`${contact.title ?? contact.email}${contact.calendarLink ? "" : " · no scheduling link"}`}
 						/>
 					))}
 					<div className="my-1 h-px bg-v2-border-divider" />
@@ -280,7 +280,7 @@ function CalendarLinkField({
 	};
 	return (
 		<div className="flex flex-col gap-1.5">
-			<Missing>{waiting ? `${plural(waiting, "candidate")} can't book a call` : "No calendar link yet"}</Missing>
+			<Missing>{waiting ? `${plural(waiting, "candidate")} can't book a call` : "No scheduling link yet"}</Missing>
 			{canEdit && (
 				<form onSubmit={submit} noValidate className="flex gap-1.5">
 					<input
@@ -291,10 +291,10 @@ function CalendarLinkField({
 						}}
 						type="url"
 						inputMode="url"
-						aria-label={`${name}'s booking link`}
+						aria-label={`${name}'s scheduling link`}
 						aria-invalid={invalid || undefined}
 						aria-describedby={invalid ? `e-cal-${contact.id}` : undefined}
-						placeholder={`Paste ${name}'s booking link`}
+						placeholder={`Paste ${name}'s scheduling link`}
 						className={cn(FIELD_CLASSES, "py-1.5")}
 					/>
 					<Button type="submit" size="sm" disabled={save.isPending} className="h-8.5 shrink-0">

@@ -9,7 +9,7 @@ import { candidatesGoNowhere, type Delivery } from "../org-settings/delivery";
 import { deliveryKey } from "../org-settings/keys";
 import { resolveRoleIntroReadiness } from "./hm-readiness";
 
-/** Active roles whose intros can't be booked: no hiring manager, or one without a calendar link. */
+/** Active roles whose intros can't be booked: no hiring manager, or one without a scheduling link. */
 function useIntroBlockers(orgId: string, enabled = true) {
 	const { data: contacts } = useQuery({
 		queryKey: companyKeys.contactOptions(orgId),

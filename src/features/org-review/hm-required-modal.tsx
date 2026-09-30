@@ -37,8 +37,8 @@ function HmRequiredModal({ isOpen, onOpenChange, onContinue, orgId, roleId, reas
 		? "This role has no hiring manager assigned yet. The intro still goes out, but without a scheduling link candidates can't book directly, making it harder to keep track of when interviews get scheduled."
 		: `${hmName} is the hiring manager for this role but has no scheduling link yet. The intro still goes out, but candidates can't book directly, making it harder to keep track of when interviews get scheduled.`;
 	const hint = noHm
-		? "Assign a hiring manager with a calendar link so candidates can book directly."
-		: `Add a calendar link to ${hmName} in your contact settings so candidates can book directly.`;
+		? "Assign a hiring manager with a scheduling link so candidates can book directly."
+		: `Add a scheduling link to ${hmName} in your contact settings so candidates can book directly.`;
 	const showCta = noHm || canManageContacts;
 	const ctaLabel = noHm ? "Set up hiring manager" : "Add scheduling link";
 	const ctaHref =

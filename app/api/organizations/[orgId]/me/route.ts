@@ -26,7 +26,7 @@ export async function PATCH(request: Request) {
   if (body.calendarLink !== undefined) {
     if (!contact) return error("You're not the contact for any role yet", 409);
     if (body.calendarLink && !/^https:\/\/\S+\.\S+/.test(body.calendarLink))
-      return error("Calendar link must start with https://", 400);
+      return error("Scheduling link must start with https://", 400);
   }
   const notifications = body.notifications;
   if (notifications && Object.values(notifications).some((v) => typeof v !== "boolean"))

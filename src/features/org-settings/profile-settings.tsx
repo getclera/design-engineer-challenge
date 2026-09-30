@@ -16,7 +16,7 @@ import { trackSave } from "./save-status";
 import { FIELD_CLASSES, FieldError, FieldLabel } from "./settings-fields";
 import { useMyProfile, useSaveMyProfile } from "./use-my-profile";
 
-/** Settings › Profile: your photo, name and title, your booking link, and leaving the company. */
+/** Settings › Profile: your photo, name and title, your scheduling link, and leaving the company. */
 export function ProfileSettings({ orgId, companyName }: { orgId: string; companyName: string }) {
 	const { data: me, isError, refetch } = useMyProfile(orgId);
 	const { save, savedAt, errors } = useSaveMyProfile(orgId);
@@ -104,7 +104,7 @@ export function ProfileSettings({ orgId, companyName }: { orgId: string; company
 						</div>
 					</div>
 				</Row>
-				<Row title="Calendar link" sub="Candidates book intro calls with you through this link.">
+				<Row title="Scheduling link" sub="Candidates book intro calls with you through this link.">
 					<CalendarLink me={me} error={errors.calendarLink} savedAt={savedAt.calendarLink} save={save} />
 				</Row>
 				<Row title={`Leave ${companyName}`} sub="You lose access at once. An owner can invite you back.">
@@ -173,7 +173,7 @@ function CalendarLink({
 	return (
 		<div data-field="calendar" className="flex flex-col gap-1.5 rounded-v2-md">
 			<FieldLabel htmlFor="f-me-calendar" savedAt={savedAt}>
-				Booking link
+				Scheduling link
 			</FieldLabel>
 			<input
 				id="f-me-calendar"
@@ -293,7 +293,7 @@ function IntroPreview({ me, companyName }: { me: MyProfile; companyName: string 
 					Book a call
 				</span>
 			) : (
-				<span className="text-v2-text-muted italic">No calendar link: no booking button</span>
+				<span className="text-v2-text-muted italic">No scheduling link: no booking button</span>
 			)}
 			<div className="flex items-center gap-2.5 border-v2-border-divider border-t pt-2.5">
 				<UserAvatar name={me.name || me.email} src={me.avatarUrl} generated={!me.avatarUrl} size="sm" />
