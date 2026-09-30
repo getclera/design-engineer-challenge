@@ -32,6 +32,9 @@ interface ReviewActionCallbacks {
 	onRetried?: (payload: ReviewActionPayload) => void;
 }
 
+/** Lets an Undo wait for the decision it reverses (see use-reverse-review-pass). */
+export const REVIEW_DECISION_KEY = ["review-decision"] as const;
+
 const firstNameOf = (item: ReviewItem) => item.talentName.split(" ")[0] || item.talentName;
 const FAILED_MESSAGE: Record<ReviewActionPayload["action"], (name: string) => string> = {
 	pass: (name) => `Couldn't save Pass for ${name}`,
@@ -50,6 +53,7 @@ export function useReviewAction(orgId: string, roleId?: string, callbacks?: Revi
 	const inFlight = useRef(0);
 
 	const mutation = useMutation({
+		mutationKey: REVIEW_DECISION_KEY,
 		mutationFn: async ({
 			item,
 			action,
