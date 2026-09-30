@@ -34,7 +34,7 @@ import { type FormEvent, Fragment, type ReactNode, useEffect, useState } from "r
 import { toast } from "sonner";
 import { companyKeys, roleKeys } from "@/lib/query-keys";
 import { companyContacts, organizations } from "@/services/api";
-import { HomeCard } from "./home-card";
+import { HomeCard, SampleTag } from "./home-card";
 import { type NextStep, reviewMinutes, STEP_GROUP } from "./home-summary";
 
 type Tone = "warning" | "info" | "ok" | "neutral";
@@ -391,7 +391,12 @@ function CaughtUpBlock({ orgId, week }: { orgId: string; week: CaughtUpWeek }) {
 			<ActionRow
 				icon={CalendarCheck}
 				tone="neutral"
-				title={`Next drop ${week.nextDrop}`}
+				title={
+					<span className="flex items-center gap-2">
+						Next drop {week.nextDrop}
+						<SampleTag />
+					</span>
+				}
 				meta={
 					week.maybes > 0
 						? `Meanwhile, ${week.maybes} ${week.maybes === 1 ? "person is" : "people are"} parked on Maybe.`
@@ -419,7 +424,7 @@ export function ActionRow({
 }: {
 	icon: Icon;
 	tone: Tone;
-	title: string;
+	title: ReactNode;
 	meta: string;
 	children?: ReactNode;
 }) {

@@ -7,7 +7,7 @@ import { UserAvatar } from "@v2/components/ui/avatar";
 import { StatusPill } from "@v2/components/ui/status-pill";
 import Link from "next/link";
 import { useSyncExternalStore } from "react";
-import { HomeCard } from "./home-card";
+import { HomeCard, SampleTag } from "./home-card";
 import { Lede } from "./home-next-steps";
 import type { MovingForwardPerson, PipelineStage } from "./home-summary";
 
@@ -35,7 +35,7 @@ export function HomeMovingForward({
 }) {
 	if (people.length === 0)
 		return (
-			<HomeCard title="Moving forward" note="This week">
+			<HomeCard title="Moving forward" note={<SampleNote />}>
 				<Lede>Your first intro shows up here, all the way to the offer.</Lede>
 				<p className="border-v2-border-divider border-t px-4 py-2.5 font-v2-body text-v2-text-tertiary text-xs max-lg:px-3">
 					After your first drop on {nextDrop}
@@ -48,7 +48,7 @@ export function HomeMovingForward({
 	// Someone stuck goes first, so the cap never hides a problem.
 	const ordered = [...people].sort((a, b) => Number(!!stuckReason(b.roleId)) - Number(!!stuckReason(a.roleId)));
 	return (
-		<HomeCard title="Moving forward" note="This week">
+		<HomeCard title="Moving forward" note={<SampleNote />}>
 			<p className="border-v2-border-divider border-t px-4 pt-3 pb-1 font-v2-body text-sm text-v2-text-secondary max-lg:px-3">
 				We set up <b className="font-semibold text-v2-text-primary">{intros === 1 ? "1 intro" : `${intros} intros`}</b>{" "}
 				· <b className="font-semibold text-v2-text-primary">{calls === 1 ? "1 call" : `${calls} calls`}</b> booked
@@ -97,6 +97,13 @@ export function HomeMovingForward({
 }
 
 HomeMovingForward.displayName = "HomeMovingForward";
+
+const SampleNote = () => (
+	<span className="flex items-center gap-2">
+		<SampleTag />
+		This week
+	</span>
+);
 
 /** "Thu 14:00" when something is coming up, else how long ago it happened (in the browser only: it reads the clock). */
 function When({ person }: { person: MovingForwardPerson }) {

@@ -1,5 +1,6 @@
 import { InfoTooltip } from "@v2/components/data-display";
 import { Card } from "@v2/components/ui/card";
+import { StatusPill } from "@v2/components/ui/status-pill";
 import { type ReactNode, useId } from "react";
 
 /** A Home section: the app's Card with Review's list header (serif title, small note on the right). */
@@ -30,5 +31,14 @@ export function HomeCard({
 				{children}
 			</section>
 		</Card>
+	);
+}
+
+/** Marks numbers made up for this case: there's no pipeline or drop schedule behind them. */
+export function SampleTag() {
+	return (
+		<StatusPill tone="muted" size="xs" title="Made-up data for this case">
+			Sample
+		</StatusPill>
 	);
 }
