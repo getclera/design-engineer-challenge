@@ -94,6 +94,8 @@ export function HomeNextMoves({
 		const onKey = (e: KeyboardEvent) => {
 			if (e.defaultPrevented || e.metaKey || e.ctrlKey || e.altKey || open) return;
 			if (e.target instanceof HTMLElement && e.target.closest("input, textarea, [contenteditable], button, a")) return;
+			// An open dialog or menu owns the keyboard.
+			if (document.querySelector('[role="dialog"], [role="menu"]')) return;
 			if (e.key === "Enter" && reviewShown) {
 				e.preventDefault();
 				router.push(reviewHref);
