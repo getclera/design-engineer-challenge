@@ -109,10 +109,10 @@ export function ReviewEmpty({
 				<>
 					<CheckCircleIcon size={28} weight="light" className="mb-4 text-v2-text-brand-green" />
 					<h3 className="font-v2-heading text-v2-text-primary text-lg">
-						{isListDone ? "That list is done" : `Nothing left in ${roleName ?? "this role"}`}
+						{isListDone ? "That list is done" : `No one for ${roleName ?? "this role"} yet`}
 					</h3>
 					<p className="mt-2 max-w-md font-v2-body text-sm text-v2-text-secondary">
-						{isListDone ? "Keep going with the rest of this role." : "Other roles still have candidates waiting."}
+						{isListDone ? "Keep going with the rest of this role." : "We'll add people here as soon as we find a match."}
 					</p>
 				</>
 			)}
