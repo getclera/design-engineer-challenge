@@ -1,7 +1,7 @@
 import type { OrgTalentProfileBundle } from "@/services/api/org-talents";
 import type { EnrichedEducation, EnrichedExperience } from "../stubs/edge-functions/talent-service/data/mergeProfileData";
 import { talentUuid } from "./ids";
-import { REVIEW_ITEM_SEEDS, type ReviewItemSeed } from "./review-items";
+import { ALL_ITEM_SEEDS, type ReviewItemSeed } from "./review-items";
 
 const MISSING_PROFILE_TALENT_IDS = new Set([talentUuid("t26")]);
 
@@ -271,5 +271,5 @@ function buildProfile(seed: ReviewItemSeed): OrgTalentProfileBundle {
 }
 
 export const PROFILES: Record<string, OrgTalentProfileBundle> = Object.fromEntries(
-  REVIEW_ITEM_SEEDS.filter((seed) => !MISSING_PROFILE_TALENT_IDS.has(seed.talentId)).map((seed) => [seed.talentId, buildProfile(seed)]),
+  ALL_ITEM_SEEDS.filter((seed) => !MISSING_PROFILE_TALENT_IDS.has(seed.talentId)).map((seed) => [seed.talentId, buildProfile(seed)]),
 );

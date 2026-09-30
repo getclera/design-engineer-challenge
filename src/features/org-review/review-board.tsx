@@ -444,9 +444,7 @@ export function ReviewBoard({
 													/>
 												)}
 												{reviewView === "unreviewed" && board.truncated && board.items.length > 0 && (
-													<p className="px-4 py-3 text-center font-v2-body text-v2-text-tertiary text-xs">
-														More arrive when you clear these
-													</p>
+													<LoadMoreRow onVisible={board.loadMore} />
 												)}
 											</div>
 										</Card>
@@ -530,4 +528,21 @@ function useDelayedFlag(flag: boolean, ms: number) {
 		return () => clearTimeout(timer);
 	}, [flag, ms]);
 	return delayed;
+}
+
+/** The list's last row: reaching it fetches the next page of people. */
+function LoadMoreRow({ onVisible }: { onVisible: () => void }) {
+	const ref = useRef<HTMLParagraphElement>(null);
+	useEffect(() => {
+		const el = ref.current;
+		if (!el) return;
+		const observer = new IntersectionObserver(([entry]) => entry.isIntersecting && onVisible(), { rootMargin: "200px" });
+		observer.observe(el);
+		return () => observer.disconnect();
+	}, [onVisible]);
+	return (
+		<p ref={ref} role="status" className="px-4 py-3 text-center font-v2-body text-v2-text-tertiary text-xs">
+			Loading more people…
+		</p>
+	);
 }

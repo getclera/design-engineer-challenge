@@ -4,7 +4,7 @@ import { cache } from "react";
 import { buildReviewFeed } from "@mock/feed";
 
 export const loadReviewItems = cache(async ({ roleId }: { orgId: string; roleId?: string }) =>
-  buildReviewFeed({ roleId: roleId ?? null }),
+  buildReviewFeed({ roleId: roleId ?? null, more: false }),
 );
 
 export interface SendoutScope {

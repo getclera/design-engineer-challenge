@@ -396,10 +396,11 @@ function adminPassCandidate(
 
 function getReviewItems<T>(
 	orgId: string,
-	{ roleId }: { roleId?: string },
+	{ roleId, more }: { roleId?: string; more?: boolean },
 ): Promise<ApiResult<DashboardListResponse<T>>> {
 	const params = new URLSearchParams();
 	if (roleId) params.set("roleId", roleId);
+	if (more) params.set("more", "1");
 	const query = params.toString();
 	return fetchApi<DashboardListResponse<T>>(`/api/organizations/${orgId}/dashboard/review${query ? `?${query}` : ""}`);
 }

@@ -1,6 +1,6 @@
 import type { MovingForwardPerson, PipelineStage } from "@v2/features/org-home/home-summary";
 import { ROLE_IDS } from "./ids";
-import { REVIEW_ITEM_SEEDS } from "./review-items";
+import { ALL_ITEM_SEEDS } from "./review-items";
 import { ROLES } from "./roles";
 import { decisions, reviewItemKey } from "./store";
 
@@ -19,7 +19,7 @@ const roleName = (roleId: string) => ROLES.find((role) => role.id === roleId)?.p
 
 /** Everyone you said yes to: this week's intros (from your decisions), then the people further along. */
 export function buildMovingForward(now = Date.now()): MovingForwardPerson[] {
-  const intros = REVIEW_ITEM_SEEDS.flatMap((seed) => {
+  const intros = ALL_ITEM_SEEDS.flatMap((seed) => {
     const decision = decisions.get(reviewItemKey(seed));
     if (!seed.roleId || decision?.action !== "interview" || now - Date.parse(decision.decidedAt) > 7 * DAY_MS) return [];
     return [

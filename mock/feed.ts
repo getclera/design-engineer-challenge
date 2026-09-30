@@ -1,12 +1,11 @@
 import type { DecidedThisWeek, ReviewBucketCounts, ReviewItem, ReviewListData } from "@/lib/review-feed";
 import { ROLE_IDS } from "./ids";
-import { REVIEW_ITEM_SEEDS, type ReviewItemSeed } from "./review-items";
+import { ALL_ITEM_SEEDS, LATER_PAGE_SEEDS, type ReviewItemSeed } from "./review-items";
 import { ROLES } from "./roles";
 import { type DecisionAction, decisions, reviewItemKey } from "./store";
 
-const HIDDEN_BEYOND_PAGE_BY_ROLE: Record<string, number> = { [ROLE_IDS.backend]: 9, [ROLE_IDS.ml]: 4 };
-// Head of Growth has 3 people on this page and 3 beyond it; all held back while the role is paused.
-const HIDDEN_WHILE_ACTIVE: Record<string, number> = { [ROLE_IDS.growth]: 3 };
+// People on the feed's second page: counted from the start, only listed once the board asks for more.
+const ON_LATER_PAGE = new Set(LATER_PAGE_SEEDS.map(reviewItemKey));
 const DAY_MS = 86_400_000;
 
 // A few decisions from earlier this week, so Home's "you decided this week" isn't empty on a fresh start.
@@ -21,15 +20,13 @@ const seeded = globalThis as unknown as { __decisionsSeeded?: boolean };
 if (!seeded.__decisionsSeeded) {
   seeded.__decisionsSeeded = true;
   for (const { name, roleId, action, daysAgo } of DECIDED_EARLIER) {
-    const seed = REVIEW_ITEM_SEEDS.find((s) => s.talentName === name && s.roleId === roleId);
+    const seed = ALL_ITEM_SEEDS.find((s) => s.talentName === name && s.roleId === roleId);
     if (!seed) continue;
     decisions.set(reviewItemKey(seed), { action, decidedAt: new Date(Date.now() - daysAgo * DAY_MS).toISOString() });
   }
 }
 
 const isActive = (roleId: string) => ROLES.some((role) => role.id === roleId && role.status === "active");
-const hiddenFor = (roleId: string) =>
-  isActive(roleId) ? (HIDDEN_BEYOND_PAGE_BY_ROLE[roleId] ?? 0) + (HIDDEN_WHILE_ACTIVE[roleId] ?? 0) : 0;
 
 function decidedThisWeek(): DecidedThisWeek {
   const week = { intro: 0, maybe: 0, pass: 0 };
@@ -57,7 +54,7 @@ function countBuckets(items: ReviewItem[]): ReviewBucketCounts {
 
 export function allReviewItems(): ReviewItem[] {
   const now = Date.now();
-  return REVIEW_ITEM_SEEDS.map((seed, index) => toReviewItem(seed, index, now));
+  return ALL_ITEM_SEEDS.map((seed, index) => toReviewItem(seed, index, now));
 }
 
 export function findReviewItem({ talentId, roleId }: { talentId: string; roleId: string | null }): ReviewItem | undefined {
@@ -68,7 +65,7 @@ export function findReviewItemByOpportunity(opportunityId: number): ReviewItem |
   return allReviewItems().find((item) => item.opportunityId === opportunityId);
 }
 
-export function buildReviewFeed({ roleId }: { roleId: string | null }): ReviewListData {
+export function buildReviewFeed({ roleId, more }: { roleId: string | null; more: boolean }): ReviewListData {
   // Maybe keeps someone pending: they stay in the feed, flagged with their note.
   // A paused role's people wait behind the pause: not in Review until it's resumed.
   const pending = allReviewItems().flatMap((item) => {
@@ -81,15 +78,16 @@ export function buildReviewFeed({ roleId }: { roleId: string | null }): ReviewLi
   const byRole = Object.fromEntries(
     ROLES.filter((role) => role.status === "active").map((role) => {
       // Maybes have their own tab: "waiting" counts only people nobody has decided on yet.
-      const visible = pending.filter((item) => item.roleId === role.id && !item.maybe).length;
-      const hidden = hiddenFor(role.id);
-      // The count already includes the people past the page, so it is exact: no "+".
-      return [role.id, { pending: visible + hidden, truncated: false }];
+      // It counts the second page too, so it is exact: no "+".
+      return [role.id, { pending: pending.filter((item) => item.roleId === role.id && !item.maybe).length, truncated: false }];
     }),
   );
 
-  const items = roleId ? pending.filter((item) => item.roleId === roleId) : pending;
-  const hidden = roleId ? hiddenFor(roleId) : ROLES.reduce((sum, role) => sum + hiddenFor(role.id), 0);
+  const inScope = roleId ? pending.filter((item) => item.roleId === roleId) : pending;
+  // A maybe stays listed wherever it came from; undecided second-page people wait for "more".
+  const held = (item: ReviewItem) => !more && !item.maybe && ON_LATER_PAGE.has(reviewItemKey(item));
+  const items = inScope.filter((item) => !held(item));
+  const hidden = inScope.length - items.length;
 
   return {
     items,
@@ -100,8 +98,7 @@ export function buildReviewFeed({ roleId }: { roleId: string | null }): ReviewLi
     pausedPending: Object.fromEntries(
       ROLES.filter((role) => role.status === "paused").map((role) => [
         role.id,
-        allReviewItems().filter((i) => i.roleId === role.id && !decisions.has(reviewItemKey(i))).length +
-          (HIDDEN_WHILE_ACTIVE[role.id] ?? 0),
+        allReviewItems().filter((i) => i.roleId === role.id && !decisions.has(reviewItemKey(i))).length,
       ]),
     ),
     decidedThisWeek: decidedThisWeek(),

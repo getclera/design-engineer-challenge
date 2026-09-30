@@ -6,6 +6,9 @@ import { useRolesList } from "@v2/features/org-roles";
 import { INTRO_DECISION_CATEGORIES, PASS_DECISION_CATEGORIES } from "@v2/features/org-shared-modals";
 import { type CSSProperties, type RefObject, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
+import { useQueryClient } from "@tanstack/react-query";
+import { extendFeed, isFeedExtended } from "@v2/lib/review-feed";
+import { orgDashboardKeys } from "@/lib/query-keys";
 import { orgTalents } from "@/services/api/org-talents";
 import { isHmLinkWarningSuppressed } from "../hm-warning-cookie";
 import { nextInQueue, sortByQueue, stepNavigable } from "../review-queue";
@@ -76,6 +79,19 @@ export function useReviewBoard(
 	const { data, isLoading, isPlaceholderData, isError, errorUpdatedAt, refetch } = useReviewItems(orgId, roleId);
 	// A background retry resets a never-loaded list to "pending"; once it has failed, keep showing the error.
 	const everFailed = errorUpdatedAt > 0;
+
+	// The feed arrives a page at a time: fetch the next one at the list's end, or when few people are left.
+	const queryClient = useQueryClient();
+	const truncated = data?.truncated ?? false;
+	const undecidedLeft = data?.items.filter((item) => !item.maybe).length ?? 0;
+	const loadMore = useCallback(() => {
+		if (!truncated || isFeedExtended(orgId, roleId)) return;
+		extendFeed(orgId, roleId);
+		void queryClient.invalidateQueries({ queryKey: orgDashboardKeys.review(orgId, roleId), exact: true });
+	}, [truncated, orgId, roleId, queryClient]);
+	useEffect(() => {
+		if (undecidedLeft <= 3) loadMore();
+	}, [undecidedLeft, loadMore]);
 
 	const initialSelectedKey = initialTalentId
 		? reviewItemKey({ talentId: initialTalentId, roleId: roleId ?? null })
@@ -462,7 +478,8 @@ export function useReviewBoard(
 	return {
 		undoLast,
 		items,
-		truncated: data?.truncated ?? false,
+		truncated,
+		loadMore,
 		isLoading: isLoading && !everFailed,
 		loadFailed: (isError || everFailed) && (!data || isPlaceholderData),
 		// A background refresh failed: the list on screen may be out of date until the next retry works.
