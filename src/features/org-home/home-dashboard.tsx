@@ -361,7 +361,8 @@ function RolesCard({
 					: null;
 			return { role, paused, count, flag, truncated: !!feed.byRole[role.id]?.truncated };
 		})
-		.sort((a, b) => Number(!!b.flag) - Number(!!a.flag) || b.count - a.count);
+		// Open roles first (a paused one needs nothing from you this week), flagged ones on top of those.
+		.sort((a, b) => Number(a.paused) - Number(b.paused) || Number(!!b.flag) - Number(!!a.flag) || b.count - a.count);
 	return (
 		<HomeCard title="Roles" note={`${roles.filter((r) => r.status === "active").length} open`}>
 			{rows.slice(0, ROLES_SHOWN).map(({ role, paused, count, flag, truncated }) => {

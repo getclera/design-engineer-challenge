@@ -84,7 +84,8 @@ export function buildReviewFeed({ roleId }: { roleId: string | null }): ReviewLi
       // Maybes have their own tab: "waiting" counts only people nobody has decided on yet.
       const visible = pending.filter((item) => item.roleId === role.id && !item.maybe).length;
       const hidden = hiddenFor(role.id);
-      return [role.id, { pending: visible + hidden, truncated: hidden > 0 }];
+      // The count already includes the people past the page, so it is exact: no "+".
+      return [role.id, { pending: visible + hidden, truncated: false }];
     }),
   );
 
