@@ -12,6 +12,7 @@ interface ExperienceRoleLineProps {
 	startDate: string | null;
 	endDate: string | null;
 	isLatest: boolean;
+	ongoing: boolean;
 	description: string | null;
 	resumeBullets: string[];
 }
@@ -23,12 +24,13 @@ function ExperienceRoleLine({
 	startDate,
 	endDate,
 	isLatest,
+	ongoing,
 	description,
 	resumeBullets,
 }: ExperienceRoleLineProps) {
 	const [detailsOpen, setDetailsOpen] = useState(false);
-	const range = dateRangeLabel(startDate, endDate, "month-year");
-	const duration = durationLabel(startDate, endDate);
+	const range = dateRangeLabel(startDate, endDate, "month-year", ongoing);
+	const duration = durationLabel(startDate, endDate, ongoing);
 	const hasDetails = Boolean(description) || resumeBullets.length > 0;
 	const CaretIcon = detailsOpen ? CaretDown : CaretRight;
 	const toggleDetails = useCallback((event: MouseEvent<HTMLButtonElement>) => {

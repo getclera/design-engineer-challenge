@@ -58,6 +58,7 @@ function ExperienceTenureRow({ tenure, showFundingAmount }: ExperienceTenureRowP
 				startDate={tenure.startDate}
 				endDate={tenure.endDate}
 				dateFormat="month-year"
+				ongoing={tenure.isCurrent}
 				duration={formatMonthsDuration(tenure.totalTenureMonths)}
 			>
 				<ul className="mt-0.5 flex flex-col gap-1 border-l border-v2-border-warm/60 pl-1.5">
@@ -68,6 +69,7 @@ function ExperienceTenureRow({ tenure, showFundingAmount }: ExperienceTenureRowP
 							startDate={role.startDate}
 							endDate={role.endDate}
 							isLatest={index === 0}
+							ongoing={role.isCurrent ?? false}
 							description={cleanField(role.description)}
 							resumeBullets={role.bullets}
 						/>

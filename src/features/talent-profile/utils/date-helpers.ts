@@ -1,7 +1,8 @@
 import { formatCalendarYear, formatMonthYear } from "@clera/shared-utils";
 
-function durationLabel(start: string | null, end: string | null): string | null {
-	if (!start) return null;
+// `ongoing` false: a job that ended on an unknown date. Say nothing rather than "Present".
+function durationLabel(start: string | null, end: string | null, ongoing = true): string | null {
+	if (!start || (!end && !ongoing)) return null;
 	const s = new Date(start).getTime();
 	const e = end ? new Date(end).getTime() : Date.now();
 	const months = Math.max(1, Math.round((e - s) / (1000 * 60 * 60 * 24 * 30.44)));
@@ -13,11 +14,17 @@ function durationLabel(start: string | null, end: string | null): string | null 
 	return `${months}m`;
 }
 
-function dateRangeLabel(start: string | null, end: string | null, format: "month-year" | "year"): string | null {
+function dateRangeLabel(
+	start: string | null,
+	end: string | null,
+	format: "month-year" | "year",
+	ongoing = true,
+): string | null {
 	const formatBound = format === "year" ? formatCalendarYear : formatMonthYear;
 	const startLabel = formatBound(start);
 	const endLabel = formatBound(end);
 	if (!startLabel) return endLabel;
+	if (!endLabel && !ongoing) return startLabel;
 	return `${startLabel} — ${endLabel || "Present"}`;
 }
 

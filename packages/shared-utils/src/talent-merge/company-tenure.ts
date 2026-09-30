@@ -43,7 +43,8 @@ function measurableBounds(role: CompanyRole, nowMs: number): RoleBounds | null {
 	const startMs = parseFlexDate(role.startDate)?.getTime();
 	if (startMs == null || !Number.isFinite(startMs)) return null;
 	const parsedEnd = parseFlexDate(role.endDate)?.getTime();
-	const endMs = role.isCurrent ? nowMs : (parsedEnd ?? nowMs);
+	// A job that ended on an unknown date adds no time we can vouch for (it used to run to today).
+	const endMs = role.isCurrent ? nowMs : (parsedEnd ?? startMs);
 	if (!Number.isFinite(endMs) || endMs < startMs) return null;
 	return { startMs, endMs, knownEndMs: parsedEnd ?? Number.NEGATIVE_INFINITY };
 }

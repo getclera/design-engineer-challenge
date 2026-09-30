@@ -15,6 +15,8 @@ interface TimelineRowProps {
 	startDate: string | null;
 	endDate: string | null;
 	dateFormat?: "month-year" | "year";
+	/** False for a job that ended on an unknown date. */
+	ongoing?: boolean;
 	duration?: string | null;
 	durationTone?: "active" | "error" | "neutral" | "warning" | "info" | "muted";
 	children?: React.ReactNode;
@@ -31,12 +33,13 @@ function TimelineRow({
 	startDate,
 	endDate,
 	dateFormat = "month-year",
+	ongoing,
 	duration,
 	durationTone,
 	children,
 }: TimelineRowProps) {
-	const dateRange = dateRangeLabel(startDate, endDate, dateFormat);
-	const durationText = duration ?? durationLabel(startDate, endDate);
+	const dateRange = dateRangeLabel(startDate, endDate, dateFormat, ongoing);
+	const durationText = duration ?? durationLabel(startDate, endDate, ongoing);
 	const isShort = durationText && !durationText.includes("y") && Number.parseInt(durationText, 10) < 6;
 	const tone = durationTone ?? (isShort ? "error" : "active");
 
