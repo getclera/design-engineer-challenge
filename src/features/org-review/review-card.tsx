@@ -10,6 +10,8 @@ import { type ReviewItem, reviewItemKey } from "./types";
 
 interface ReviewCardProps {
 	item: ReviewItem;
+	/** Name the role on the row (the same person is listed for more than one). */
+	showRole?: boolean;
 	isSelected: boolean;
 	isPending?: boolean;
 	failed?: boolean;
@@ -28,6 +30,7 @@ interface ReviewCardProps {
 
 export function ReviewCard({
 	item,
+	showRole = false,
 	isSelected,
 	isPending = false,
 	failed = false,
@@ -43,8 +46,14 @@ export function ReviewCard({
 	onSeen,
 }: ReviewCardProps) {
 	const hasActions = !!onIntro && !!onPass;
+	const roleTag = showRole && item.roleName;
 	const tags = (
 		<>
+			{roleTag && (
+				<StatusPill tone="neutral" size="xs" className="max-w-full truncate" title={item.roleName ?? undefined}>
+					{item.roleName}
+				</StatusPill>
+			)}
 			{similarToName && (
 				<StatusPill tone="info" size="xs">
 					Similar profiles to {similarToName}
@@ -67,7 +76,7 @@ export function ReviewCard({
 			)}
 		</>
 	);
-	const hasTags = !!similarToName || !item.roleId || !!item.maybe?.note || failed;
+	const hasTags = !!roleTag || !!similarToName || !item.roleId || !!item.maybe?.note || failed;
 
 	const card = (
 		<TalentBoardCard

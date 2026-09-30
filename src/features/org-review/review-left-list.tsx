@@ -47,6 +47,9 @@ export function ReviewLeftList({
 }: ReviewLeftListProps) {
 	const prefersReducedMotion = useReducedMotion();
 	const exit = prefersReducedMotion ? { opacity: 0 } : { opacity: 0, height: 0 };
+	// Someone listed for two roles gets two rows: name the role on those, or they look like a duplicate.
+	const seen = new Map<string, number>();
+	for (const item of sections.flatMap((s) => s.items)) seen.set(item.talentId, (seen.get(item.talentId) ?? 0) + 1);
 
 	return (
 		<div className="divide-y divide-v2-border-divider">
@@ -77,6 +80,7 @@ export function ReviewLeftList({
 						>
 							<ReviewCard
 								item={item}
+								showRole={(seen.get(item.talentId) ?? 0) > 1}
 								isSelected={selectedKey === reviewItemKey(item)}
 								isPending={isPending(item)}
 								failed={isFailed(item)}
