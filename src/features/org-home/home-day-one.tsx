@@ -5,7 +5,7 @@ import { Button } from "@v2/components/ui/button";
 import { Card } from "@v2/components/ui/card";
 import { StatusPill } from "@v2/components/ui/status-pill";
 import { TalentBoardCard } from "@v2/features/org-shared-cards";
-import { cn } from "@v2/lib/utils";
+import { BRAND_GREEN_RGB, cn } from "@v2/lib/utils";
 import { motion, useReducedMotion } from "framer-motion";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -32,7 +32,7 @@ export function HomeFirstDrop({ drop, roleName }: { drop: NextDrop; roleName: st
 				<span className="absolute inset-[28%] rounded-full bg-v2-bg-card" />
 				<motion.span
 					className="absolute inset-0 rounded-full"
-					style={{ background: "conic-gradient(from 0deg, transparent 0 280deg, rgba(3,147,101,0.5) 360deg)" }}
+					style={{ background: `conic-gradient(from 0deg, transparent 0 280deg, rgb(${BRAND_GREEN_RGB} / 0.5) 360deg)` }}
 					animate={reduced ? undefined : { rotate: 360 }}
 					// Two sweeps (under 5s), then it rests: no endless motion next to text (WCAG 2.2.2).
 					transition={{ duration: 2.4, ease: "linear", repeat: 1 }}
@@ -102,7 +102,7 @@ export function HomeGetReady({ day, steps: initial }: { day: string; steps: Setu
 					/>
 				</svg>
 				<div className="min-w-0 flex-1">
-					<p className="font-medium font-v2-body text-[15px] text-v2-text-primary">
+					<p className="font-medium font-v2-body text-base text-v2-text-primary">
 						{all
 							? `You're ready for ${day}`
 							: `${initial.length - count} ${initial.length - count === 1 ? "step" : "steps"} left`}

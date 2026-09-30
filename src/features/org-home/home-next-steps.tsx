@@ -26,7 +26,7 @@ import { Sheet, SheetContent, SheetTitle } from "@v2/components/ui/sheet";
 import { invalidateOrgDashboard, PHONE_SHEET_CLASSES, SheetGrabber } from "@v2/features/org-review";
 import { singleKeysOn } from "@v2/features/org-shared-cards";
 import { useMediaQuery } from "@v2/hooks/use-media-query";
-import { cn } from "@v2/lib/utils";
+import { BRAND_GREEN_RGB, cn } from "@v2/lib/utils";
 import { motion, useReducedMotion } from "framer-motion";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -268,7 +268,7 @@ function StepRow({
 				<StepIcon size={16} />
 			</span>
 			<div className="min-w-0 flex-1">
-				<p className={cn("font-medium font-v2-body text-v2-text-primary", primary ? "text-[15px]" : "text-sm")}>
+				<p className={cn("font-medium font-v2-body text-v2-text-primary", primary ? "text-base" : "text-sm")}>
 					{title}
 				</p>
 				<div className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-1 font-v2-body text-v2-text-tertiary text-xs tabular-nums">
@@ -320,7 +320,7 @@ function CaughtUpBlock({ orgId, week }: { orgId: string; week: CaughtUpWeek }) {
 							: {
 									scale: 1,
 									rotate: 0,
-									boxShadow: ["0 0 0 0 rgba(3,147,101,0.45)", "0 0 0 16px rgba(3,147,101,0)"],
+									boxShadow: [`0 0 0 0 rgb(${BRAND_GREEN_RGB} / 0.45)`, `0 0 0 16px rgb(${BRAND_GREEN_RGB} / 0)`],
 								}
 					}
 					transition={{
@@ -334,7 +334,7 @@ function CaughtUpBlock({ orgId, week }: { orgId: string; week: CaughtUpWeek }) {
 					<CheckCircle size={20} weight="fill" />
 				</motion.span>
 				<div className="min-w-0 flex-1">
-					<p className="font-medium font-v2-body text-[15px] text-v2-text-primary">
+					<p className="font-medium font-v2-body text-base text-v2-text-primary">
 						{week.quiet ? "A quiet week" : "Nice, you're all done"}
 					</p>
 					<p className="mt-0.5 font-v2-body text-v2-text-tertiary text-xs">

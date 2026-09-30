@@ -1,5 +1,7 @@
 "use client";
 
+import { BRAND_GREEN_RGB } from "@v2/lib/utils";
+
 /**
  * Deep links from Home and Review (`?focus=linkedin`, `?focus=calendar&role=…`): bring the field into view, flash it
  * once so the eye lands on it, and put the cursor in it.
@@ -24,8 +26,8 @@ export function focusField(key: string, scope?: string, tries = 20) {
 			if (!reduced)
 				row.animate(
 					[
-						{ boxShadow: "0 0 0 6px rgb(3 147 101 / 0.22)", backgroundColor: "rgb(3 147 101 / 0.08)" },
-						{ boxShadow: "0 0 0 6px rgb(3 147 101 / 0)", backgroundColor: "rgb(3 147 101 / 0)" },
+						{ boxShadow: `0 0 0 6px rgb(${BRAND_GREEN_RGB} / 0.22)`, backgroundColor: `rgb(${BRAND_GREEN_RGB} / 0.08)` },
+						{ boxShadow: `0 0 0 6px rgb(${BRAND_GREEN_RGB} / 0)`, backgroundColor: `rgb(${BRAND_GREEN_RGB} / 0)` },
 					],
 					{ duration: 1800, easing: "ease-out" },
 				);
